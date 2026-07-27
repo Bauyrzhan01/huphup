@@ -2765,14 +2765,16 @@ def api_profile():
         user["company"] = (data.get("company") or "").strip()[:120]
         user["city"] = (data.get("city") or "").strip()[:80]
         user["position"] = (data.get("position") or "").strip()[:80]
-        bin_val = (data.get("bin") or "").strip()
-        if bin_val:
-            if not bin_val.isdigit() or len(bin_val) != 12:
-                return jsonify({"ok": False, "error": "БИН должен состоять из 12 цифр"}), 400
-            user["bin"] = bin_val
-        else:
-            user["bin"] = ""
-        user["website"] = (data.get("website") or "").strip()[:200]
+        if "bin" in data:
+            bin_val = (data.get("bin") or "").strip()
+            if bin_val:
+                if not bin_val.isdigit() or len(bin_val) != 12:
+                    return jsonify({"ok": False, "error": "БИН должен состоять из 12 цифр"}), 400
+                user["bin"] = bin_val
+            else:
+                user["bin"] = ""
+        if "website" in data:
+            user["website"] = (data.get("website") or "").strip()[:200]
         user["address"] = (data.get("address") or "").strip()[:200]
         user["about"] = (data.get("about") or "").strip()[:500]
         cats = data.get("preferred_categories")

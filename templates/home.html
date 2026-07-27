@@ -243,6 +243,14 @@
                 <input type="text" name="company" id="profile-company" value="{{ user.company or '' }}" autocomplete="organization" maxlength="120" placeholder="{{ _('home.profile_org_ph') }}" />
               </label>
               <label>
+                {{ _("auth.bin") }}
+                <input type="text" name="bin" id="profile-bin" value="{{ user.bin or '' }}" inputmode="numeric" maxlength="12" pattern="\d{12}" placeholder="{{ _('auth.bin_ph') }}" autocomplete="off" />
+              </label>
+              <label>
+                {{ _("js.website") }}
+                <input type="url" name="website" id="profile-website" value="{{ user.website or '' }}" placeholder="https://" maxlength="200" autocomplete="url" />
+              </label>
+              <label class="full">
                 {{ _("home.profile_address") }}
                 <input type="text" name="address" id="profile-address" value="{{ user.address or '' }}" autocomplete="street-address" maxlength="200" placeholder="{{ _('home.profile_address_ph') }}" />
               </label>

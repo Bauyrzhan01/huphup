@@ -419,6 +419,7 @@ if (profileForm) {
       profileSuccess.hidden = true;
       profileSuccess.textContent = "";
     }
+    if (typeof syncInterestSelect === "function") syncInterestSelect();
     const payload = formToObject(profileForm);
     const { res, data } = await postJson("/api/profile", payload);
     if (!res.ok || !data.ok) {

@@ -96,6 +96,10 @@ function updateProfileCompleteness() {
       !!profileVal("profile-about"),
       document.querySelectorAll("#profile-chips .profile-chip.is-on").length > 0,
     ];
+    const buyerBin = profileVal("profile-bin");
+    if (buyerBin) checks.push(/^\d{12}$/.test(buyerBin));
+    const buyerWeb = profileFieldVal("profile-website");
+    if (buyerWeb) checks.push(true);
   }
   const filled = checks.filter(Boolean).length;
   const pct = Math.round((filled / Math.max(checks.length, 1)) * 100);
@@ -300,12 +304,10 @@ if (passwordForm) {
     }
 
     try {
-      const res = await fetch("/api/password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ current_password: current, new_password: next }),
+      const { res, data } = await postJson("/api/password", {
+        current_password: current,
+        new_password: next,
       });
-      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
         if (passwordError) {
           passwordError.hidden = false;
