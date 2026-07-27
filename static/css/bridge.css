@@ -752,6 +752,16 @@
   margin-top: 10px;
 }
 
+.deal-next__rating-saved {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .rate-block {
   margin-top: 16px;
   padding-top: 16px;

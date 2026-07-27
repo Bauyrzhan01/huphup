@@ -465,11 +465,27 @@ function bindRateStars() {
 const dealNext = document.getElementById("supplier-deal-next");
 const dealNextContacts = document.getElementById("supplier-deal-next-contacts");
 
+function ensureSupplierDealNextRatingSavedEl() {
+  if (!dealNext) return null;
+  let el = dealNext.querySelector(".deal-next__rating-saved");
+  if (!el) {
+    el = document.createElement("p");
+    el.className = "deal-next__rating-saved";
+    const anchor = dealNextContacts || dealNext.querySelector(".deal-next__hint");
+    if (anchor?.parentNode) anchor.parentNode.insertBefore(el, anchor.nextSibling);
+    else dealNext.appendChild(el);
+  }
+  return el;
+}
+
 function renderDealNext(req) {
   if (!dealNext) return;
   const completed = req?.status === "completed" && req?.is_deal_party;
+  const hintEl = dealNext.querySelector(".deal-next__hint");
+  const savedEl = ensureSupplierDealNextRatingSavedEl();
   if (!completed) {
     dealNext.hidden = true;
+    if (savedEl) savedEl.hidden = true;
     return;
   }
   dealNext.hidden = false;
@@ -489,32 +505,35 @@ function renderDealNext(req) {
       <span>${emailHtml}</span>
     `;
   }
+  if (req.my_rating && savedEl) {
+    const c = req.my_rating.comment ? ` · ${escapeHtml(req.my_rating.comment)}` : "";
+    savedEl.hidden = false;
+    savedEl.innerHTML = `<strong>${escapeHtml(t("js.rating_saved"))}</strong> · ${escapeHtml(
+      t("js.score_of_5", { score: req.my_rating.score })
+    )}${c}`;
+    if (hintEl) hintEl.hidden = true;
+  } else {
+    if (savedEl) savedEl.hidden = true;
+    if (hintEl) {
+      hintEl.hidden = !req.can_rate;
+      if (req.can_rate) hintEl.textContent = t("home.deal_next_rate");
+    }
+  }
 }
 
 function renderRateBlock(req) {
   renderDealNext(req);
   if (!rateBlock) return;
   const completed = req?.status === "completed" && req?.is_deal_party;
-  if (!completed) {
+  const showForm = completed && req.can_rate && !req.my_rating;
+  if (!showForm) {
     rateBlock.hidden = true;
+    showRateError("");
     return;
   }
   rateBlock.hidden = false;
   bindRateStars();
   const name = req.rate_target_name || t("js.rate_buyer");
-  if (req.my_rating) {
-    if (rateTitle) rateTitle.textContent = t("js.your_rating");
-    if (rateStars) rateStars.hidden = true;
-    if (rateComment) rateComment.hidden = true;
-    if (rateSubmit) rateSubmit.hidden = true;
-    if (rateDone) {
-      rateDone.hidden = false;
-      const c = req.my_rating.comment ? ` · ${req.my_rating.comment}` : "";
-      rateDone.textContent = t("js.score_of_5", { score: req.my_rating.score }) + c;
-    }
-    showRateError("");
-    return;
-  }
   if (rateTitle) rateTitle.textContent = t("js.rate_name", { name });
   if (rateStars) rateStars.hidden = false;
   if (rateComment) {
@@ -903,7 +922,19 @@ rateSubmit?.addEventListener("click", async () => {
     return;
   }
   showRateError("");
-  if (data.request) renderRateBlock(data.request);
+  let req = data.request;
+  if (req && !req.my_rating && data.rating) {
+    req = {
+      ...req,
+      my_rating: { score: data.rating.score, comment: data.rating.comment || "" },
+      can_rate: false,
+    };
+  }
+  if (req) {
+    renderDealMessages(req.deal_messages || [], req);
+    renderRateBlock(req);
+    loadRequests();
+  }
 });
 
 async function loadRequests() {
