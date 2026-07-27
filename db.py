@@ -223,6 +223,14 @@ def _init_schema_sqlite(conn: sqlite3.Connection) -> None:
           attempts INTEGER NOT NULL DEFAULT 0
         );
         CREATE INDEX IF NOT EXISTS idx_pending_expires ON pending_registrations(expires_at);
+        CREATE TABLE IF NOT EXISTS pending_password_resets (
+          email TEXT PRIMARY KEY,
+          code_digest TEXT NOT NULL,
+          expires_at REAL NOT NULL,
+          sent_at REAL NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_pwd_reset_expires ON pending_password_resets(expires_at);
         """
     )
     conn.commit()
@@ -296,6 +304,14 @@ def _init_schema_pg(conn) -> None:
               attempts INTEGER NOT NULL DEFAULT 0
             );
             CREATE INDEX IF NOT EXISTS idx_pending_expires ON pending_registrations(expires_at);
+            CREATE TABLE IF NOT EXISTS pending_password_resets (
+              email TEXT PRIMARY KEY,
+              code_digest TEXT NOT NULL,
+              expires_at DOUBLE PRECISION NOT NULL,
+              sent_at DOUBLE PRECISION NOT NULL,
+              attempts INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_pwd_reset_expires ON pending_password_resets(expires_at);
             """
         )
     conn.commit()
@@ -1328,6 +1344,149 @@ def delete_pending_registration(email: str) -> None:
         else:
             conn.execute(
                 "DELETE FROM pending_registrations WHERE email = ?", (email,)
+            )
+
+
+# --- Pending password reset (email code) ---
+
+
+def purge_expired_pending_password_resets(now_ts: float | None = None) -> None:
+    if not use_db():
+        return
+    when = float(now_ts if now_ts is not None else time.time())
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM pending_password_resets WHERE expires_at < %s", (when,)
+                )
+        else:
+            conn.execute(
+                "DELETE FROM pending_password_resets WHERE expires_at < ?", (when,)
+            )
+
+
+def get_pending_password_reset(email: str) -> dict | None:
+    email = (email or "").strip().lower()
+    if not email or not use_db():
+        return None
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT email, code_digest, expires_at, sent_at, attempts
+                    FROM pending_password_resets WHERE email = %s
+                    """,
+                    (email,),
+                )
+                row = cur.fetchone()
+    else:
+        conn = connect()
+        with _lock:
+            row = conn.execute(
+                """
+                SELECT email, code_digest, expires_at, sent_at, attempts
+                FROM pending_password_resets WHERE email = ?
+                """,
+                (email,),
+            ).fetchone()
+    if not row:
+        return None
+    get = row.get if isinstance(row, dict) else row.__getitem__
+    return {
+        "email": get("email"),
+        "code_digest": get("code_digest"),
+        "expires_at": float(get("expires_at")),
+        "sent_at": float(get("sent_at")),
+        "attempts": int(get("attempts") or 0),
+    }
+
+
+def save_pending_password_reset(
+    email: str,
+    *,
+    code_digest: str,
+    expires_at: float,
+    sent_at: float,
+    attempts: int = 0,
+) -> None:
+    email = (email or "").strip().lower()
+    if not email or not use_db():
+        return
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO pending_password_resets
+                      (email, code_digest, expires_at, sent_at, attempts)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (email) DO UPDATE SET
+                      code_digest = EXCLUDED.code_digest,
+                      expires_at = EXCLUDED.expires_at,
+                      sent_at = EXCLUDED.sent_at,
+                      attempts = EXCLUDED.attempts
+                    """,
+                    (email, code_digest, expires_at, sent_at, attempts),
+                )
+        else:
+            conn.execute(
+                """
+                INSERT INTO pending_password_resets
+                  (email, code_digest, expires_at, sent_at, attempts)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(email) DO UPDATE SET
+                  code_digest = excluded.code_digest,
+                  expires_at = excluded.expires_at,
+                  sent_at = excluded.sent_at,
+                  attempts = excluded.attempts
+                """,
+                (email, code_digest, expires_at, sent_at, attempts),
+            )
+
+
+def update_pending_password_reset(email: str, **fields) -> None:
+    email = (email or "").strip().lower()
+    if not email or not use_db() or not fields:
+        return
+    allowed = {"code_digest", "expires_at", "sent_at", "attempts"}
+    sets = []
+    vals = []
+    for key, val in fields.items():
+        if key not in allowed:
+            continue
+        sets.append(f"{key} = %s" if use_postgres() else f"{key} = ?")
+        vals.append(val)
+    if not sets:
+        return
+    vals.append(email)
+    sql = (
+        f"UPDATE pending_password_resets SET {', '.join(sets)} WHERE email = %s"
+        if use_postgres()
+        else f"UPDATE pending_password_resets SET {', '.join(sets)} WHERE email = ?"
+    )
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
+                cur.execute(sql, vals)
+        else:
+            conn.execute(sql, vals)
+
+
+def delete_pending_password_reset(email: str) -> None:
+    email = (email or "").strip().lower()
+    if not email or not use_db():
+        return
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM pending_password_resets WHERE email = %s", (email,)
+                )
+        else:
+            conn.execute(
+                "DELETE FROM pending_password_resets WHERE email = ?", (email,)
             )
 
 

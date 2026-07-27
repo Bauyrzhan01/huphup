@@ -106,6 +106,7 @@ CSRF_HEADER = "X-CSRF-Token"
 
 # Код подтверждения email при регистрации (DB на Vercel/Neon; иначе in-memory)
 _PENDING_REGISTRATIONS: dict[str, dict] = {}
+_PENDING_PASSWORD_RESETS: dict[str, dict] = {}
 EMAIL_VERIFY_TTL_SEC = 900
 EMAIL_VERIFY_RESEND_SEC = 45
 
@@ -160,6 +161,56 @@ def _pending_update_attempts(email: str, attempts: int) -> None:
         return
     if email in _PENDING_REGISTRATIONS:
         _PENDING_REGISTRATIONS[email]["attempts"] = attempts
+
+
+def _pwd_reset_get(email: str) -> dict | None:
+    email = (email or "").strip().lower()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        row = db_store.get_pending_password_reset(email)
+        if not row:
+            return None
+        return {
+            "code_digest": row["code_digest"],
+            "expires_at": row["expires_at"],
+            "sent_at": row["sent_at"],
+            "attempts": row["attempts"],
+        }
+    return _PENDING_PASSWORD_RESETS.get(email)
+
+
+def _pwd_reset_save(email: str, record: dict) -> None:
+    email = (email or "").strip().lower()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.save_pending_password_reset(
+            email,
+            code_digest=record["code_digest"],
+            expires_at=record["expires_at"],
+            sent_at=record["sent_at"],
+            attempts=int(record.get("attempts") or 0),
+        )
+        return
+    _PENDING_PASSWORD_RESETS[email] = record
+
+
+def _pwd_reset_delete(email: str) -> None:
+    email = (email or "").strip().lower()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.delete_pending_password_reset(email)
+        return
+    _PENDING_PASSWORD_RESETS.pop(email, None)
+
+
+def _pwd_reset_update_attempts(email: str, attempts: int) -> None:
+    email = (email or "").strip().lower()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.update_pending_password_reset(email, attempts=attempts)
+        return
+    if email in _PENDING_PASSWORD_RESETS:
+        _PENDING_PASSWORD_RESETS[email]["attempts"] = attempts
 
 
 @app.context_processor
@@ -2462,6 +2513,11 @@ def _verify_code_digest(code: str) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def _reset_code_digest(code: str) -> str:
+    raw = f"{app.secret_key}:password-reset:{code}".encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
 def _purge_pending_registrations():
     now = time.time()
     if db_store.use_db():
@@ -2471,6 +2527,44 @@ def _purge_pending_registrations():
     expired = [k for k, v in _PENDING_REGISTRATIONS.items() if v.get("expires_at", 0) < now]
     for k in expired:
         _PENDING_REGISTRATIONS.pop(k, None)
+
+
+def _purge_pending_password_resets():
+    now = time.time()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.purge_expired_pending_password_resets(now)
+        return
+    expired = [
+        k for k, v in _PENDING_PASSWORD_RESETS.items() if v.get("expires_at", 0) < now
+    ]
+    for k in expired:
+        _PENDING_PASSWORD_RESETS.pop(k, None)
+
+
+def _issue_password_reset_code(email: str):
+    _purge_pending_password_resets()
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    now = time.time()
+    record = {
+        "code_digest": _reset_code_digest(code),
+        "expires_at": now + EMAIL_VERIFY_TTL_SEC,
+        "sent_at": now,
+        "attempts": 0,
+    }
+    _pwd_reset_save(email, record)
+    subject = "HupHup — код для сброса пароля"
+    body = (
+        f"Ваш код для сброса пароля: {code}\n\n"
+        f"Код действует 15 минут.\n"
+        f"Если вы не запрашивали сброс — игнорируйте письмо.\n"
+    )
+    mailed = False
+    if smtp_configured():
+        mailed = send_mail(email, subject, body)
+    if not mailed and ((not IS_PRODUCTION) or ALLOW_DEV_CODE):
+        print(f"[password-reset] SMTP off/fail — code for {email}: {code}")
+    return code, mailed
 
 
 def _build_register_user(data: dict):
@@ -2506,7 +2600,7 @@ def _build_register_user(data: dict):
         "email": email,
         "password": generate_password_hash(password),
         "created_at": now_iso(),
-        "email_verified": True,
+        "email_verified": False,
     }
 
     if invite_token and invite_owner:
@@ -2593,6 +2687,7 @@ def _finalize_registration(user: dict):
                 break
         user["company_supplier_id"] = owner["id"]
         user["supplier_role"] = "manager"
+    user["email_verified"] = True
     save_user(user)
     session["user_id"] = user["id"]
     session["role"] = user["role"]
@@ -2874,6 +2969,121 @@ def api_password():
     user["password"] = generate_password_hash(new_password)
     save_user(user)
     return jsonify({"ok": True, "message": "Пароль изменён"})
+
+
+@app.route("/api/password/forgot", methods=["POST"])
+def api_password_forgot():
+    if not check_auth_rate_limit():
+        return jsonify({"ok": False, "error": "Слишком много попыток. Подождите и повторите."}), 429
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    if not email or "@" not in email:
+        return jsonify({"ok": False, "error": "Укажите корректный email"}), 400
+
+    user = find_user_by_email(email)
+    generic = {
+        "ok": True,
+        "needs_verification": True,
+        "email": email,
+        "message": "Если аккаунт существует, код отправлен на email",
+    }
+    if not user:
+        return jsonify(generic)
+
+    code, mailed = _issue_password_reset_code(email)
+    if IS_PRODUCTION and not mailed and not ALLOW_DEV_CODE:
+        _pwd_reset_delete(email)
+        return jsonify({
+            "ok": False,
+            "error": "Не удалось отправить код. Проверьте SMTP или попробуйте позже.",
+        }), 503
+
+    payload = dict(generic)
+    payload["message"] = f"Код отправлен на {email}"
+    if not mailed and _expose_dev_code():
+        payload["dev_code"] = code
+        payload["message"] = f"SMTP не настроен — код для теста: {code}"
+    return jsonify(payload)
+
+
+@app.route("/api/password/forgot/verify", methods=["POST"])
+def api_password_forgot_verify():
+    if not check_auth_rate_limit():
+        return jsonify({"ok": False, "error": "Слишком много попыток. Подождите и повторите."}), 429
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    code = re.sub(r"\D", "", str(data.get("code") or ""))
+    new_password = data.get("new_password") or ""
+    confirm = data.get("confirm_password") or new_password
+    if not email or len(code) != 6:
+        return jsonify({"ok": False, "error": "Введите email и 6-значный код"}), 400
+    if len(new_password) < 6:
+        return jsonify({"ok": False, "error": "Пароль должен быть не короче 6 символов"}), 400
+    if new_password != confirm:
+        return jsonify({"ok": False, "error": "Пароли не совпадают"}), 400
+
+    user = find_user_by_email(email)
+    if not user:
+        return jsonify({"ok": False, "error": "Неверный код или email"}), 400
+
+    _purge_pending_password_resets()
+    pending = _pwd_reset_get(email)
+    if not pending:
+        return jsonify({"ok": False, "error": "Код истёк. Запросите новый."}), 400
+
+    attempts = int(pending.get("attempts") or 0) + 1
+    _pwd_reset_update_attempts(email, attempts)
+    if attempts > 8:
+        _pwd_reset_delete(email)
+        return jsonify({
+            "ok": False,
+            "error": "Слишком много неверных попыток. Запросите код снова.",
+        }), 429
+
+    expected = pending.get("code_digest") or ""
+    if not hmac.compare_digest(expected, _reset_code_digest(code)):
+        return jsonify({"ok": False, "error": "Неверный код подтверждения"}), 400
+
+    user["password"] = generate_password_hash(new_password)
+    save_user(user)
+    _pwd_reset_delete(email)
+    return jsonify({"ok": True, "message": "Пароль обновлён. Теперь можно войти."})
+
+
+@app.route("/api/password/forgot/resend", methods=["POST"])
+def api_password_forgot_resend():
+    if not check_auth_rate_limit():
+        return jsonify({"ok": False, "error": "Слишком много попыток. Подождите и повторите."}), 429
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        return jsonify({"ok": False, "error": "Укажите email"}), 400
+    if not find_user_by_email(email):
+        return jsonify({"ok": True, "message": "Если аккаунт существует, код отправлен"})
+
+    _purge_pending_password_resets()
+    pending = _pwd_reset_get(email)
+    if not pending:
+        return jsonify({"ok": False, "error": "Сначала запросите сброс пароля"}), 400
+
+    now = time.time()
+    last = float(pending.get("sent_at") or 0)
+    wait = EMAIL_VERIFY_RESEND_SEC - (now - last)
+    if wait > 0:
+        return jsonify({
+            "ok": False,
+            "error": f"Подождите ещё {int(wait)} сек. перед повторной отправкой",
+        }), 429
+
+    code, mailed = _issue_password_reset_code(email)
+    if IS_PRODUCTION and not mailed and not ALLOW_DEV_CODE:
+        return jsonify({"ok": False, "error": "Не удалось отправить письмо."}), 503
+
+    payload = {"ok": True, "message": f"Новый код отправлен на {email}"}
+    if not mailed and _expose_dev_code():
+        payload["dev_code"] = code
+        payload["message"] = f"SMTP не настроен — код: {code}"
+    return jsonify(payload)
 
 
 @app.route("/api/my/stats")

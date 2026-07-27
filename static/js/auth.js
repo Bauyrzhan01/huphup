@@ -139,8 +139,208 @@ if (authForm) {
 
 const loginForm = document.getElementById("login-form");
 if (loginForm && !authForm) {
+  const stepLogin = document.getElementById("login-step-form");
+  const stepForgotEmail = document.getElementById("login-step-forgot-email");
+  const stepForgotReset = document.getElementById("login-step-forgot-reset");
+  const forgotEmailInput = document.getElementById("forgot-email");
+  const forgotCodeInput = document.getElementById("forgot-code");
+  const forgotNewPassword = document.getElementById("forgot-new-password");
+  const forgotConfirmPassword = document.getElementById("forgot-confirm-password");
+  const forgotEmailDisplay = document.getElementById("forgot-email-display");
+  const forgotError = document.getElementById("forgot-error");
+  const forgotResetError = document.getElementById("forgot-reset-error");
+  const forgotResetHint = document.getElementById("forgot-reset-hint");
+  let forgotPendingEmail = "";
+
+  function tKey(key, fallback) {
+    return typeof t === "function" ? t(key) : fallback;
+  }
+
+  function showLoginStep() {
+    stepLogin?.removeAttribute("hidden");
+    stepForgotEmail?.setAttribute("hidden", "");
+    stepForgotReset?.setAttribute("hidden", "");
+    showError("");
+    showSuccess("");
+  }
+
+  function showForgotEmailStep() {
+    stepLogin?.setAttribute("hidden", "");
+    stepForgotEmail?.removeAttribute("hidden");
+    stepForgotReset?.setAttribute("hidden", "");
+    if (forgotError) {
+      forgotError.hidden = true;
+      forgotError.textContent = "";
+    }
+    const loginEmail = loginForm.querySelector('[name="email"]')?.value?.trim();
+    if (forgotEmailInput && loginEmail) forgotEmailInput.value = loginEmail;
+    forgotEmailInput?.focus();
+  }
+
+  function showForgotResetStep(email, message) {
+    forgotPendingEmail = (email || "").trim().toLowerCase();
+    stepLogin?.setAttribute("hidden", "");
+    stepForgotEmail?.setAttribute("hidden", "");
+    stepForgotReset?.removeAttribute("hidden");
+    if (forgotEmailDisplay) forgotEmailDisplay.textContent = forgotPendingEmail;
+    if (forgotResetError) {
+      forgotResetError.hidden = true;
+      forgotResetError.textContent = "";
+    }
+    if (forgotResetHint) {
+      forgotResetHint.hidden = !message;
+      forgotResetHint.textContent = message || "";
+    }
+    if (forgotCodeInput) {
+      forgotCodeInput.value = "";
+      forgotCodeInput.focus();
+    }
+  }
+
+  document.getElementById("forgot-open")?.addEventListener("click", () => {
+    showForgotEmailStep();
+  });
+  document.getElementById("forgot-back-from-email")?.addEventListener("click", showLoginStep);
+  document.getElementById("forgot-back-from-reset")?.addEventListener("click", showLoginStep);
+
+  document.getElementById("forgot-send")?.addEventListener("click", async () => {
+    if (forgotError) {
+      forgotError.hidden = true;
+      forgotError.textContent = "";
+    }
+    const email = (forgotEmailInput?.value || "").trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      if (forgotError) {
+        forgotError.hidden = false;
+        forgotError.textContent = tKey("auth.email", "Укажите email");
+      }
+      return;
+    }
+    const btn = document.getElementById("forgot-send");
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add("is-busy");
+    }
+    try {
+      const { res, data } = await postJson("/api/password/forgot", { email });
+      if (!res.ok || !data.ok) {
+        if (forgotError) {
+          forgotError.hidden = false;
+          forgotError.textContent = data.error || tKey("auth.verify_resend_fail", "Не удалось отправить код");
+        }
+        return;
+      }
+      showForgotResetStep(data.email || email, data.message || "");
+      if (data.dev_code && forgotCodeInput) forgotCodeInput.value = data.dev_code;
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove("is-busy");
+      }
+    }
+  });
+
+  document.getElementById("forgot-resend")?.addEventListener("click", async () => {
+    if (!forgotPendingEmail) return;
+    const btn = document.getElementById("forgot-resend");
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add("is-busy");
+    }
+    try {
+      const { res, data } = await postJson("/api/password/forgot/resend", { email: forgotPendingEmail });
+      if (!res.ok || !data.ok) {
+        if (forgotResetError) {
+          forgotResetError.hidden = false;
+          forgotResetError.textContent = data.error || tKey("auth.verify_resend_fail", "Не удалось отправить код");
+        }
+        return;
+      }
+      if (forgotResetHint) {
+        forgotResetHint.hidden = false;
+        forgotResetHint.textContent = data.message || tKey("auth.verify_resent", "Новый код отправлен");
+      }
+      if (data.dev_code && forgotCodeInput) forgotCodeInput.value = data.dev_code;
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove("is-busy");
+      }
+    }
+  });
+
+  document.getElementById("forgot-reset-submit")?.addEventListener("click", async () => {
+    if (forgotResetError) {
+      forgotResetError.hidden = true;
+      forgotResetError.textContent = "";
+    }
+    const code = (forgotCodeInput?.value || "").replace(/\D/g, "");
+    const new_password = forgotNewPassword?.value || "";
+    const confirm_password = forgotConfirmPassword?.value || "";
+    if (code.length !== 6) {
+      if (forgotResetError) {
+        forgotResetError.hidden = false;
+        forgotResetError.textContent = tKey("auth.verify_code_invalid", "Введите 6-значный код");
+      }
+      return;
+    }
+    if (new_password.length < 6) {
+      if (forgotResetError) {
+        forgotResetError.hidden = false;
+        forgotResetError.textContent = tKey("js.err_password_short", "Пароль не короче 6 символов");
+      }
+      return;
+    }
+    if (new_password !== confirm_password) {
+      if (forgotResetError) {
+        forgotResetError.hidden = false;
+        forgotResetError.textContent = tKey("auth.forgot_pass_mismatch", "Пароли не совпадают");
+      }
+      return;
+    }
+    const btn = document.getElementById("forgot-reset-submit");
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add("is-busy");
+    }
+    try {
+      const { res, data } = await postJson("/api/password/forgot/verify", {
+        email: forgotPendingEmail,
+        code,
+        new_password,
+        confirm_password,
+      });
+      if (!res.ok || !data.ok) {
+        if (forgotResetError) {
+          forgotResetError.hidden = false;
+          forgotResetError.textContent = data.error || tKey("auth.verify_failed", "Неверный код");
+        }
+        return;
+      }
+      showLoginStep();
+      showSuccess(data.message || tKey("auth.forgot_success", "Пароль обновлён"));
+      const emailField = loginForm.querySelector('[name="email"]');
+      if (emailField) emailField.value = forgotPendingEmail;
+      loginForm.querySelector('[name="password"]')?.focus();
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove("is-busy");
+      }
+    }
+  });
+
+  forgotCodeInput?.addEventListener("input", () => {
+    forgotCodeInput.value = forgotCodeInput.value.replace(/\D/g, "").slice(0, 6);
+  });
+
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (stepForgotEmail && !stepForgotEmail.hidden) return;
+    if (stepForgotReset && !stepForgotReset.hidden) {
+      document.getElementById("forgot-reset-submit")?.click();
+      return;
+    }
     showError("");
     const btn = loginForm.querySelector('button[type="submit"]');
     if (btn) {

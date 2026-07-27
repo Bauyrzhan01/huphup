@@ -34,21 +34,77 @@
       <div class="auth__panel-inner">
         <a href="{{ url_for('index') }}" class="auth__back">← {{ _('nav.start') }}</a>
         <form class="auth__card" id="login-form" novalidate>
-          <h1 class="auth__title">{{ _('auth.login_title') }}</h1>
-          <p class="auth__sub">{{ _('auth.login_sub') }} <a href="{{ url_for('register') }}">{{ _('auth.register_link') }}</a></p>
+          <div id="login-step-form">
+            <h1 class="auth__title">{{ _('auth.login_title') }}</h1>
+            <p class="auth__sub">{{ _('auth.login_sub') }} <a href="{{ url_for('register') }}">{{ _('auth.register_link') }}</a></p>
 
-          <p class="auth__error" id="form-error" hidden role="alert"></p>
+            <p class="auth__error" id="form-error" hidden role="alert"></p>
+            <p class="auth__hint" id="form-success" hidden role="status"></p>
 
-          <div class="field">
-            <label for="email">{{ _('auth.email') }}</label>
-            <input id="email" name="email" type="email" autocomplete="email" required placeholder="{{ _('auth.email_ph') }}" />
+            <div class="field">
+              <label for="email">{{ _('auth.email') }}</label>
+              <input id="email" name="email" type="email" autocomplete="email" required placeholder="{{ _('auth.email_ph') }}" />
+            </div>
+            <div class="field">
+              <label for="password">{{ _('auth.password') }}</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+            </div>
+
+            <p class="auth__forgot-wrap">
+              <button type="button" class="auth__link-btn" id="forgot-open">{{ _('auth.forgot_link') }}</button>
+            </p>
+
+            <button type="submit" class="btn btn--solid btn--block">{{ _('auth.submit_login') }}</button>
           </div>
-          <div class="field">
-            <label for="password">{{ _('auth.password') }}</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+
+          <div id="login-step-forgot-email" hidden>
+            <h1 class="auth__title">{{ _('auth.forgot_title') }}</h1>
+            <p class="auth__sub">{{ _('auth.forgot_sub') }}</p>
+            <p class="auth__error" id="forgot-error" hidden role="alert"></p>
+
+            <div class="field">
+              <label for="forgot-email">{{ _('auth.email') }}</label>
+              <input id="forgot-email" name="forgot_email" type="email" autocomplete="email" required placeholder="{{ _('auth.email_ph') }}" />
+            </div>
+
+            <button type="button" class="btn btn--solid btn--block" id="forgot-send">{{ _('auth.forgot_send') }}</button>
+            <button type="button" class="btn btn--ghost btn--block" id="forgot-back-from-email">{{ _('auth.forgot_back_login') }}</button>
           </div>
 
-          <button type="submit" class="btn btn--solid btn--block">{{ _('auth.submit_login') }}</button>
+          <div id="login-step-forgot-reset" hidden>
+            <h1 class="auth__title">{{ _('auth.forgot_reset_title') }}</h1>
+            <p class="auth__sub">{{ _('auth.forgot_reset_sub') }} <strong id="forgot-email-display"></strong></p>
+            <p class="auth__error" id="forgot-reset-error" hidden role="alert"></p>
+            <p class="auth__hint" id="forgot-reset-hint" hidden></p>
+
+            <div class="field">
+              <label for="forgot-code">{{ _('auth.verify_code') }}</label>
+              <input
+                id="forgot-code"
+                name="forgot_code"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                pattern="\d{6}"
+                placeholder="000000"
+              />
+            </div>
+            <div class="field">
+              <label for="forgot-new-password">{{ _('auth.forgot_new_password') }}</label>
+              <input id="forgot-new-password" name="new_password" type="password" autocomplete="new-password" minlength="6" placeholder="••••••••" />
+            </div>
+            <div class="field">
+              <label for="forgot-confirm-password">{{ _('auth.forgot_confirm_password') }}</label>
+              <input id="forgot-confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="6" placeholder="••••••••" />
+            </div>
+
+            <button type="button" class="btn btn--solid btn--block" id="forgot-reset-submit">{{ _('auth.forgot_reset_submit') }}</button>
+            <div class="auth__verify-actions">
+              <button type="button" class="btn btn--ghost btn--block" id="forgot-resend">{{ _('auth.verify_resend') }}</button>
+              <button type="button" class="btn btn--ghost btn--block" id="forgot-back-from-reset">{{ _('auth.forgot_back_login') }}</button>
+            </div>
+          </div>
         </form>
       </div>
     </main>
@@ -60,6 +116,7 @@
     window.I18N_BUNDLE = {{ i18n_bundle|tojson }};
   </script>
   <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth_flow.js') }}"></script>
   <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
 

@@ -1760,6 +1760,43 @@ ol {
   display: none !important;
 }
 
+.auth__hint--notice {
+  margin-top: 12px;
+  margin-bottom: 0;
+  color: var(--ink-muted);
+  background: var(--bg-soft);
+  border-color: var(--line);
+}
+
+.auth__forgot-wrap {
+  margin: 4px 0 16px;
+  text-align: right;
+}
+
+.auth__link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-deep);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth__link-btn:hover {
+  color: var(--accent);
+}
+
+.auth__verify-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .team-invite {
   margin-bottom: 20px;
   padding: 14px;
