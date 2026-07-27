@@ -1,0 +1,351 @@
+/* HupHup — mobile adaptation & touch-safe layout (phones / small tablets) */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+img,
+video,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+label {
+  touch-action: manipulation;
+}
+
+/* Prefer 44px+ tap targets without breaking denser desktop UI */
+@media (max-width: 780px) {
+  :root {
+    --pad: clamp(14px, 4vw, 22px);
+    --nav-h: 60px;
+  }
+
+  button,
+  .btn,
+  .nav__cta,
+  .auth-btn,
+  .tab-btn,
+  .chip,
+  .icon-btn {
+    min-height: 44px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* iOS zoom prevention */
+  }
+
+  /* Landing */
+  .hero {
+    min-height: auto;
+    padding-top: calc(var(--nav-h) + 28px);
+    padding-bottom: 48px;
+  }
+
+  .hero__title,
+  .hero__brand,
+  .brand-mark,
+  .landing-brand {
+    word-break: break-word;
+  }
+
+  .hero__actions,
+  .cta-row {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .hero__actions .btn,
+  .cta-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nav {
+    padding-inline: var(--pad);
+  }
+
+  .nav__burger,
+  .nav-toggle,
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .section,
+  .how,
+  .product,
+  .audience,
+  .footer {
+    padding-inline: var(--pad);
+  }
+
+  /* Auth split / cards */
+  .auth-shell,
+  .auth-layout,
+  .auth-split,
+  .bridge-auth,
+  .auth-page {
+    min-height: 100dvh;
+  }
+
+  .auth-panel,
+  .auth-card,
+  .auth-simple,
+  .bridge-card {
+    width: min(100%, 440px);
+    margin-inline: auto;
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+
+  .auth-side,
+  .auth-visual,
+  .auth-split__visual {
+    display: none;
+  }
+
+  /* App shell (buyer / supplier) — drawer sidebar + top mobile bar */
+  .app {
+    display: block;
+    min-height: 100dvh;
+  }
+
+  .mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    min-height: 56px;
+    padding: 8px var(--pad);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .mobile-bar__btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 80;
+    width: min(86vw, 320px);
+    height: 100dvh;
+    transform: translateX(-105%);
+    transition: transform 0.28s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app.sidebar-open .sidebar,
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: rgba(15, 23, 42, 0.45);
+  }
+
+  .sidebar__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .sidebar__link {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .main {
+    padding: 12px var(--pad) calc(24px + env(safe-area-inset-bottom));
+    width: 100%;
+  }
+
+  .composer {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .composer textarea,
+  .composer__input {
+    flex: 1;
+    min-height: 48px;
+  }
+
+  .composer__send {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .notify__panel {
+    width: min(100vw - 24px, 360px);
+    right: 12px;
+    left: auto;
+  }
+
+  .panel-head,
+  .dash-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  /* Chat / results */
+  .chat,
+  .thread,
+  .results,
+  .offers {
+    width: 100%;
+  }
+
+  .chat__composer,
+  .composer {
+    position: sticky;
+    bottom: 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    background: inherit;
+  }
+
+  .msg,
+  .bubble,
+  .offer-card,
+  .product-card,
+  .request-card {
+    max-width: 100%;
+  }
+
+  /* Grids → single column */
+  .grid-2,
+  .grid-3,
+  .cards,
+  .catalog-grid,
+  .products-grid,
+  .profile-grid,
+  .form-grid,
+  .stats-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tables: horizontal scroll instead of crushing */
+  .table-wrap,
+  .ap-table-wrap,
+  .data-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 520px;
+  }
+
+  /* Modals full-bleed on phone */
+  .modal,
+  .dialog,
+  .sheet {
+    width: min(100vw - 24px, 520px);
+    max-height: min(90dvh, 900px);
+  }
+
+  .modal.is-full,
+  .drawer {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 16px 16px 0 0;
+    margin: 0;
+  }
+
+  /* Bottom safe area for fixed bars */
+  .bottom-bar,
+  .tabbar,
+  .mobile-dock {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --pad: 14px;
+  }
+
+  h1,
+  .hero__title {
+    font-size: clamp(1.55rem, 7.2vw, 2rem);
+    line-height: 1.15;
+  }
+
+  h2 {
+    font-size: clamp(1.25rem, 5.5vw, 1.55rem);
+  }
+
+  .brand-logo img,
+  .brand-logo__img {
+    max-height: 36px;
+  }
+
+  .pill,
+  .badge,
+  .tag {
+    font-size: 12px;
+  }
+
+  /* Hide low-priority columns in dense tables if present */
+  .hide-sm {
+    display: none !important;
+  }
+}
+
+/* Landscape phones */
+@media (max-width: 900px) and (orientation: landscape) {
+  .hero {
+    min-height: auto;
+    padding-block: 24px;
+  }
+
+  .auth-shell,
+  .auth-layout {
+    min-height: auto;
+    padding-block: 20px;
+  }
+}
+
+/* Reduce motion when requested */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

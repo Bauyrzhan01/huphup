@@ -46,11 +46,17 @@
   function formParams(formId) {
     const form = document.getElementById(formId);
     const params = new URLSearchParams();
-    if (!form) return params;
+    if (!form) {
+      params.set("limit", "100");
+      params.set("offset", "0");
+      return params;
+    }
     new FormData(form).forEach((value, key) => {
       const v = String(value ?? "").trim();
       if (v !== "") params.set(key, v);
     });
+    if (!params.has("limit")) params.set("limit", "100");
+    if (!params.has("offset")) params.set("offset", "0");
     return params;
   }
 

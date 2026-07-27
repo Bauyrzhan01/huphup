@@ -627,6 +627,25 @@ def save_requests(items):
         save_json(REQUESTS_FILE, items)
 
 
+def save_request(item):
+    """Persist a single request without full-collection rewrite."""
+    if not item or not item.get("id"):
+        return
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.upsert_request(item)
+        return
+    items = load_requests()
+    rid = item["id"]
+    for i, r in enumerate(items):
+        if r.get("id") == rid:
+            items[i] = item
+            save_requests(items)
+            return
+    items.append(item)
+    save_requests(items)
+
+
 def load_notifications():
     if db_store.use_db():
         db_store.ensure_migrated()
@@ -958,18 +977,44 @@ def find_rating(request_id, from_user_id, ratings=None):
 
 
 def find_user_by_email(email):
-    email = email.strip().lower()
+    email = (email or "").strip().lower()
+    if not email:
+        return None
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        return db_store.get_user_by_email(email)
     for user in load_users():
-        if user["email"].lower() == email:
+        if (user.get("email") or "").lower() == email:
             return user
     return None
 
 
 def find_user_by_id(user_id):
+    if not user_id:
+        return None
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        return db_store.get_user_by_id(user_id)
     for user in load_users():
-        if user["id"] == user_id:
+        if user.get("id") == user_id:
             return user
     return None
+
+
+def save_user(user):
+    """Persist a single user without rewriting the whole collection."""
+    if not user or not user.get("id"):
+        return
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.upsert_user(user)
+        return
+    users, index = find_user_index(user["id"])
+    if index >= 0:
+        users[index] = user
+    else:
+        users.append(user)
+    save_users(users)
 
 
 def find_user_index(user_id):
@@ -1549,6 +1594,12 @@ def enrich_request(item, viewer):
 
 
 def find_request(request_id):
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        item = db_store.get_request_by_id(request_id)
+        if item:
+            return [item], 0, item
+        return [], -1, None
     items = load_requests()
     for i, item in enumerate(items):
         if item["id"] == request_id:
@@ -1738,6 +1789,18 @@ def _admin_int(name: str, default=None):
         return int(raw)
     except ValueError:
         return default
+
+
+def _admin_paginate(items: list) -> tuple[list, int, int, int]:
+    """Slice filtered admin lists. Returns (page_items, total, limit, offset)."""
+    total = len(items)
+    limit = _admin_int("limit", 100)
+    if limit is None:
+        limit = 100
+    limit = max(1, min(200, int(limit)))
+    offset = _admin_int("offset", 0) or 0
+    offset = max(0, int(offset))
+    return items[offset : offset + limit], total, limit, offset
 
 
 # --- HTML-страницы ---
@@ -2438,8 +2501,7 @@ def _expose_dev_code() -> bool:
 
 
 def _finalize_registration(user: dict):
-    users = load_users()
-    if any((u.get("email") or "").lower() == user["email"] for u in users):
+    if find_user_by_email(user["email"]):
         return None, (jsonify({"ok": False, "error": "Пользователь с таким email уже существует"}), 400)
     invite_token = user.pop("_invite_token", None)
     if user.get("role") == "supplier" and supplier_role_of(user) == "owner":
@@ -2450,25 +2512,21 @@ def _finalize_registration(user: dict):
         owner, inv, inv_i = find_invite(invite_token)
         if not owner or not invite_is_valid(inv):
             return None, (jsonify({"ok": False, "error": "Ссылка приглашения недействительна или устарела"}), 400)
-        # mark invite used on owner in users list
-        for u in users:
-            if u.get("id") == owner["id"]:
-                invites = u.get("invites") if isinstance(u.get("invites"), list) else []
-                for i, rec in enumerate(invites):
-                    if isinstance(rec, dict) and rec.get("token") == invite_token:
-                        invites[i] = {
-                            **rec,
-                            "used_by": user["id"],
-                            "used_at": now_iso(),
-                            "used_email": user["email"],
-                        }
-                        u["invites"] = invites
-                        break
+        invites = owner.get("invites") if isinstance(owner.get("invites"), list) else []
+        for i, rec in enumerate(invites):
+            if isinstance(rec, dict) and rec.get("token") == invite_token:
+                invites[i] = {
+                    **rec,
+                    "used_by": user["id"],
+                    "used_at": now_iso(),
+                    "used_email": user["email"],
+                }
+                owner["invites"] = invites
+                save_user(owner)
                 break
         user["company_supplier_id"] = owner["id"]
         user["supplier_role"] = "manager"
-    users.append(user)
-    save_users(users)
+    save_user(user)
     session["user_id"] = user["id"]
     session["role"] = user["role"]
     return user, None
@@ -2634,12 +2692,11 @@ def buyer_profile_payload(user):
 @api_login_required
 def api_profile():
     data = request.get_json(silent=True) or {}
-    users, index = find_user_index(session["user_id"])
-    if index < 0:
+    user = find_user_by_id(session["user_id"])
+    if not user:
         session.clear()
         return jsonify({"ok": False, "error": "Пользователь не найден"}), 401
 
-    user = users[index]
     name = (data.get("name") or "").strip()
     if not name:
         return jsonify({"ok": False, "error": "Укажите имя"}), 400
@@ -2669,8 +2726,7 @@ def api_profile():
     if user["role"] == "supplier":
         if is_supplier_manager(user):
             # Менеджер может менять только своё имя
-            users[index] = user
-            save_users(users)
+            save_user(user)
             return jsonify(
                 {
                     "ok": True,
@@ -2704,8 +2760,7 @@ def api_profile():
         user["supplier"] = supplier
         user.setdefault("supplier_role", "owner")
 
-    users[index] = user
-    save_users(users)
+    save_user(user)
     profile_user = (
         buyer_profile_payload(user)
         if user["role"] == "user"
@@ -2738,18 +2793,16 @@ def api_password():
     if len(new_password) < 6:
         return jsonify({"ok": False, "error": "Пароль должен быть не короче 6 символов"}), 400
 
-    users, index = find_user_index(session["user_id"])
-    if index < 0:
+    user = find_user_by_id(session["user_id"])
+    if not user:
         session.clear()
         return jsonify({"ok": False, "error": "Пользователь не найден"}), 401
 
-    user = users[index]
     if not check_password_hash(user["password"], current):
         return jsonify({"ok": False, "error": "Неверный текущий пароль"}), 401
 
     user["password"] = generate_password_hash(new_password)
-    users[index] = user
-    save_users(users)
+    save_user(user)
     return jsonify({"ok": True, "message": "Пароль изменён"})
 
 
@@ -3108,10 +3161,9 @@ def api_team_member_block(member_id):
     data = request.get_json(silent=True) or {}
     blocked = bool(data.get("blocked", True))
 
-    users, index = find_user_index(member_id)
-    if index < 0:
+    member = find_user_by_id(member_id)
+    if not member:
         return jsonify({"ok": False, "error": "Сотрудник не найден"}), 404
-    member = users[index]
     if (
         member.get("role") != "supplier"
         or supplier_role_of(member) != "manager"
@@ -3120,8 +3172,7 @@ def api_team_member_block(member_id):
         return jsonify({"ok": False, "error": "Можно менять только своих менеджеров"}), 403
 
     member["blocked"] = blocked
-    users[index] = member
-    save_users(users)
+    save_user(member)
     return jsonify(
         {
             "ok": True,
@@ -3625,9 +3676,7 @@ def api_requests():
         "offers": [],
         "accepted_offer_id": None,
     }
-    items = load_requests()
-    items.append(item)
-    save_requests(items)
+    save_request(item)
     track_event(
         "request_created",
         path="/api/requests",
@@ -3727,7 +3776,7 @@ def api_request_offer(request_id):
     else:
         offers.append(offer)
 
-    save_requests(items)
+    save_request(target)
     track_event(
         "offer_sent",
         path=f"/api/requests/{request_id}/offer",
@@ -3803,7 +3852,7 @@ def api_request_accept(request_id):
         }
     ]
     items[index] = target
-    save_requests(items)
+    save_request(target)
 
     add_notification(
         offer["supplier_id"],
@@ -3849,7 +3898,7 @@ def api_request_cancel(request_id):
     target["status"] = "cancelled"
     target["cancelled_at"] = now_iso()
     items[index] = target
-    save_requests(items)
+    save_request(target)
 
     short = (target.get("text") or "")[:80]
     notify_many(
@@ -3910,7 +3959,7 @@ def api_request_reject(request_id):
     offer.pop("counter_price", None)
     offer.pop("counter_message", None)
     items[index] = target
-    save_requests(items)
+    save_request(target)
 
     add_notification(
         offer["supplier_id"],
@@ -3962,7 +4011,7 @@ def api_request_counter(request_id):
     offer["counter_message"] = counter_message
     offer["counter_at"] = now_iso()
     items[index] = target
-    save_requests(items)
+    save_request(target)
 
     body_bits = []
     if counter_price:
@@ -4053,7 +4102,7 @@ def api_request_messages(request_id):
     messages = target.setdefault("deal_messages", [])
     messages.append(msg)
     items[index] = target
-    save_requests(items)
+    save_request(target)
 
     if user["role"] == "user":
         other_id = target.get("accepted_supplier_id")
@@ -4135,7 +4184,7 @@ def api_request_attachment_upload(request_id):
     }
     target.setdefault("file_attachments", {})[file_id] = attachment
     items[index] = target
-    save_requests(items)
+    save_request(target)
 
     return jsonify({"ok": True, "attachment": attachment})
 
@@ -4193,7 +4242,7 @@ def api_request_complete(request_id):
     target["completed_at"] = now_iso()
     target["completed_by"] = user["id"]
     items[index] = target
-    save_requests(items)
+    save_request(target)
 
     if user["role"] == "user":
         other_id = target.get("accepted_supplier_id")
@@ -4308,6 +4357,23 @@ def admin_panel_static(filename):
 @app.route("/api/admin/stats")
 @api_admin_required
 def api_admin_stats():
+    if db_store.use_db():
+        roles = db_store.user_role_counts()
+        by_status = db_store.request_status_counts()
+        return jsonify(
+            {
+                "ok": True,
+                "stats": {
+                    "users_total": roles.get("total", 0),
+                    "buyers": roles.get("buyers", 0),
+                    "suppliers": roles.get("suppliers", 0),
+                    "admins": roles.get("admins", 0),
+                    "blocked": roles.get("blocked", 0),
+                    "requests_total": sum(by_status.values()) if by_status else db_store.count_requests(),
+                    "requests_by_status": by_status,
+                },
+            }
+        )
     users = load_users()
     requests_items = load_requests()
     buyers = sum(1 for u in users if u.get("role") == "user")
@@ -4488,7 +4554,10 @@ def api_admin_users():
                 continue
         items.append(row)
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return jsonify({"ok": True, "items": items, "total": len(items)})
+    page, total, limit, offset = _admin_paginate(items)
+    return jsonify(
+        {"ok": True, "items": page, "total": total, "limit": limit, "offset": offset}
+    )
 
 
 @app.route("/api/admin/users/<user_id>/block", methods=["POST"])
@@ -4496,10 +4565,9 @@ def api_admin_users():
 def api_admin_user_block(user_id):
     data = request.get_json(silent=True) or {}
     blocked = bool(data.get("blocked"))
-    users, index = find_user_index(user_id)
-    if index < 0:
+    target = find_user_by_id(user_id)
+    if not target:
         return jsonify({"ok": False, "error": "Пользователь не найден"}), 404
-    target = users[index]
     if target.get("role") == "admin":
         return jsonify({"ok": False, "error": "Нельзя блокировать администратора"}), 400
     if target.get("id") == session.get("user_id"):
@@ -4511,8 +4579,7 @@ def api_admin_user_block(user_id):
     else:
         target.pop("blocked_at", None)
         target.pop("blocked_by", None)
-    users[index] = target
-    save_users(users)
+    save_user(target)
     return jsonify(
         {
             "ok": True,
@@ -4608,7 +4675,10 @@ def api_admin_requests():
                 continue
         items.append(row)
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return jsonify({"ok": True, "items": items[:500], "total": len(items)})
+    page, total, limit, offset = _admin_paginate(items)
+    return jsonify(
+        {"ok": True, "items": page, "total": total, "limit": limit, "offset": offset}
+    )
 
 
 @app.route("/api/admin/products")
@@ -4690,7 +4760,10 @@ def api_admin_products():
             if q not in hay:
                 continue
         items.append(row)
-    return jsonify({"ok": True, "items": items[:500], "total": len(items)})
+    page, total, limit, offset = _admin_paginate(items)
+    return jsonify(
+        {"ok": True, "items": page, "total": total, "limit": limit, "offset": offset}
+    )
 
 
 @app.route("/api/admin/notifications")
@@ -4747,7 +4820,10 @@ def api_admin_notifications():
                 continue
         items.append(row)
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return jsonify({"ok": True, "items": items[:500], "total": len(items)})
+    page, total, limit, offset = _admin_paginate(items)
+    return jsonify(
+        {"ok": True, "items": page, "total": total, "limit": limit, "offset": offset}
+    )
 
 
 @app.route("/api/admin/ratings")
@@ -4808,7 +4884,10 @@ def api_admin_ratings():
                 continue
         items.append(row)
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return jsonify({"ok": True, "items": items[:500], "total": len(items)})
+    page, total, limit, offset = _admin_paginate(items)
+    return jsonify(
+        {"ok": True, "items": page, "total": total, "limit": limit, "offset": offset}
+    )
 
 
 @app.route("/api/analytics/pulse", methods=["GET", "POST"])

@@ -893,6 +893,34 @@ a {
     padding: 18px 14px 32px;
   }
 
+  .ap-rail {
+    padding: 12px 12px 8px;
+  }
+
+  .ap-brand {
+    margin-bottom: 8px;
+  }
+
+  .ap-nav {
+    gap: 6px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .ap-nav__btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .ap-nav__ico {
+    display: none;
+  }
+
   .ap-stats,
   .ap-stats--wide,
   .ap-grid,
@@ -901,10 +929,49 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .ap-table th:nth-child(3),
-  .ap-table td:nth-child(3),
-  .ap-table th:nth-child(4),
-  .ap-table td:nth-child(4) {
+  .ap-head__title {
+    font-size: 1.35rem;
+  }
+
+  .ap-filters {
+    padding: 12px;
+  }
+
+  .ap-filters__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ap-filters__count {
+    margin-left: 0;
+  }
+
+  .ap-table-wrap {
+    margin-inline: -4px;
+  }
+
+  .ap-table th:nth-child(n + 4),
+  .ap-table td:nth-child(n + 4) {
     display: none;
+  }
+
+  .ap-table th:nth-child(1),
+  .ap-table td:nth-child(1),
+  .ap-table th:nth-child(2),
+  .ap-table td:nth-child(2),
+  .ap-table th:last-child,
+  .ap-table td:last-child {
+    display: table-cell;
+  }
+
+  .ap-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ap-btn {
+    min-height: 40px;
+    width: 100%;
   }
 }

@@ -28,7 +28,25 @@ DEFAULT_DB = RUNTIME_DATA_DIR / "huphup.db"
 _lock = threading.RLock()
 _sqlite_conn: sqlite3.Connection | None = None
 _pg = None  # psycopg module when available
+_pool = None  # psycopg_pool.ConnectionPool
 _migrated_ok = False
+_schema_ready = False
+
+
+def _close_pool() -> None:
+    global _pool
+    if _pool is None:
+        return
+    try:
+        _pool.close()
+    except Exception:
+        pass
+    _pool = None
+
+
+import atexit
+
+atexit.register(_close_pool)
 
 
 def _database_url() -> str:
@@ -78,30 +96,55 @@ def _normalize_pg_url(url: str) -> str:
     """Neon иногда отдаёт postgres:// — psycopg предпочитает postgresql://."""
     if url.startswith("postgres://"):
         return "postgresql://" + url[len("postgres://") :]
+    # Drop channel_binding for broader client compatibility
+    if "channel_binding=" in url:
+        parts = []
+        for chunk in url.split("&"):
+            if not chunk.startswith("channel_binding="):
+                parts.append(chunk)
+        url = "&".join(parts)
     return url
 
 
-def _pg_connect():
-    global _pg
-    if _pg is None:
-        import psycopg
-        from psycopg.rows import dict_row
+def _get_pool():
+    """Shared Postgres pool (safe for serverless multi-request)."""
+    global _pool, _pg, _schema_ready
+    if _pool is not None:
+        return _pool
+    import psycopg
+    from psycopg.rows import dict_row
+    from psycopg_pool import ConnectionPool
 
-        _pg = psycopg
-        _pg.dict_row = dict_row  # type: ignore[attr-defined]
-    url = _normalize_pg_url(_database_url())
-    # channel_binding can break some serverless clients; keep sslmode
-    conn = _pg.connect(url, row_factory=_pg.dict_row, connect_timeout=15)
-    return conn
+    _pg = psycopg
+    _pg.dict_row = dict_row  # type: ignore[attr-defined]
+    max_size = max(2, min(20, int(os.environ.get("PG_POOL_MAX") or "10")))
+    min_size = 0 if ON_VERCEL else 1
+    _pool = ConnectionPool(
+        conninfo=_normalize_pg_url(_database_url()),
+        min_size=min_size,
+        max_size=max_size,
+        timeout=30,
+        kwargs={"row_factory": dict_row, "connect_timeout": 15},
+        open=True,
+    )
+    with _pool.connection() as conn:
+        _init_schema_pg(conn)
+        conn.commit()
+    _schema_ready = True
+    return _pool
+
+
+@contextmanager
+def pg_conn():
+    with _get_pool().connection() as conn:
+        yield conn
 
 
 def connect():
-    """Ленивое соединение: sqlite Connection или новый postgres Connection."""
+    """SQLite: process-long connection. Postgres callers must use pg_conn()."""
     global _sqlite_conn
     if use_postgres():
-        conn = _pg_connect()
-        _init_schema_pg(conn)
-        return conn
+        raise RuntimeError("Use pg_conn() for Postgres — connect() is SQLite-only")
     with _lock:
         if _sqlite_conn is None:
             path = db_path()
@@ -110,8 +153,15 @@ def connect():
             _sqlite_conn.row_factory = sqlite3.Row
             _sqlite_conn.execute("PRAGMA journal_mode=WAL")
             _sqlite_conn.execute("PRAGMA synchronous=NORMAL")
+            _sqlite_conn.execute("PRAGMA busy_timeout=5000")
+            _sqlite_conn.execute("PRAGMA temp_store=MEMORY")
             _init_schema_sqlite(_sqlite_conn)
         return _sqlite_conn
+
+
+def _putconn(conn) -> None:
+    """Legacy no-op; pool connections are returned via pg_conn() context."""
+    return
 
 
 # --- Схема ---
@@ -159,6 +209,11 @@ def _init_schema_sqlite(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_analytics_ts ON analytics_events(ts);
         CREATE INDEX IF NOT EXISTS idx_analytics_kind ON analytics_events(kind);
         CREATE INDEX IF NOT EXISTS idx_analytics_visitor_ts ON analytics_events(visitor_id, ts);
+        CREATE INDEX IF NOT EXISTS idx_users_email ON users (json_extract(payload, '$.email'));
+        CREATE INDEX IF NOT EXISTS idx_users_role ON users (json_extract(payload, '$.role'));
+        CREATE INDEX IF NOT EXISTS idx_requests_status ON requests (json_extract(payload, '$.status'));
+        CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications (user_id);
+        CREATE INDEX IF NOT EXISTS idx_products_supplier ON products (supplier_id);
         """
     )
     conn.commit()
@@ -207,31 +262,38 @@ def _init_schema_pg(conn) -> None:
             CREATE INDEX IF NOT EXISTS idx_analytics_ts ON analytics_events(ts);
             CREATE INDEX IF NOT EXISTS idx_analytics_kind ON analytics_events(kind);
             CREATE INDEX IF NOT EXISTS idx_analytics_visitor_ts ON analytics_events(visitor_id, ts);
+            CREATE INDEX IF NOT EXISTS idx_users_email_lower
+              ON users ((lower(payload->>'email')));
+            CREATE INDEX IF NOT EXISTS idx_users_role
+              ON users ((payload->>'role'));
+            CREATE INDEX IF NOT EXISTS idx_users_blocked
+              ON users ((payload->>'blocked'));
+            CREATE INDEX IF NOT EXISTS idx_requests_status
+              ON requests ((payload->>'status'));
+            CREATE INDEX IF NOT EXISTS idx_requests_user
+              ON requests ((payload->>'user_id'));
+            CREATE INDEX IF NOT EXISTS idx_requests_created
+              ON requests ((payload->>'created_at'));
+            CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications (user_id);
+            CREATE INDEX IF NOT EXISTS idx_products_supplier ON products (supplier_id);
+            CREATE INDEX IF NOT EXISTS idx_products_category
+              ON products ((payload->>'category'));
             """
         )
     conn.commit()
-
-
-def _q(sql: str) -> str:
-    """SQLite uses ?; Postgres uses %s."""
-    if use_postgres():
-        return sql.replace("?", "%s")
-    return sql
 
 
 @contextmanager
 def transaction():
     """Commit при успехе, rollback при ошибке."""
     if use_postgres():
-        conn = connect()
-        try:
-            yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
+        with pg_conn() as conn:
+            try:
+                yield conn
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
         return
 
     conn = connect()
@@ -279,109 +341,247 @@ def _row_payload(row) -> Any:
 
 
 def load_users() -> list:
-    conn = connect()
-    try:
-        if use_postgres():
+    if use_postgres():
+        with pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT payload FROM users")
                 rows = cur.fetchall()
             return [_loads(r["payload"]) for r in rows]
-        with _lock:
-            rows = conn.execute("SELECT payload FROM users").fetchall()
-        return [_loads(r["payload"]) for r in rows]
-    finally:
-        if use_postgres():
-            conn.close()
+    conn = connect()
+    with _lock:
+        rows = conn.execute("SELECT payload FROM users").fetchall()
+    return [_loads(r["payload"]) for r in rows]
 
 
-def save_users(users: list) -> None:
+def get_user_by_id(user_id: str):
+    if not user_id:
+        return None
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT payload FROM users WHERE id = %s", (str(user_id),))
+                row = cur.fetchone()
+            return _loads(row["payload"]) if row else None
+    conn = connect()
+    with _lock:
+        row = conn.execute(
+            "SELECT payload FROM users WHERE id = ?", (str(user_id),)
+        ).fetchone()
+    return _loads(row["payload"]) if row else None
+
+
+def get_user_by_email(email: str):
+    email = (email or "").strip().lower()
+    if not email:
+        return None
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT payload FROM users WHERE lower(payload->>'email') = %s LIMIT 1",
+                    (email,),
+                )
+                row = cur.fetchone()
+            return _loads(row["payload"]) if row else None
+    # SQLite / fallback scan
+    for user in load_users():
+        if (user.get("email") or "").lower() == email:
+            return user
+    return None
+
+
+def upsert_user(user: dict) -> None:
+    """Insert or update a single user (O(1) write)."""
+    uid = str((user or {}).get("id") or "")
+    if not uid:
+        return
     with transaction() as conn:
         if use_postgres():
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM users")
+                cur.execute(
+                    """
+                    INSERT INTO users (id, payload) VALUES (%s, %s)
+                    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload
+                    """,
+                    (uid, _payload_param(user)),
+                )
+        else:
+            conn.execute(
+                "INSERT INTO users (id, payload) VALUES (?, ?) "
+                "ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
+                (uid, _dumps(user)),
+            )
+
+
+def save_users(users: list) -> None:
+    """Full sync via upsert + delete orphans (avoids wipe-then-insert gap)."""
+    ids = [str(u.get("id")) for u in users if u.get("id")]
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
                 for u in users:
                     if not u.get("id"):
                         continue
                     cur.execute(
-                        "INSERT INTO users (id, payload) VALUES (%s, %s)",
+                        """
+                        INSERT INTO users (id, payload) VALUES (%s, %s)
+                        ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload
+                        """,
                         (str(u.get("id")), _payload_param(u)),
                     )
+                if ids:
+                    cur.execute("DELETE FROM users WHERE NOT (id = ANY(%s))", (ids,))
+                else:
+                    cur.execute("DELETE FROM users")
         else:
-            conn.execute("DELETE FROM users")
-            conn.executemany(
-                "INSERT INTO users (id, payload) VALUES (?, ?)",
-                [(str(u.get("id")), _dumps(u)) for u in users if u.get("id")],
-            )
+            for u in users:
+                if not u.get("id"):
+                    continue
+                conn.execute(
+                    "INSERT INTO users (id, payload) VALUES (?, ?) "
+                    "ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
+                    (str(u.get("id")), _dumps(u)),
+                )
+            if ids:
+                placeholders = ",".join("?" for _ in ids)
+                conn.execute(
+                    f"DELETE FROM users WHERE id NOT IN ({placeholders})",
+                    ids,
+                )
+            else:
+                conn.execute("DELETE FROM users")
 
 
 def load_requests() -> list:
-    conn = connect()
-    try:
-        if use_postgres():
+    if use_postgres():
+        with pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT payload FROM requests")
                 rows = cur.fetchall()
             return [_loads(r["payload"]) for r in rows]
-        with _lock:
-            rows = conn.execute("SELECT payload FROM requests").fetchall()
-        return [_loads(r["payload"]) for r in rows]
-    finally:
-        if use_postgres():
-            conn.close()
+    conn = connect()
+    with _lock:
+        rows = conn.execute("SELECT payload FROM requests").fetchall()
+    return [_loads(r["payload"]) for r in rows]
 
 
-def save_requests(items: list) -> None:
+def get_request_by_id(request_id: str):
+    if not request_id:
+        return None
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT payload FROM requests WHERE id = %s", (str(request_id),))
+                row = cur.fetchone()
+            return _loads(row["payload"]) if row else None
+    conn = connect()
+    with _lock:
+        row = conn.execute(
+            "SELECT payload FROM requests WHERE id = ?", (str(request_id),)
+        ).fetchone()
+    return _loads(row["payload"]) if row else None
+
+
+def upsert_request(item: dict) -> None:
+    rid = str((item or {}).get("id") or "")
+    if not rid:
+        return
     with transaction() as conn:
         if use_postgres():
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM requests")
+                cur.execute(
+                    """
+                    INSERT INTO requests (id, payload) VALUES (%s, %s)
+                    ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload
+                    """,
+                    (rid, _payload_param(item)),
+                )
+        else:
+            conn.execute(
+                "INSERT INTO requests (id, payload) VALUES (?, ?) "
+                "ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
+                (rid, _dumps(item)),
+            )
+
+
+def save_requests(items: list) -> None:
+    ids = [str(i.get("id")) for i in items if i.get("id")]
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
                 for i in items:
                     if not i.get("id"):
                         continue
                     cur.execute(
-                        "INSERT INTO requests (id, payload) VALUES (%s, %s)",
+                        """
+                        INSERT INTO requests (id, payload) VALUES (%s, %s)
+                        ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload
+                        """,
                         (str(i.get("id")), _payload_param(i)),
                     )
+                if ids:
+                    cur.execute("DELETE FROM requests WHERE NOT (id = ANY(%s))", (ids,))
+                else:
+                    cur.execute("DELETE FROM requests")
         else:
-            conn.execute("DELETE FROM requests")
-            conn.executemany(
-                "INSERT INTO requests (id, payload) VALUES (?, ?)",
-                [(str(i.get("id")), _dumps(i)) for i in items if i.get("id")],
-            )
+            for i in items:
+                if not i.get("id"):
+                    continue
+                conn.execute(
+                    "INSERT INTO requests (id, payload) VALUES (?, ?) "
+                    "ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
+                    (str(i.get("id")), _dumps(i)),
+                )
+            if ids:
+                placeholders = ",".join("?" for _ in ids)
+                conn.execute(
+                    f"DELETE FROM requests WHERE id NOT IN ({placeholders})",
+                    ids,
+                )
+            else:
+                conn.execute("DELETE FROM requests")
 
 
 def load_notifications() -> list:
-    conn = connect()
-    try:
-        if use_postgres():
+    if use_postgres():
+        with pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT payload FROM notifications")
                 rows = cur.fetchall()
             return [_loads(r["payload"]) for r in rows]
-        with _lock:
-            rows = conn.execute("SELECT payload FROM notifications").fetchall()
-        return [_loads(r["payload"]) for r in rows]
-    finally:
-        if use_postgres():
-            conn.close()
+    conn = connect()
+    with _lock:
+        rows = conn.execute("SELECT payload FROM notifications").fetchall()
+    return [_loads(r["payload"]) for r in rows]
 
 
 def save_notifications(items: list) -> None:
+    ids = [str(i.get("id")) for i in items if i.get("id")]
     with transaction() as conn:
         if use_postgres():
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM notifications")
                 for i in items:
                     if not i.get("id"):
                         continue
                     cur.execute(
-                        "INSERT INTO notifications (id, user_id, payload) VALUES (%s, %s, %s)",
+                        """
+                        INSERT INTO notifications (id, user_id, payload)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (id) DO UPDATE
+                          SET user_id = EXCLUDED.user_id, payload = EXCLUDED.payload
+                        """,
                         (
                             str(i.get("id")),
                             str(i.get("user_id") or ""),
                             _payload_param(i),
                         ),
                     )
+                if ids:
+                    cur.execute(
+                        "DELETE FROM notifications WHERE NOT (id = ANY(%s))", (ids,)
+                    )
+                else:
+                    cur.execute("DELETE FROM notifications")
         else:
             conn.execute("DELETE FROM notifications")
             conn.executemany(
@@ -395,33 +595,37 @@ def save_notifications(items: list) -> None:
 
 
 def load_ratings() -> list:
-    conn = connect()
-    try:
-        if use_postgres():
+    if use_postgres():
+        with pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT payload FROM ratings")
                 rows = cur.fetchall()
             return [_loads(r["payload"]) for r in rows]
-        with _lock:
-            rows = conn.execute("SELECT payload FROM ratings").fetchall()
-        return [_loads(r["payload"]) for r in rows]
-    finally:
-        if use_postgres():
-            conn.close()
+    conn = connect()
+    with _lock:
+        rows = conn.execute("SELECT payload FROM ratings").fetchall()
+    return [_loads(r["payload"]) for r in rows]
 
 
 def save_ratings(items: list) -> None:
+    ids = [str(i.get("id")) for i in items if i.get("id")]
     with transaction() as conn:
         if use_postgres():
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM ratings")
                 for i in items:
                     if not i.get("id"):
                         continue
                     cur.execute(
-                        "INSERT INTO ratings (id, payload) VALUES (%s, %s)",
+                        """
+                        INSERT INTO ratings (id, payload) VALUES (%s, %s)
+                        ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload
+                        """,
                         (str(i.get("id")), _payload_param(i)),
                     )
+                if ids:
+                    cur.execute("DELETE FROM ratings WHERE NOT (id = ANY(%s))", (ids,))
+                else:
+                    cur.execute("DELETE FROM ratings")
         else:
             conn.execute("DELETE FROM ratings")
             conn.executemany(
@@ -431,9 +635,8 @@ def save_ratings(items: list) -> None:
 
 
 def load_catalog() -> dict:
-    conn = connect()
-    try:
-        if use_postgres():
+    if use_postgres():
+        with pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT payload FROM meta WHERE key = %s", ("catalog_categories",))
                 cats = cur.fetchone()
@@ -446,22 +649,20 @@ def load_catalog() -> dict:
                 "templates": _loads(templates["payload"]) if templates else [],
                 "products": [_loads(r["payload"]) for r in products],
             }
-        with _lock:
-            cats = conn.execute(
-                "SELECT payload FROM meta WHERE key = ?", ("catalog_categories",)
-            ).fetchone()
-            templates = conn.execute(
-                "SELECT payload FROM meta WHERE key = ?", ("catalog_templates",)
-            ).fetchone()
-            products = conn.execute("SELECT payload FROM products").fetchall()
-        return {
-            "categories": _loads(cats["payload"]) if cats else [],
-            "templates": _loads(templates["payload"]) if templates else [],
-            "products": [_loads(r["payload"]) for r in products],
-        }
-    finally:
-        if use_postgres():
-            conn.close()
+    conn = connect()
+    with _lock:
+        cats = conn.execute(
+            "SELECT payload FROM meta WHERE key = ?", ("catalog_categories",)
+        ).fetchone()
+        templates = conn.execute(
+            "SELECT payload FROM meta WHERE key = ?", ("catalog_templates",)
+        ).fetchone()
+        products = conn.execute("SELECT payload FROM products").fetchall()
+    return {
+        "categories": _loads(cats["payload"]) if cats else [],
+        "templates": _loads(templates["payload"]) if templates else [],
+        "products": [_loads(r["payload"]) for r in products],
+    }
 
 
 def save_catalog(data: dict) -> None:
@@ -562,18 +763,15 @@ def ensure_migrated() -> None:
     global _migrated_ok
     if not use_db() or _migrated_ok:
         return
-    conn = connect()
-    try:
-        if use_postgres():
+    if use_postgres():
+        with pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT COUNT(*) AS c FROM users")
                 n = cur.fetchone()["c"]
-        else:
-            with _lock:
-                n = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
-    finally:
-        if use_postgres():
-            conn.close()
+    else:
+        conn = connect()
+        with _lock:
+            n = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
 
     if n > 0:
         _migrated_ok = True
@@ -653,9 +851,8 @@ def record_analytics_event(
 def fetch_analytics_events(since_ts: float, kinds: list[str] | None = None) -> list[dict]:
     if not use_db():
         return []
-    conn = connect()
-    try:
-        if use_postgres():
+    if use_postgres():
+        with pg_conn() as conn:
             with conn.cursor() as cur:
                 if kinds:
                     cur.execute(
@@ -678,32 +875,30 @@ def fetch_analytics_events(since_ts: float, kinds: list[str] | None = None) -> l
                         (since_ts,),
                     )
                 rows = cur.fetchall()
-        else:
-            with _lock:
-                if kinds:
-                    placeholders = ",".join("?" for _ in kinds)
-                    rows = conn.execute(
-                        f"""
-                        SELECT id, ts, kind, path, user_id, role, visitor_id, meta
-                        FROM analytics_events
-                        WHERE ts >= ? AND kind IN ({placeholders})
-                        ORDER BY ts ASC
-                        """,
-                        (since_ts, *kinds),
-                    ).fetchall()
-                else:
-                    rows = conn.execute(
-                        """
-                        SELECT id, ts, kind, path, user_id, role, visitor_id, meta
-                        FROM analytics_events
-                        WHERE ts >= ?
-                        ORDER BY ts ASC
-                        """,
-                        (since_ts,),
-                    ).fetchall()
-    finally:
-        if use_postgres():
-            conn.close()
+    else:
+        conn = connect()
+        with _lock:
+            if kinds:
+                placeholders = ",".join("?" for _ in kinds)
+                rows = conn.execute(
+                    f"""
+                    SELECT id, ts, kind, path, user_id, role, visitor_id, meta
+                    FROM analytics_events
+                    WHERE ts >= ? AND kind IN ({placeholders})
+                    ORDER BY ts ASC
+                    """,
+                    (since_ts, *kinds),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT id, ts, kind, path, user_id, role, visitor_id, meta
+                    FROM analytics_events
+                    WHERE ts >= ?
+                    ORDER BY ts ASC
+                    """,
+                    (since_ts,),
+                ).fetchall()
 
     out = []
     for r in rows:
@@ -730,9 +925,8 @@ def fetch_analytics_events(since_ts: float, kinds: list[str] | None = None) -> l
 def count_analytics(since_ts: float, kind: str | None = None) -> int:
     if not use_db():
         return 0
-    conn = connect()
-    try:
-        if use_postgres():
+    if use_postgres():
+        with pg_conn() as conn:
             with conn.cursor() as cur:
                 if kind:
                     cur.execute(
@@ -745,30 +939,27 @@ def count_analytics(since_ts: float, kind: str | None = None) -> int:
                         (since_ts,),
                     )
                 row = cur.fetchone()
-        else:
-            with _lock:
-                if kind:
-                    row = conn.execute(
-                        "SELECT COUNT(*) AS c FROM analytics_events WHERE ts >= ? AND kind = ?",
-                        (since_ts, kind),
-                    ).fetchone()
-                else:
-                    row = conn.execute(
-                        "SELECT COUNT(*) AS c FROM analytics_events WHERE ts >= ?",
-                        (since_ts,),
-                    ).fetchone()
-    finally:
-        if use_postgres():
-            conn.close()
+    else:
+        conn = connect()
+        with _lock:
+            if kind:
+                row = conn.execute(
+                    "SELECT COUNT(*) AS c FROM analytics_events WHERE ts >= ? AND kind = ?",
+                    (since_ts, kind),
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT COUNT(*) AS c FROM analytics_events WHERE ts >= ?",
+                    (since_ts,),
+                ).fetchone()
     return int(row["c"] if row else 0)
 
 
 def distinct_visitors(since_ts: float, online_window_sec: float = 120) -> int:
     if not use_db():
         return 0
-    conn = connect()
-    try:
-        if use_postgres():
+    if use_postgres():
+        with pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -781,22 +972,182 @@ def distinct_visitors(since_ts: float, online_window_sec: float = 120) -> int:
                     (since_ts,),
                 )
                 row = cur.fetchone()
-        else:
-            with _lock:
-                row = conn.execute(
-                    """
-                    SELECT COUNT(DISTINCT visitor_id) AS c
-                    FROM analytics_events
-                    WHERE ts >= ?
-                      AND visitor_id != ''
-                      AND kind IN ('pulse', 'page_view')
-                    """,
-                    (since_ts,),
-                ).fetchone()
-    finally:
-        if use_postgres():
-            conn.close()
+    else:
+        conn = connect()
+        with _lock:
+            row = conn.execute(
+                """
+                SELECT COUNT(DISTINCT visitor_id) AS c
+                FROM analytics_events
+                WHERE ts >= ?
+                  AND visitor_id != ''
+                  AND kind IN ('pulse', 'page_view')
+                """,
+                (since_ts,),
+            ).fetchone()
     return int(row["c"] if row else 0)
+
+
+def count_users() -> int:
+    if not use_db():
+        return 0
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) AS c FROM users")
+                return int(cur.fetchone()["c"])
+    conn = connect()
+    with _lock:
+        return int(conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"])
+
+
+def user_role_counts() -> dict:
+    """Cheap role/blocked aggregates for admin overview."""
+    out = {"buyers": 0, "suppliers": 0, "admins": 0, "blocked": 0, "total": 0}
+    if not use_db():
+        return out
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT
+                      COUNT(*) AS total,
+                      COUNT(*) FILTER (WHERE payload->>'role' = 'user') AS buyers,
+                      COUNT(*) FILTER (WHERE payload->>'role' = 'supplier') AS suppliers,
+                      COUNT(*) FILTER (WHERE payload->>'role' = 'admin') AS admins,
+                      COUNT(*) FILTER (
+                        WHERE coalesce(payload->>'blocked', 'false') IN ('true', '1', 'True')
+                      ) AS blocked
+                    FROM users
+                    """
+                )
+                row = cur.fetchone() or {}
+                out.update(
+                    {
+                        "total": int(row.get("total") or 0),
+                        "buyers": int(row.get("buyers") or 0),
+                        "suppliers": int(row.get("suppliers") or 0),
+                        "admins": int(row.get("admins") or 0),
+                        "blocked": int(row.get("blocked") or 0),
+                    }
+                )
+                return out
+    users = load_users()
+    out["total"] = len(users)
+    for u in users:
+        role = u.get("role")
+        if role == "user":
+            out["buyers"] += 1
+        elif role == "supplier":
+            out["suppliers"] += 1
+        elif role == "admin":
+            out["admins"] += 1
+        if u.get("blocked"):
+            out["blocked"] += 1
+    return out
+
+
+def request_status_counts() -> dict:
+    out = {}
+    if not use_db():
+        return out
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT coalesce(payload->>'status', 'sent') AS status, COUNT(*) AS c
+                    FROM requests
+                    GROUP BY 1
+                    """
+                )
+                for row in cur.fetchall():
+                    out[str(row["status"])] = int(row["c"])
+                return out
+    for r in load_requests():
+        st = r.get("status") or "sent"
+        out[st] = out.get(st, 0) + 1
+    return out
+
+
+def count_requests() -> int:
+    if not use_db():
+        return 0
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) AS c FROM requests")
+                return int(cur.fetchone()["c"])
+    conn = connect()
+    with _lock:
+        return int(conn.execute("SELECT COUNT(*) AS c FROM requests").fetchone()["c"])
+
+
+def list_users_page(offset: int = 0, limit: int = 50) -> list:
+    """Paginated user payloads for admin lists."""
+    offset = max(0, int(offset or 0))
+    limit = max(1, min(200, int(limit or 50)))
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT payload FROM users ORDER BY id LIMIT %s OFFSET %s",
+                    (limit, offset),
+                )
+                return [_loads(r["payload"]) for r in cur.fetchall()]
+    conn = connect()
+    with _lock:
+        rows = conn.execute(
+            "SELECT payload FROM users ORDER BY id LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+    return [_loads(r["payload"]) for r in rows]
+
+
+def list_requests_page(offset: int = 0, limit: int = 50) -> list:
+    offset = max(0, int(offset or 0))
+    limit = max(1, min(200, int(limit or 50)))
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT payload FROM requests ORDER BY id LIMIT %s OFFSET %s",
+                    (limit, offset),
+                )
+                return [_loads(r["payload"]) for r in cur.fetchall()]
+    conn = connect()
+    with _lock:
+        rows = conn.execute(
+            "SELECT payload FROM requests ORDER BY id LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+    return [_loads(r["payload"]) for r in rows]
+
+
+def users_by_ids(ids: list[str]) -> dict:
+    """Map id -> user for a batch (avoids full table load)."""
+    clean = [str(i) for i in ids if i]
+    if not clean:
+        return {}
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, payload FROM users WHERE id = ANY(%s)", (clean,)
+                )
+                return {r["id"]: _loads(r["payload"]) for r in cur.fetchall()}
+    conn = connect()
+    out = {}
+    with _lock:
+        placeholders = ",".join("?" for _ in clean)
+        rows = conn.execute(
+            f"SELECT id, payload FROM users WHERE id IN ({placeholders})",
+            clean,
+        ).fetchall()
+        for r in rows:
+            out[r["id"]] = _loads(r["payload"])
+    return out
 
 
 def health() -> dict:
@@ -807,21 +1158,18 @@ def health() -> dict:
             info["detail"] = "json mode"
             info["ok"] = True
             return info
-        conn = connect()
-        try:
-            if use_postgres():
+        if use_postgres():
+            with pg_conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute("SELECT 1 AS x")
                     cur.fetchone()
-                host = urlparse(_database_url()).hostname or ""
-                info["detail"] = host
-            else:
-                conn.execute("SELECT 1")
-                info["detail"] = str(db_path())
-            info["ok"] = True
-        finally:
-            if use_postgres():
-                conn.close()
+            host = urlparse(_database_url()).hostname or ""
+            info["detail"] = host
+        else:
+            conn = connect()
+            conn.execute("SELECT 1")
+            info["detail"] = str(db_path())
+        info["ok"] = True
     except Exception as exc:
         info["detail"] = str(exc)[:200]
     return info
