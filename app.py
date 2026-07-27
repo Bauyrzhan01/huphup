@@ -3616,6 +3616,7 @@ def api_requests():
         maybe_deadline_reminders()
         items = load_requests()
         status = (request.args.get("status") or "").strip()
+        view = (request.args.get("view") or "").strip().lower()
         if user["role"] == "user":
             mine = [r for r in items if r["user_id"] == user["id"]]
         else:
@@ -3625,6 +3626,23 @@ def api_requests():
                 for r in items
                 if cid and supplier_can_see_request(r, cid)
             ]
+        if view == "summary":
+            prepared = [enrich_request(r, user) for r in mine]
+            active = [r for r in prepared if (r.get("status") or "sent") == "sent"]
+            deals = [r for r in prepared if r.get("status") == "deal"]
+            history = [r for r in prepared if r.get("status") in ("completed", "cancelled")]
+            active.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+            deals.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+            history.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+            return jsonify(
+                {
+                    "ok": True,
+                    "active": active,
+                    "deals": deals,
+                    "history": history,
+                    "deadline_hours": OFFER_DEADLINE_HOURS,
+                }
+            )
         if status:
             mine = [r for r in mine if (r.get("status") or "sent") == status]
         mine = sorted(mine, key=lambda r: r.get("created_at", ""), reverse=True)

@@ -624,22 +624,11 @@ function renderSidebarHistory({ active = [], deals = [], history = [] } = {}) {
 }
 
 async function refreshLists() {
-  const [histRes, activeRes, dealRes, cancelRes] = await Promise.all([
-    fetch("/api/requests?status=completed"),
-    fetch("/api/requests?status=sent"),
-    fetch("/api/requests?status=deal"),
-    fetch("/api/requests?status=cancelled"),
-  ]);
-  const histData = await histRes.json().catch(() => ({}));
-  const activeData = await activeRes.json().catch(() => ({}));
-  const dealData = await dealRes.json().catch(() => ({}));
-  const cancelData = await cancelRes.json().catch(() => ({}));
-  const history = [
-    ...(histRes.ok && histData.ok ? histData.items || [] : []),
-    ...(cancelRes.ok && cancelData.ok ? cancelData.items || [] : []),
-  ];
-  const active = activeRes.ok && activeData.ok ? activeData.items || [] : [];
-  const deals = dealRes.ok && dealData.ok ? dealData.items || [] : [];
+  const res = await fetch("/api/requests?view=summary");
+  const data = await res.json().catch(() => ({}));
+  const history = res.ok && data.ok ? data.history || [] : [];
+  const active = res.ok && data.ok ? data.active || [] : [];
+  const deals = res.ok && data.ok ? data.deals || [] : [];
   renderSidebarHistory({ active, deals, history });
   if (typeof setHistoryCache === "function") {
     setHistoryCache([...deals, ...active, ...history]);
