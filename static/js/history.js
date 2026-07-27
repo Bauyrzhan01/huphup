@@ -46,6 +46,7 @@ function histEscape(s) {
 function histCardMeta(item) {
   const tr = typeof t === "function" ? t : (k) => k;
   const status = item.status || "sent";
+  if (status === "cancelled") return tr("js.cancelled");
   if (status === "completed") {
     const accepted =
       item.accepted_offer ||

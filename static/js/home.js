@@ -276,10 +276,20 @@ function renderOffers(offers, req) {
   offersBlock.hidden = false;
   offersList.innerHTML = "";
   const lead = document.getElementById("offers-lead");
+  const reqStatus = req?.status || "sent";
   const has = (offers || []).length > 0;
   offersEmpty.hidden = has;
   if (lead) lead.hidden = !has;
   if (!has) {
+    if (reqStatus === "cancelled") {
+      offersEmpty.hidden = true;
+      offersList.innerHTML = `
+        <div class="offers-toolbar">
+          <span class="offer-chip offer-chip--muted status-pill is-cancel">${escapeHtml(t("js.cancelled"))}</span>
+        </div>
+        <p class="shell-empty">${escapeHtml(t("js.request_cancelled_note"))}</p>`;
+      return;
+    }
     offersEmpty.textContent = t("js.offers_empty_long");
     return;
   }
