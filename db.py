@@ -214,6 +214,15 @@ def _init_schema_sqlite(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_requests_status ON requests (json_extract(payload, '$.status'));
         CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications (user_id);
         CREATE INDEX IF NOT EXISTS idx_products_supplier ON products (supplier_id);
+        CREATE TABLE IF NOT EXISTS pending_registrations (
+          email TEXT PRIMARY KEY,
+          code_digest TEXT NOT NULL,
+          user_payload TEXT NOT NULL,
+          expires_at REAL NOT NULL,
+          sent_at REAL NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_pending_expires ON pending_registrations(expires_at);
         """
     )
     conn.commit()
@@ -278,6 +287,15 @@ def _init_schema_pg(conn) -> None:
             CREATE INDEX IF NOT EXISTS idx_products_supplier ON products (supplier_id);
             CREATE INDEX IF NOT EXISTS idx_products_category
               ON products ((payload->>'category'));
+            CREATE TABLE IF NOT EXISTS pending_registrations (
+              email TEXT PRIMARY KEY,
+              code_digest TEXT NOT NULL,
+              user_payload JSONB NOT NULL,
+              expires_at DOUBLE PRECISION NOT NULL,
+              sent_at DOUBLE PRECISION NOT NULL,
+              attempts INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_pending_expires ON pending_registrations(expires_at);
             """
         )
     conn.commit()
@@ -1148,6 +1166,169 @@ def users_by_ids(ids: list[str]) -> dict:
         for r in rows:
             out[r["id"]] = _loads(r["payload"])
     return out
+
+
+# --- Pending email verification (registration) ---
+
+
+def purge_expired_pending_registrations(now_ts: float | None = None) -> None:
+    """Remove expired pending rows (safe on every register/verify)."""
+    if not use_db():
+        return
+    when = float(now_ts if now_ts is not None else time.time())
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM pending_registrations WHERE expires_at < %s", (when,)
+                )
+        else:
+            conn.execute(
+                "DELETE FROM pending_registrations WHERE expires_at < ?", (when,)
+            )
+
+
+def get_pending_registration(email: str) -> dict | None:
+    email = (email or "").strip().lower()
+    if not email or not use_db():
+        return None
+    if use_postgres():
+        with pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT email, code_digest, user_payload, expires_at, sent_at, attempts
+                    FROM pending_registrations WHERE email = %s
+                    """,
+                    (email,),
+                )
+                row = cur.fetchone()
+    else:
+        conn = connect()
+        with _lock:
+            row = conn.execute(
+                """
+                SELECT email, code_digest, user_payload, expires_at, sent_at, attempts
+                FROM pending_registrations WHERE email = ?
+                """,
+                (email,),
+            ).fetchone()
+    if not row:
+        return None
+    get = row.get if isinstance(row, dict) else row.__getitem__
+    return {
+        "email": get("email"),
+        "code_digest": get("code_digest"),
+        "user": _loads(get("user_payload")),
+        "expires_at": float(get("expires_at")),
+        "sent_at": float(get("sent_at")),
+        "attempts": int(get("attempts") or 0),
+    }
+
+
+def save_pending_registration(
+    email: str,
+    *,
+    code_digest: str,
+    user: dict,
+    expires_at: float,
+    sent_at: float,
+    attempts: int = 0,
+) -> None:
+    email = (email or "").strip().lower()
+    if not email or not use_db():
+        return
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO pending_registrations
+                      (email, code_digest, user_payload, expires_at, sent_at, attempts)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (email) DO UPDATE SET
+                      code_digest = EXCLUDED.code_digest,
+                      user_payload = EXCLUDED.user_payload,
+                      expires_at = EXCLUDED.expires_at,
+                      sent_at = EXCLUDED.sent_at,
+                      attempts = EXCLUDED.attempts
+                    """,
+                    (
+                        email,
+                        code_digest,
+                        _payload_param(user),
+                        float(expires_at),
+                        float(sent_at),
+                        int(attempts),
+                    ),
+                )
+        else:
+            conn.execute(
+                """
+                INSERT INTO pending_registrations
+                  (email, code_digest, user_payload, expires_at, sent_at, attempts)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(email) DO UPDATE SET
+                  code_digest = excluded.code_digest,
+                  user_payload = excluded.user_payload,
+                  expires_at = excluded.expires_at,
+                  sent_at = excluded.sent_at,
+                  attempts = excluded.attempts
+                """,
+                (
+                    email,
+                    code_digest,
+                    _dumps(user),
+                    float(expires_at),
+                    float(sent_at),
+                    int(attempts),
+                ),
+            )
+
+
+def update_pending_registration(email: str, **fields) -> None:
+    email = (email or "").strip().lower()
+    if not email or not use_db() or not fields:
+        return
+    allowed = {"code_digest", "expires_at", "sent_at", "attempts", "user"}
+    sets = []
+    vals = []
+    for key, val in fields.items():
+        if key not in allowed:
+            continue
+        col = "user_payload" if key == "user" else key
+        sets.append(f"{col} = %s" if use_postgres() else f"{col} = ?")
+        vals.append(_payload_param(val) if key == "user" else val)
+    if not sets:
+        return
+    vals.append(email)
+    sql = (
+        f"UPDATE pending_registrations SET {', '.join(sets)} WHERE email = %s"
+        if use_postgres()
+        else f"UPDATE pending_registrations SET {', '.join(sets)} WHERE email = ?"
+    )
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
+                cur.execute(sql, vals)
+        else:
+            conn.execute(sql, vals)
+
+
+def delete_pending_registration(email: str) -> None:
+    email = (email or "").strip().lower()
+    if not email or not use_db():
+        return
+    with transaction() as conn:
+        if use_postgres():
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM pending_registrations WHERE email = %s", (email,)
+                )
+        else:
+            conn.execute(
+                "DELETE FROM pending_registrations WHERE email = ?", (email,)
+            )
 
 
 def health() -> dict:

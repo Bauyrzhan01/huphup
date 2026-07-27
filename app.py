@@ -104,10 +104,62 @@ API_RATE_WINDOW_SEC = 60
 CSRF_COOKIE = "csrf_token"
 CSRF_HEADER = "X-CSRF-Token"
 
-# Код подтверждения email при регистрации (in-memory, 1 gunicorn worker)
+# Код подтверждения email при регистрации (DB на Vercel/Neon; иначе in-memory)
 _PENDING_REGISTRATIONS: dict[str, dict] = {}
 EMAIL_VERIFY_TTL_SEC = 900
 EMAIL_VERIFY_RESEND_SEC = 45
+
+
+def _pending_get(email: str) -> dict | None:
+    email = (email or "").strip().lower()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        row = db_store.get_pending_registration(email)
+        if not row:
+            return None
+        return {
+            "code_digest": row["code_digest"],
+            "user": row["user"],
+            "expires_at": row["expires_at"],
+            "sent_at": row["sent_at"],
+            "attempts": row["attempts"],
+        }
+    return _PENDING_REGISTRATIONS.get(email)
+
+
+def _pending_save(email: str, record: dict) -> None:
+    email = (email or "").strip().lower()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.save_pending_registration(
+            email,
+            code_digest=record["code_digest"],
+            user=record["user"],
+            expires_at=record["expires_at"],
+            sent_at=record["sent_at"],
+            attempts=int(record.get("attempts") or 0),
+        )
+        return
+    _PENDING_REGISTRATIONS[email] = record
+
+
+def _pending_delete(email: str) -> None:
+    email = (email or "").strip().lower()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.delete_pending_registration(email)
+        return
+    _PENDING_REGISTRATIONS.pop(email, None)
+
+
+def _pending_update_attempts(email: str, attempts: int) -> None:
+    email = (email or "").strip().lower()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.update_pending_registration(email, attempts=attempts)
+        return
+    if email in _PENDING_REGISTRATIONS:
+        _PENDING_REGISTRATIONS[email]["attempts"] = attempts
 
 
 @app.context_processor
@@ -1231,11 +1283,11 @@ def touch_user_presence(user_id: str) -> None:
     """Обновить last_seen_at для онлайн-статуса."""
     if not user_id:
         return
-    users, index = find_user_index(user_id)
-    if index < 0:
+    user = find_user_by_id(user_id)
+    if not user:
         return
-    users[index]["last_seen_at"] = now_iso()
-    save_users(users)
+    user["last_seen_at"] = now_iso()
+    save_user(user)
 
 
 def is_user_online(user) -> bool:
@@ -2402,6 +2454,10 @@ def _verify_code_digest(code: str) -> str:
 
 def _purge_pending_registrations():
     now = time.time()
+    if db_store.use_db():
+        db_store.ensure_migrated()
+        db_store.purge_expired_pending_registrations(now)
+        return
     expired = [k for k, v in _PENDING_REGISTRATIONS.items() if v.get("expires_at", 0) < now]
     for k in expired:
         _PENDING_REGISTRATIONS.pop(k, None)
@@ -2474,13 +2530,14 @@ def _issue_register_code(email: str, user: dict):
     _purge_pending_registrations()
     code = f"{secrets.randbelow(1_000_000):06d}"
     now = time.time()
-    _PENDING_REGISTRATIONS[email] = {
+    record = {
         "code_digest": _verify_code_digest(code),
         "user": user,
         "expires_at": now + EMAIL_VERIFY_TTL_SEC,
         "sent_at": now,
         "attempts": 0,
     }
+    _pending_save(email, record)
     subject = "HupHup — код подтверждения"
     body = (
         f"Ваш код подтверждения регистрации: {code}\n\n"
@@ -2545,7 +2602,7 @@ def api_register():
     code, mailed = _issue_register_code(email, user)
 
     if IS_PRODUCTION and not mailed and not ALLOW_DEV_CODE:
-        _PENDING_REGISTRATIONS.pop(email, None)
+        _pending_delete(email)
         return jsonify({
             "ok": False,
             "error": "Не удалось отправить код на email. Проверьте SMTP или попробуйте позже.",
@@ -2577,13 +2634,14 @@ def api_register_verify():
         return jsonify({"ok": False, "error": "Введите email и 6-значный код"}), 400
 
     _purge_pending_registrations()
-    pending = _PENDING_REGISTRATIONS.get(email)
+    pending = _pending_get(email)
     if not pending:
         return jsonify({"ok": False, "error": "Код истёк или не найден. Запросите новый."}), 400
 
-    pending["attempts"] = int(pending.get("attempts") or 0) + 1
-    if pending["attempts"] > 8:
-        _PENDING_REGISTRATIONS.pop(email, None)
+    attempts = int(pending.get("attempts") or 0) + 1
+    _pending_update_attempts(email, attempts)
+    if attempts > 8:
+        _pending_delete(email)
         return jsonify({
             "ok": False,
             "error": "Слишком много неверных попыток. Пройдите регистрацию снова.",
@@ -2594,7 +2652,7 @@ def api_register_verify():
         return jsonify({"ok": False, "error": "Неверный код подтверждения"}), 400
 
     user = pending.get("user")
-    _PENDING_REGISTRATIONS.pop(email, None)
+    _pending_delete(email)
     if not user:
         return jsonify({"ok": False, "error": "Данные регистрации потеряны. Начните снова."}), 400
 
@@ -2619,7 +2677,7 @@ def api_register_resend():
         return jsonify({"ok": False, "error": "Укажите email"}), 400
 
     _purge_pending_registrations()
-    pending = _PENDING_REGISTRATIONS.get(email)
+    pending = _pending_get(email)
     if not pending:
         return jsonify({"ok": False, "error": "Сначала заполните форму регистрации"}), 400
 
@@ -3033,8 +3091,8 @@ def api_team_invite():
     if user["role"] != "supplier" or not is_supplier_owner(user):
         return jsonify({"ok": False, "error": "Приглашения создаёт только руководитель"}), 403
 
-    users, index = find_user_index(user["id"])
-    if index < 0:
+    owner = find_user_by_id(user["id"])
+    if not owner:
         return jsonify({"ok": False, "error": "Пользователь не найден"}), 401
 
     token = secrets.token_urlsafe(24)
@@ -3047,13 +3105,13 @@ def api_team_invite():
         "expires_at": expires_at,
         "used_by": None,
     }
-    invites = users[index].setdefault("invites", [])
+    invites = owner.setdefault("invites", [])
     if not isinstance(invites, list):
         invites = []
     invites.append(inv)
-    users[index]["invites"] = invites[-30:]
-    users[index].setdefault("supplier_role", "owner")
-    save_users(users)
+    owner["invites"] = invites[-30:]
+    owner.setdefault("supplier_role", "owner")
+    save_user(owner)
 
     path = f"/register?invite={token}"
     invite_url = shareable_url(path)
