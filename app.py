@@ -1665,26 +1665,79 @@ def ensure_admin_user() -> None:
 
 def public_admin_user(user):
     """Карточка пользователя для админ-списка (без пароля)."""
-    s = user.get("supplier") or {}
+    s = user.get("supplier") or {} if isinstance(user.get("supplier"), dict) else {}
+    cats = (
+        supplier_categories(s)
+        if user.get("role") == "supplier"
+        else (user.get("preferred_categories") or [])
+    )
+    legal = s.get("legal_address") or ""
+    actual = s.get("actual_address") or ""
+    city = ""
+    if user.get("role") == "supplier":
+        city = (actual or legal or "").split(",")[0].strip()
+    else:
+        city = user.get("city") or ""
     return {
-        "id": user.get("id"),
-        "name": user.get("name"),
-        "email": user.get("email"),
-        "role": user.get("role"),
+        "id": user.get("id") or "",
+        "name": user.get("name") or "",
+        "email": user.get("email") or "",
+        "role": user.get("role") or "",
+        "supplier_role": supplier_role_of(user) if user.get("role") == "supplier" else "",
         "blocked": bool(user.get("blocked")),
         "created_at": user.get("created_at") or "",
+        "blocked_at": user.get("blocked_at") or "",
         "company_name": s.get("company_name") or user.get("company") or "",
         "bin": s.get("bin") or user.get("bin") or "",
         "phone": s.get("phone") or user.get("phone") or "",
-        "categories": supplier_categories(s) if user.get("role") == "supplier" else (
-            user.get("preferred_categories") or []
-        ),
-        "city": (
-            (s.get("actual_address") or s.get("legal_address") or "").split(",")[0]
-            if user.get("role") == "supplier"
-            else (user.get("city") or "")
-        ),
+        "contact_person": s.get("contact_person") or "",
+        "category": s.get("category") or "",
+        "categories": cats if isinstance(cats, list) else [],
+        "city": city,
+        "legal_address": legal,
+        "actual_address": actual,
+        "bank_name": s.get("bank_name") or "",
+        "iban": s.get("iban") or "",
+        "bik": s.get("bik") or "",
+        "website": s.get("website") or user.get("website") or "",
+        "years_on_market": s.get("years_on_market") or "",
+        "description": (s.get("description") or user.get("about") or "")[:200],
+        "position": user.get("position") or "",
+        "company_supplier_id": user.get("company_supplier_id") or "",
     }
+
+
+def _admin_arg(name: str) -> str:
+    return (request.args.get(name) or "").strip()
+
+
+def _admin_arg_lower(name: str) -> str:
+    return _admin_arg(name).lower()
+
+
+def _admin_date_ok(value: str, date_from: str, date_to: str) -> bool:
+    day = (value or "")[:10]
+    if date_from and (not day or day < date_from):
+        return False
+    if date_to and (not day or day > date_to):
+        return False
+    return True
+
+
+def _admin_contains(hay: str, needle: str) -> bool:
+    if not needle:
+        return True
+    return needle in (hay or "").lower()
+
+
+def _admin_int(name: str, default=None):
+    raw = _admin_arg(name)
+    if raw == "":
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
 
 
 # --- HTML-страницы ---
@@ -4280,21 +4333,136 @@ def api_admin_stats():
     )
 
 
+@app.route("/api/admin/filter-meta")
+@api_admin_required
+def api_admin_filter_meta():
+    """Distinct values for admin filter dropdowns (all collections)."""
+    users = [public_admin_user(u) for u in load_users() if u.get("role") != "admin"]
+    requests_items = load_requests()
+    catalog = load_catalog() or {}
+    products = catalog.get("products") or []
+    notifications = load_notifications()
+    ratings = load_ratings()
+
+    def uniq(values, limit=300):
+        out = sorted({str(v).strip() for v in values if v is not None and str(v).strip()})
+        return out[:limit]
+
+    cities = uniq(u.get("city") for u in users)
+    companies = uniq(u.get("company_name") for u in users)
+    categories = uniq(
+        list(CATEGORY_OPTIONS)
+        + [u.get("category") for u in users]
+        + [c for u in users for c in (u.get("categories") or [])]
+        + [p.get("category") for p in products]
+        + [c for r in requests_items for c in (r.get("matched_categories") or [])]
+    )
+    subcategories = uniq(p.get("subcategory") or p.get("subcategory_id") for p in products)
+    units = uniq(p.get("unit") for p in products)
+    notif_types = uniq(n.get("type") for n in notifications)
+    banks = uniq(u.get("bank_name") for u in users)
+    supplier_roles = uniq(u.get("supplier_role") for u in users if u.get("supplier_role"))
+    scores = uniq(r.get("score") or r.get("rating") for r in ratings)
+
+    return jsonify(
+        {
+            "ok": True,
+            "meta": {
+                "roles": ["user", "supplier"],
+                "supplier_roles": supplier_roles or ["owner", "manager"],
+                "blocked": ["0", "1"],
+                "cities": cities,
+                "companies": companies,
+                "categories": categories,
+                "subcategories": subcategories,
+                "units": units,
+                "banks": banks,
+                "request_statuses": ["sent", "deal", "completed", "cancelled"],
+                "notification_types": notif_types,
+                "scores": scores,
+                "has_options": ["", "1", "0"],
+            },
+            "counts": {
+                "users": len(users),
+                "requests": len(requests_items),
+                "products": len(products),
+                "notifications": len(notifications),
+                "ratings": len(ratings),
+            },
+        }
+    )
+
+
 @app.route("/api/admin/users")
 @api_admin_required
 def api_admin_users():
-    role = (request.args.get("role") or "").strip()
-    q = (request.args.get("q") or "").strip().lower()
-    blocked_only = (request.args.get("blocked") or "").strip() == "1"
+    role = _admin_arg("role")
+    q = _admin_arg_lower("q")
+    blocked = _admin_arg("blocked")  # "", "1", "0"
+    city = _admin_arg_lower("city")
+    company = _admin_arg_lower("company")
+    category = _admin_arg_lower("category")
+    bin_q = _admin_arg_lower("bin")
+    phone = _admin_arg_lower("phone")
+    email = _admin_arg_lower("email")
+    name = _admin_arg_lower("name")
+    contact = _admin_arg_lower("contact_person")
+    bank = _admin_arg_lower("bank")
+    website = _admin_arg_lower("website")
+    supplier_role = _admin_arg("supplier_role")
+    has_bin = _admin_arg("has_bin")
+    has_phone = _admin_arg("has_phone")
+    created_from = _admin_arg("created_from")
+    created_to = _admin_arg("created_to")
+    id_q = _admin_arg_lower("id")
+
     items = []
     for u in load_users():
         if u.get("role") == "admin":
             continue
-        if role and u.get("role") != role:
-            continue
-        if blocked_only and not u.get("blocked"):
-            continue
         row = public_admin_user(u)
+        if role and row.get("role") != role:
+            continue
+        if blocked == "1" and not row.get("blocked"):
+            continue
+        if blocked == "0" and row.get("blocked"):
+            continue
+        if supplier_role and row.get("supplier_role") != supplier_role:
+            continue
+        if city and city not in (row.get("city") or "").lower():
+            continue
+        if company and company not in (row.get("company_name") or "").lower():
+            continue
+        if category:
+            cats = " ".join(row.get("categories") or []).lower()
+            if category not in cats and category not in (row.get("category") or "").lower():
+                continue
+        if bin_q and bin_q not in (row.get("bin") or "").lower():
+            continue
+        if phone and phone not in (row.get("phone") or "").lower():
+            continue
+        if email and email not in (row.get("email") or "").lower():
+            continue
+        if name and name not in (row.get("name") or "").lower():
+            continue
+        if contact and contact not in (row.get("contact_person") or "").lower():
+            continue
+        if bank and bank not in (row.get("bank_name") or "").lower():
+            continue
+        if website and website not in (row.get("website") or "").lower():
+            continue
+        if id_q and id_q not in (row.get("id") or "").lower():
+            continue
+        if has_bin == "1" and not row.get("bin"):
+            continue
+        if has_bin == "0" and row.get("bin"):
+            continue
+        if has_phone == "1" and not row.get("phone"):
+            continue
+        if has_phone == "0" and row.get("phone"):
+            continue
+        if not _admin_date_ok(row.get("created_at") or "", created_from, created_to):
+            continue
         if q:
             hay = " ".join(
                 [
@@ -4303,13 +4471,24 @@ def api_admin_users():
                     row.get("company_name") or "",
                     row.get("bin") or "",
                     row.get("phone") or "",
+                    row.get("city") or "",
+                    row.get("contact_person") or "",
+                    row.get("category") or "",
+                    " ".join(row.get("categories") or []),
+                    row.get("legal_address") or "",
+                    row.get("actual_address") or "",
+                    row.get("iban") or "",
+                    row.get("bik") or "",
+                    row.get("website") or "",
+                    row.get("description") or "",
+                    row.get("id") or "",
                 ]
             ).lower()
             if q not in hay:
                 continue
         items.append(row)
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return jsonify({"ok": True, "items": items})
+    return jsonify({"ok": True, "items": items, "total": len(items)})
 
 
 @app.route("/api/admin/users/<user_id>/block", methods=["POST"])
@@ -4346,104 +4525,290 @@ def api_admin_user_block(user_id):
 @app.route("/api/admin/requests")
 @api_admin_required
 def api_admin_requests():
-    status = (request.args.get("status") or "").strip()
-    q = (request.args.get("q") or "").strip().lower()
+    status = _admin_arg("status")
+    q = _admin_arg_lower("q")
+    user_email = _admin_arg_lower("user_email")
+    user_name = _admin_arg_lower("user_name")
+    user_id = _admin_arg_lower("user_id")
+    category = _admin_arg_lower("category")
+    request_id = _admin_arg_lower("id")
+    has_offers = _admin_arg("has_offers")
+    offers_min = _admin_int("offers_min")
+    offers_max = _admin_int("offers_max")
+    suppliers_min = _admin_int("suppliers_min")
+    direct = _admin_arg("direct")
+    created_from = _admin_arg("created_from")
+    created_to = _admin_arg("created_to")
+
     items = []
     for r in load_requests():
-        if status and (r.get("status") or "") != status:
-            continue
         text = r.get("text") or ""
-        if q and q not in text.lower() and q not in (r.get("user_email") or "").lower():
+        offers_count = len(r.get("offers") or [])
+        supplier_ids = r.get("supplier_ids") or []
+        cats = r.get("matched_categories") or []
+        row = {
+            "id": r.get("id"),
+            "text": text[:240],
+            "summary": (r.get("summary") or "")[:160],
+            "status": r.get("status") or "sent",
+            "user_id": r.get("user_id") or "",
+            "user_name": r.get("user_name") or "",
+            "user_email": r.get("user_email") or "",
+            "supplier_ids": supplier_ids,
+            "suppliers_count": len(supplier_ids),
+            "offers_count": offers_count,
+            "created_at": r.get("created_at") or "",
+            "expires_at": r.get("expires_at") or "",
+            "matched_categories": cats,
+            "direct_supplier_id": r.get("direct_supplier_id") or "",
+            "product_id": r.get("product_id") or "",
+        }
+        if status and row["status"] != status:
             continue
-        items.append(
-            {
-                "id": r.get("id"),
-                "text": text[:200],
-                "status": r.get("status") or "sent",
-                "user_id": r.get("user_id"),
-                "user_name": r.get("user_name") or "",
-                "user_email": r.get("user_email") or "",
-                "supplier_ids": r.get("supplier_ids") or [],
-                "offers_count": len(r.get("offers") or []),
-                "created_at": r.get("created_at") or "",
-                "matched_categories": r.get("matched_categories") or [],
-            }
-        )
+        if user_email and user_email not in row["user_email"].lower():
+            continue
+        if user_name and user_name not in row["user_name"].lower():
+            continue
+        if user_id and user_id not in row["user_id"].lower():
+            continue
+        if request_id and request_id not in (row["id"] or "").lower():
+            continue
+        if category and category not in " ".join(cats).lower():
+            continue
+        if has_offers == "1" and offers_count <= 0:
+            continue
+        if has_offers == "0" and offers_count > 0:
+            continue
+        if offers_min is not None and offers_count < offers_min:
+            continue
+        if offers_max is not None and offers_count > offers_max:
+            continue
+        if suppliers_min is not None and len(supplier_ids) < suppliers_min:
+            continue
+        if direct == "1" and not row["direct_supplier_id"]:
+            continue
+        if direct == "0" and row["direct_supplier_id"]:
+            continue
+        if not _admin_date_ok(row["created_at"], created_from, created_to):
+            continue
+        if q:
+            hay = " ".join(
+                [
+                    text,
+                    row["summary"],
+                    row["user_email"],
+                    row["user_name"],
+                    row["user_id"],
+                    row["id"] or "",
+                    " ".join(cats),
+                    row["status"],
+                ]
+            ).lower()
+            if q not in hay:
+                continue
+        items.append(row)
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return jsonify({"ok": True, "items": items[:200]})
+    return jsonify({"ok": True, "items": items[:500], "total": len(items)})
 
 
 @app.route("/api/admin/products")
 @api_admin_required
 def api_admin_products():
-    q = (request.args.get("q") or "").strip().lower()
+    q = _admin_arg_lower("q")
+    category = _admin_arg_lower("category")
+    subcategory = _admin_arg_lower("subcategory")
+    company = _admin_arg_lower("company")
+    supplier_id = _admin_arg_lower("supplier_id")
+    unit = _admin_arg_lower("unit")
+    name = _admin_arg_lower("name")
+    has_image = _admin_arg("has_image")
+    created_from = _admin_arg("created_from")
+    created_to = _admin_arg("created_to")
+    id_q = _admin_arg_lower("id")
+
     catalog = load_catalog() or {}
     users_by_id = {u.get("id"): u for u in load_users()}
     items = []
     for p in catalog.get("products") or []:
-        name = p.get("name") or ""
-        if q and q not in name.lower() and q not in (p.get("category") or "").lower():
-            continue
         sid = p.get("supplier_id") or ""
         supplier = users_by_id.get(sid) or {}
-        company = (supplier.get("supplier") or {}).get("company_name") or supplier.get("name") or ""
-        items.append(
-            {
-                "id": p.get("id"),
-                "name": name,
-                "category": p.get("category") or "",
-                "price": p.get("price") or "",
-                "supplier_id": sid,
-                "company_name": company,
-                "image_url": p.get("image_url") or "",
-            }
+        company_name = (
+            (supplier.get("supplier") or {}).get("company_name")
+            or p.get("supplier_name")
+            or supplier.get("name")
+            or ""
         )
-    return jsonify({"ok": True, "items": items[:300], "total": len(catalog.get("products") or [])})
+        image = p.get("image_url") or ""
+        images = p.get("image_urls") or ([] if not image else [image])
+        row = {
+            "id": p.get("id"),
+            "name": p.get("name") or "",
+            "category": p.get("category") or "",
+            "subcategory": p.get("subcategory") or p.get("subcategory_id") or "",
+            "price": p.get("price") or "",
+            "unit": p.get("unit") or "",
+            "description": (p.get("description") or "")[:160],
+            "supplier_id": sid,
+            "company_name": company_name,
+            "image_url": image,
+            "images_count": len(images) if isinstance(images, list) else 0,
+            "created_at": p.get("created_at") or "",
+        }
+        if category and category not in row["category"].lower():
+            continue
+        if subcategory and subcategory not in row["subcategory"].lower():
+            continue
+        if company and company not in row["company_name"].lower():
+            continue
+        if supplier_id and supplier_id not in sid.lower():
+            continue
+        if unit and unit not in row["unit"].lower():
+            continue
+        if name and name not in row["name"].lower():
+            continue
+        if id_q and id_q not in (row["id"] or "").lower():
+            continue
+        if has_image == "1" and row["images_count"] <= 0:
+            continue
+        if has_image == "0" and row["images_count"] > 0:
+            continue
+        if not _admin_date_ok(row["created_at"], created_from, created_to):
+            continue
+        if q:
+            hay = " ".join(
+                [
+                    row["name"],
+                    row["category"],
+                    row["subcategory"],
+                    row["company_name"],
+                    row["unit"],
+                    row["description"],
+                    sid,
+                    row["id"] or "",
+                ]
+            ).lower()
+            if q not in hay:
+                continue
+        items.append(row)
+    return jsonify({"ok": True, "items": items[:500], "total": len(items)})
 
 
 @app.route("/api/admin/notifications")
 @api_admin_required
 def api_admin_notifications():
-    q = (request.args.get("q") or "").strip().lower()
+    q = _admin_arg_lower("q")
+    ntype = _admin_arg_lower("type")
+    user_id = _admin_arg_lower("user_id")
+    read = _admin_arg("read")
+    title = _admin_arg_lower("title")
+    created_from = _admin_arg("created_from")
+    created_to = _admin_arg("created_to")
+    id_q = _admin_arg_lower("id")
+
     items = []
     for n in load_notifications():
-        title = n.get("title") or ""
         body = n.get("body") or n.get("message") or ""
-        if q and q not in title.lower() and q not in body.lower():
+        row = {
+            "id": n.get("id"),
+            "user_id": n.get("user_id") or "",
+            "type": n.get("type") or "",
+            "title": n.get("title") or "",
+            "body": (body or "")[:200],
+            "created_at": n.get("created_at") or "",
+            "read": bool(n.get("read")),
+            "request_id": n.get("request_id") or "",
+        }
+        if ntype and ntype not in row["type"].lower():
             continue
-        items.append(
-            {
-                "id": n.get("id"),
-                "user_id": n.get("user_id") or "",
-                "type": n.get("type") or "",
-                "title": title,
-                "body": (body or "")[:160],
-                "created_at": n.get("created_at") or "",
-                "read": bool(n.get("read")),
-            }
-        )
+        if user_id and user_id not in row["user_id"].lower():
+            continue
+        if title and title not in row["title"].lower():
+            continue
+        if id_q and id_q not in (row["id"] or "").lower():
+            continue
+        if read == "1" and not row["read"]:
+            continue
+        if read == "0" and row["read"]:
+            continue
+        if not _admin_date_ok(row["created_at"], created_from, created_to):
+            continue
+        if q:
+            hay = " ".join(
+                [
+                    row["title"],
+                    row["body"],
+                    row["type"],
+                    row["user_id"],
+                    row["request_id"],
+                    row["id"] or "",
+                ]
+            ).lower()
+            if q not in hay:
+                continue
+        items.append(row)
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return jsonify({"ok": True, "items": items[:200]})
+    return jsonify({"ok": True, "items": items[:500], "total": len(items)})
 
 
 @app.route("/api/admin/ratings")
 @api_admin_required
 def api_admin_ratings():
+    q = _admin_arg_lower("q")
+    score = _admin_arg("score")
+    score_min = _admin_int("score_min")
+    score_max = _admin_int("score_max")
+    from_id = _admin_arg_lower("from_user_id")
+    to_id = _admin_arg_lower("to_user_id")
+    request_id = _admin_arg_lower("request_id")
+    created_from = _admin_arg("created_from")
+    created_to = _admin_arg("created_to")
+
     items = []
     for r in load_ratings():
-        items.append(
-            {
-                "id": r.get("id"),
-                "request_id": r.get("request_id") or "",
-                "from_user_id": r.get("from_user_id") or r.get("user_id") or "",
-                "to_user_id": r.get("to_user_id") or r.get("supplier_id") or "",
-                "score": r.get("score") or r.get("rating") or "",
-                "comment": (r.get("comment") or "")[:160],
-                "created_at": r.get("created_at") or "",
-            }
-        )
+        sc = r.get("score") if r.get("score") is not None else r.get("rating")
+        try:
+            sc_num = int(sc) if sc is not None and str(sc).strip() != "" else None
+        except (TypeError, ValueError):
+            sc_num = None
+        row = {
+            "id": r.get("id"),
+            "request_id": r.get("request_id") or "",
+            "from_user_id": r.get("from_user_id") or r.get("user_id") or "",
+            "to_user_id": r.get("to_user_id") or r.get("supplier_id") or "",
+            "score": sc if sc is not None else "",
+            "comment": (r.get("comment") or "")[:200],
+            "created_at": r.get("created_at") or "",
+        }
+        if score != "" and str(row["score"]) != score:
+            continue
+        if score_min is not None and (sc_num is None or sc_num < score_min):
+            continue
+        if score_max is not None and (sc_num is None or sc_num > score_max):
+            continue
+        if from_id and from_id not in row["from_user_id"].lower():
+            continue
+        if to_id and to_id not in row["to_user_id"].lower():
+            continue
+        if request_id and request_id not in row["request_id"].lower():
+            continue
+        if not _admin_date_ok(row["created_at"], created_from, created_to):
+            continue
+        if q:
+            hay = " ".join(
+                [
+                    str(row["score"]),
+                    row["comment"],
+                    row["from_user_id"],
+                    row["to_user_id"],
+                    row["request_id"],
+                    row["id"] or "",
+                ]
+            ).lower()
+            if q not in hay:
+                continue
+        items.append(row)
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return jsonify({"ok": True, "items": items[:200]})
+    return jsonify({"ok": True, "items": items[:500], "total": len(items)})
 
 
 @app.route("/api/analytics/pulse", methods=["GET", "POST"])

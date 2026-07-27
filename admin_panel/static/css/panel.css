@@ -666,6 +666,67 @@ a {
   margin-bottom: 14px;
 }
 
+.ap-filters {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--ap-line);
+  border-radius: 16px;
+  background: var(--ap-surface);
+}
+
+.ap-filters__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ap-field {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ap-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ap-field .ap-input,
+.ap-field .ap-select {
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ap-ink);
+  width: 100%;
+}
+
+.ap-filters__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.ap-filters__count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ap-muted);
+}
+
+@media (max-width: 980px) {
+  .ap-filters__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .ap-filters__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .ap-input,
 .ap-select {
   padding: 10px 12px;

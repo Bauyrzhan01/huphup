@@ -32,8 +32,89 @@
     ratings: document.getElementById("tab-ratings"),
   };
 
-  const charts = { wave: null, daily: null, status: null, roles: null };
+  let filterMeta = null;
   let pollTimer = null;
+
+  const LOADERS = {
+    loadUsers: () => loadUsers(),
+    loadRequests: () => loadRequests(),
+    loadProducts: () => loadProducts(),
+    loadNotifications: () => loadNotifications(),
+    loadRatings: () => loadRatings(),
+  };
+
+  function formParams(formId) {
+    const form = document.getElementById(formId);
+    const params = new URLSearchParams();
+    if (!form) return params;
+    new FormData(form).forEach((value, key) => {
+      const v = String(value ?? "").trim();
+      if (v !== "") params.set(key, v);
+    });
+    return params;
+  }
+
+  function fillDatalist(id, values) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = (values || [])
+      .map((v) => `<option value="${escapeHtml(v)}"></option>`)
+      .join("");
+  }
+
+  function fillSelect(select, values, allLabel) {
+    if (!select) return;
+    const current = select.value;
+    const opts = [`<option value="">${escapeHtml(allLabel || t("admin.filter_all"))}</option>`];
+    (values || []).forEach((v) => {
+      const label =
+        select.dataset.meta === "roles"
+          ? v === "supplier"
+            ? t("auth.role_supplier")
+            : v === "user"
+              ? t("auth.role_user")
+              : v
+          : select.dataset.meta === "request_statuses" && STATUS_LABEL[v]
+            ? STATUS_LABEL[v]()
+            : v;
+      opts.push(`<option value="${escapeHtml(v)}">${escapeHtml(label)}</option>`);
+    });
+    select.innerHTML = opts.join("");
+    if ([...select.options].some((o) => o.value === current)) select.value = current;
+  }
+
+  async function loadFilterMeta() {
+    const res = await fetch("/api/admin/filter-meta");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return;
+    filterMeta = data.meta || {};
+    fillDatalist("dl-cities", filterMeta.cities);
+    fillDatalist("dl-companies", filterMeta.companies);
+    fillDatalist("dl-categories", filterMeta.categories);
+    fillDatalist("dl-subcategories", filterMeta.subcategories);
+    fillDatalist("dl-units", filterMeta.units);
+    fillDatalist("dl-banks", filterMeta.banks);
+    document.querySelectorAll("select[data-meta]").forEach((sel) => {
+      const key = sel.dataset.meta;
+      fillSelect(sel, filterMeta[key] || [], t("admin.filter_all"));
+    });
+  }
+
+  function wireFilters() {
+    document.querySelectorAll("form.ap-filters").forEach((form) => {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const fn = LOADERS[form.dataset.load];
+        if (fn) fn();
+      });
+      form.addEventListener("reset", () => {
+        setTimeout(() => {
+          const fn = LOADERS[form.dataset.load];
+          if (fn) fn();
+        }, 0);
+      });
+    });
+  }
 
   const STATUS_LABEL = {
     sent: () => t("home.filter_sent"),
@@ -61,6 +142,8 @@
     bad: "#b42318",
     grid: "rgba(0, 11, 34, 0.06)",
   };
+
+  const charts = { wave: null, daily: null, status: null, roles: null };
 
   function showTab(name) {
     Object.entries(views).forEach(([key, el]) => {
@@ -322,23 +405,19 @@
   }
 
   async function loadUsers() {
-    const q = document.getElementById("users-q")?.value.trim() || "";
-    const role = document.getElementById("users-role")?.value || "";
-    const blocked = document.getElementById("users-blocked")?.checked ? "1" : "";
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (role) params.set("role", role);
-    if (blocked) params.set("blocked", blocked);
+    const params = formParams("filters-users");
     const res = await fetch(`/api/admin/users?${params}`);
     const data = await res.json().catch(() => ({}));
+    const countEl = document.getElementById("users-count");
+    if (countEl) countEl.textContent = data.total != null ? `${t("admin.found")}: ${data.total}` : "";
     if (!usersBody) return;
     if (!res.ok || !data.ok) {
-      usersBody.innerHTML = `<tr><td colspan="6" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
+      usersBody.innerHTML = `<tr><td colspan="8" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
       return;
     }
     const items = data.items || [];
     if (!items.length) {
-      usersBody.innerHTML = `<tr><td colspan="6" class="ap-empty">${escapeHtml(t("admin.empty_users"))}</td></tr>`;
+      usersBody.innerHTML = `<tr><td colspan="8" class="ap-empty">${escapeHtml(t("admin.empty_users"))}</td></tr>`;
       return;
     }
     usersBody.innerHTML = items
@@ -355,16 +434,20 @@
                 : ` <span class="ap-badge ap-badge--warn">${escapeHtml(t("admin.bin_bad"))}</span>`
             }`
           : "—";
+        const cats = (u.categories || []).slice(0, 3).join(", ") || u.category || "—";
         const actionLabel = u.blocked ? t("admin.unblock") : t("admin.block");
         const actionClass = u.blocked ? "ap-btn ap-btn--ok" : "ap-btn ap-btn--danger";
         return `<tr>
           <td>
             <strong>${escapeHtml(u.name || "")}</strong>
             <div class="ap-muted">${escapeHtml(u.email || "")}</div>
+            <div class="ap-muted">${escapeHtml(u.phone || "")}</div>
           </td>
-          <td>${escapeHtml(roleLabel)}</td>
+          <td>${escapeHtml(roleLabel)}${u.supplier_role ? `<div class="ap-muted">${escapeHtml(u.supplier_role)}</div>` : ""}</td>
           <td>${escapeHtml(u.company_name || "—")}</td>
           <td>${bin}</td>
+          <td>${escapeHtml(u.city || "—")}</td>
+          <td><div class="ap-muted">${escapeHtml(cats)}</div></td>
           <td>${status}</td>
           <td class="ap-actions">
             <button type="button" class="${actionClass}" data-block="${escapeHtml(u.id)}" data-next="${u.blocked ? "0" : "1"}">${escapeHtml(actionLabel)}</button>
@@ -395,21 +478,19 @@
   }
 
   async function loadRequests() {
-    const q = document.getElementById("requests-q")?.value.trim() || "";
-    const status = document.getElementById("requests-status")?.value || "";
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (status) params.set("status", status);
+    const params = formParams("filters-requests");
     const res = await fetch(`/api/admin/requests?${params}`);
     const data = await res.json().catch(() => ({}));
+    const countEl = document.getElementById("requests-count");
+    if (countEl) countEl.textContent = data.total != null ? `${t("admin.found")}: ${data.total}` : "";
     if (!requestsBody) return;
     if (!res.ok || !data.ok) {
-      requestsBody.innerHTML = `<tr><td colspan="5" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
+      requestsBody.innerHTML = `<tr><td colspan="6" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
       return;
     }
     const items = data.items || [];
     if (!items.length) {
-      requestsBody.innerHTML = `<tr><td colspan="5" class="ap-empty">${escapeHtml(t("admin.empty_requests"))}</td></tr>`;
+      requestsBody.innerHTML = `<tr><td colspan="6" class="ap-empty">${escapeHtml(t("admin.empty_requests"))}</td></tr>`;
       return;
     }
     requestsBody.innerHTML = items
@@ -420,14 +501,15 @@
         return `<tr>
           <td>
             <div>${escapeHtml(r.text || "")}</div>
-            <div class="ap-muted">${escapeHtml((r.matched_categories || []).join(", "))}</div>
+            <div class="ap-muted">${escapeHtml(r.id || "")}</div>
           </td>
           <td>
             <strong>${escapeHtml(r.user_name || "")}</strong>
             <div class="ap-muted">${escapeHtml(r.user_email || "")}</div>
           </td>
           <td><span class="ap-badge ap-badge--${escapeHtml(st)}">${escapeHtml(stLabel)}</span></td>
-          <td>${Number(r.offers_count) || 0}</td>
+          <td>${Number(r.offers_count) || 0} / ${Number(r.suppliers_count) || 0}</td>
+          <td class="ap-muted">${escapeHtml((r.matched_categories || []).join(", "))}</td>
           <td class="ap-muted">${escapeHtml(created)}</td>
         </tr>`;
       })
@@ -435,27 +517,29 @@
   }
 
   async function loadProducts() {
-    const q = document.getElementById("products-q")?.value.trim() || "";
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
+    const params = formParams("filters-products");
     const res = await fetch(`/api/admin/products?${params}`);
     const data = await res.json().catch(() => ({}));
+    const countEl = document.getElementById("products-count");
+    if (countEl) countEl.textContent = data.total != null ? `${t("admin.found")}: ${data.total}` : "";
     if (!productsBody) return;
     if (!res.ok || !data.ok) {
-      productsBody.innerHTML = `<tr><td colspan="4" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
+      productsBody.innerHTML = `<tr><td colspan="6" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
       return;
     }
     const items = data.items || [];
     if (!items.length) {
-      productsBody.innerHTML = `<tr><td colspan="4" class="ap-empty">${escapeHtml(t("admin.empty_products"))}</td></tr>`;
+      productsBody.innerHTML = `<tr><td colspan="6" class="ap-empty">${escapeHtml(t("admin.empty_products"))}</td></tr>`;
       return;
     }
     productsBody.innerHTML = items
       .map(
         (p) => `<tr>
-        <td><strong>${escapeHtml(p.name || "")}</strong></td>
+        <td><strong>${escapeHtml(p.name || "")}</strong><div class="ap-muted">${escapeHtml(p.description || "")}</div></td>
         <td>${escapeHtml(p.company_name || "—")}</td>
         <td>${escapeHtml(p.category || "—")}</td>
+        <td>${escapeHtml(p.subcategory || "—")}</td>
+        <td>${escapeHtml(p.unit || "—")}</td>
         <td>${escapeHtml(p.price || "—")}</td>
       </tr>`
       )
@@ -463,19 +547,19 @@
   }
 
   async function loadNotifications() {
-    const q = document.getElementById("notifications-q")?.value.trim() || "";
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
+    const params = formParams("filters-notifications");
     const res = await fetch(`/api/admin/notifications?${params}`);
     const data = await res.json().catch(() => ({}));
+    const countEl = document.getElementById("notifications-count");
+    if (countEl) countEl.textContent = data.total != null ? `${t("admin.found")}: ${data.total}` : "";
     if (!notificationsBody) return;
     if (!res.ok || !data.ok) {
-      notificationsBody.innerHTML = `<tr><td colspan="4" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
+      notificationsBody.innerHTML = `<tr><td colspan="5" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
       return;
     }
     const items = data.items || [];
     if (!items.length) {
-      notificationsBody.innerHTML = `<tr><td colspan="4" class="ap-empty">${escapeHtml(t("admin.empty_notifications"))}</td></tr>`;
+      notificationsBody.innerHTML = `<tr><td colspan="5" class="ap-empty">${escapeHtml(t("admin.empty_notifications"))}</td></tr>`;
       return;
     }
     notificationsBody.innerHTML = items
@@ -486,14 +570,18 @@
           <td><span class="ap-badge">${escapeHtml(n.type || "—")}</span></td>
           <td><strong>${escapeHtml(n.title || "")}</strong><div class="ap-muted">${escapeHtml(n.body || "")}</div></td>
           <td class="ap-muted">${escapeHtml(n.user_id || "—")}</td>
+          <td>${n.read ? t("admin.yes") : t("admin.no")}</td>
         </tr>`;
       })
       .join("");
   }
 
   async function loadRatings() {
-    const res = await fetch("/api/admin/ratings");
+    const params = formParams("filters-ratings");
+    const res = await fetch(`/api/admin/ratings?${params}`);
     const data = await res.json().catch(() => ({}));
+    const countEl = document.getElementById("ratings-count");
+    if (countEl) countEl.textContent = data.total != null ? `${t("admin.found")}: ${data.total}` : "";
     if (!ratingsBody) return;
     if (!res.ok || !data.ok) {
       ratingsBody.innerHTML = `<tr><td colspan="5" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
@@ -523,22 +611,6 @@
     showTab(active);
   });
 
-  document.getElementById("users-q")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") loadUsers();
-  });
-  document.getElementById("requests-q")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") loadRequests();
-  });
-  document.getElementById("products-q")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") loadProducts();
-  });
-  document.getElementById("notifications-q")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") loadNotifications();
-  });
-  document.getElementById("users-role")?.addEventListener("change", loadUsers);
-  document.getElementById("users-blocked")?.addEventListener("change", loadUsers);
-  document.getElementById("requests-status")?.addEventListener("change", loadRequests);
-
   function startPoll() {
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(() => {
@@ -547,9 +619,10 @@
     }, 8000);
   }
 
+  wireFilters();
   showTab("overview");
   const boot = () =>
-    Promise.resolve(loadAnalytics()).finally(() => {
+    Promise.all([loadFilterMeta(), loadAnalytics()]).finally(() => {
       window.tbHidePageLoader?.();
       startPoll();
     });

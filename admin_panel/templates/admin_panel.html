@@ -140,18 +140,34 @@
       </section>
 
       <section class="ap-view" id="tab-users" hidden data-title="{{ _('admin.nav_users') }}" data-lead="{{ _('admin.users_lead') }}">
-        <div class="ap-toolbar">
-          <input type="search" id="users-q" class="ap-input" placeholder="{{ _('admin.search_users') }}" autocomplete="off" />
-          <select id="users-role" class="ap-select">
-            <option value="">{{ _("admin.filter_all_roles") }}</option>
-            <option value="user">{{ _("auth.role_user") }}</option>
-            <option value="supplier">{{ _("auth.role_supplier") }}</option>
-          </select>
-          <label class="ap-check">
-            <input type="checkbox" id="users-blocked" />
-            {{ _("admin.filter_blocked") }}
-          </label>
-        </div>
+        <form class="ap-filters" id="filters-users" data-load="loadUsers">
+          <div class="ap-filters__grid">
+            <label class="ap-field"><span>{{ _('admin.f_q') }}</span><input name="q" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_role') }}</span><select name="role" class="ap-select" data-meta="roles"></select></label>
+            <label class="ap-field"><span>{{ _('admin.col_status') }}</span><select name="blocked" class="ap-select"><option value="">{{ _('admin.filter_all') }}</option><option value="0">{{ _('admin.status_active') }}</option><option value="1">{{ _('admin.status_blocked') }}</option></select></label>
+            <label class="ap-field"><span>{{ _('admin.f_supplier_role') }}</span><select name="supplier_role" class="ap-select" data-meta="supplier_roles"></select></label>
+            <label class="ap-field"><span>{{ _('admin.col_name') }}</span><input name="name" class="ap-input" /></label>
+            <label class="ap-field"><span>Email</span><input name="email" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_company') }}</span><input name="company" class="ap-input" list="dl-companies" /></label>
+            <label class="ap-field"><span>{{ _('auth.bin') }}</span><input name="bin" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_phone') }}</span><input name="phone" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_city') }}</span><input name="city" class="ap-input" list="dl-cities" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_category') }}</span><input name="category" class="ap-input" list="dl-categories" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_contact') }}</span><input name="contact_person" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_bank') }}</span><input name="bank" class="ap-input" list="dl-banks" /></label>
+            <label class="ap-field"><span>Website</span><input name="website" class="ap-input" /></label>
+            <label class="ap-field"><span>ID</span><input name="id" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_has_bin') }}</span><select name="has_bin" class="ap-select"><option value="">{{ _('admin.filter_all') }}</option><option value="1">{{ _('admin.yes') }}</option><option value="0">{{ _('admin.no') }}</option></select></label>
+            <label class="ap-field"><span>{{ _('admin.f_has_phone') }}</span><select name="has_phone" class="ap-select"><option value="">{{ _('admin.filter_all') }}</option><option value="1">{{ _('admin.yes') }}</option><option value="0">{{ _('admin.no') }}</option></select></label>
+            <label class="ap-field"><span>{{ _('admin.f_from') }}</span><input name="created_from" type="date" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_to') }}</span><input name="created_to" type="date" class="ap-input" /></label>
+          </div>
+          <div class="ap-filters__actions">
+            <button type="submit" class="ap-btn ap-btn--solid">{{ _('admin.apply_filters') }}</button>
+            <button type="reset" class="ap-btn ap-btn--ghost">{{ _('admin.reset_filters') }}</button>
+            <span class="ap-filters__count" id="users-count"></span>
+          </div>
+        </form>
         <div class="ap-table-wrap">
           <table class="ap-table" id="users-table">
             <thead>
@@ -160,28 +176,43 @@
                 <th>{{ _("admin.col_role") }}</th>
                 <th>{{ _("admin.col_company") }}</th>
                 <th>{{ _("auth.bin") }}</th>
+                <th>{{ _("admin.f_city") }}</th>
+                <th>{{ _("admin.col_category") }}</th>
                 <th>{{ _("admin.col_status") }}</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="users-tbody">
-              <tr><td colspan="6" class="ap-empty">{{ _("js.loading") }}</td></tr>
+              <tr><td colspan="8" class="ap-empty">{{ _("js.loading") }}</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
       <section class="ap-view" id="tab-requests" hidden data-title="{{ _('admin.nav_requests') }}" data-lead="{{ _('admin.requests_lead') }}">
-        <div class="ap-toolbar">
-          <input type="search" id="requests-q" class="ap-input" placeholder="{{ _('admin.search_requests') }}" autocomplete="off" />
-          <select id="requests-status" class="ap-select">
-            <option value="">{{ _("admin.filter_all_status") }}</option>
-            <option value="sent">{{ _("home.filter_sent") }}</option>
-            <option value="deal">{{ _("home.filter_deal") }}</option>
-            <option value="completed">{{ _("home.filter_done") }}</option>
-            <option value="cancelled">{{ _("home.filter_cancelled") }}</option>
-          </select>
-        </div>
+        <form class="ap-filters" id="filters-requests" data-load="loadRequests">
+          <div class="ap-filters__grid">
+            <label class="ap-field"><span>{{ _('admin.f_q') }}</span><input name="q" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_status') }}</span><select name="status" class="ap-select" data-meta="request_statuses"></select></label>
+            <label class="ap-field"><span>{{ _('admin.col_buyer') }}</span><input name="user_name" class="ap-input" /></label>
+            <label class="ap-field"><span>Email</span><input name="user_email" class="ap-input" /></label>
+            <label class="ap-field"><span>User ID</span><input name="user_id" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_category') }}</span><input name="category" class="ap-input" list="dl-categories" /></label>
+            <label class="ap-field"><span>Request ID</span><input name="id" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_has_offers') }}</span><select name="has_offers" class="ap-select"><option value="">{{ _('admin.filter_all') }}</option><option value="1">{{ _('admin.yes') }}</option><option value="0">{{ _('admin.no') }}</option></select></label>
+            <label class="ap-field"><span>{{ _('admin.f_offers_min') }}</span><input name="offers_min" type="number" min="0" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_offers_max') }}</span><input name="offers_max" type="number" min="0" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_suppliers_min') }}</span><input name="suppliers_min" type="number" min="0" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_direct') }}</span><select name="direct" class="ap-select"><option value="">{{ _('admin.filter_all') }}</option><option value="1">{{ _('admin.yes') }}</option><option value="0">{{ _('admin.no') }}</option></select></label>
+            <label class="ap-field"><span>{{ _('admin.f_from') }}</span><input name="created_from" type="date" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_to') }}</span><input name="created_to" type="date" class="ap-input" /></label>
+          </div>
+          <div class="ap-filters__actions">
+            <button type="submit" class="ap-btn ap-btn--solid">{{ _('admin.apply_filters') }}</button>
+            <button type="reset" class="ap-btn ap-btn--ghost">{{ _('admin.reset_filters') }}</button>
+            <span class="ap-filters__count" id="requests-count"></span>
+          </div>
+        </form>
         <div class="ap-table-wrap">
           <table class="ap-table" id="requests-table">
             <thead>
@@ -190,20 +221,38 @@
                 <th>{{ _("admin.col_buyer") }}</th>
                 <th>{{ _("admin.col_status") }}</th>
                 <th>{{ _("admin.col_offers") }}</th>
+                <th>{{ _("admin.col_category") }}</th>
                 <th>{{ _("admin.col_created") }}</th>
               </tr>
             </thead>
             <tbody id="requests-tbody">
-              <tr><td colspan="5" class="ap-empty">{{ _("js.loading") }}</td></tr>
+              <tr><td colspan="6" class="ap-empty">{{ _("js.loading") }}</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
       <section class="ap-view" id="tab-products" hidden data-title="{{ _('admin.nav_products') }}" data-lead="{{ _('admin.products_lead') }}">
-        <div class="ap-toolbar">
-          <input type="search" id="products-q" class="ap-input" placeholder="{{ _('admin.search_products') }}" autocomplete="off" />
-        </div>
+        <form class="ap-filters" id="filters-products" data-load="loadProducts">
+          <div class="ap-filters__grid">
+            <label class="ap-field"><span>{{ _('admin.f_q') }}</span><input name="q" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_product') }}</span><input name="name" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_category') }}</span><input name="category" class="ap-input" list="dl-categories" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_subcategory') }}</span><input name="subcategory" class="ap-input" list="dl-subcategories" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_company') }}</span><input name="company" class="ap-input" list="dl-companies" /></label>
+            <label class="ap-field"><span>Supplier ID</span><input name="supplier_id" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_unit') }}</span><input name="unit" class="ap-input" list="dl-units" /></label>
+            <label class="ap-field"><span>ID</span><input name="id" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_has_image') }}</span><select name="has_image" class="ap-select"><option value="">{{ _('admin.filter_all') }}</option><option value="1">{{ _('admin.yes') }}</option><option value="0">{{ _('admin.no') }}</option></select></label>
+            <label class="ap-field"><span>{{ _('admin.f_from') }}</span><input name="created_from" type="date" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_to') }}</span><input name="created_to" type="date" class="ap-input" /></label>
+          </div>
+          <div class="ap-filters__actions">
+            <button type="submit" class="ap-btn ap-btn--solid">{{ _('admin.apply_filters') }}</button>
+            <button type="reset" class="ap-btn ap-btn--ghost">{{ _('admin.reset_filters') }}</button>
+            <span class="ap-filters__count" id="products-count"></span>
+          </div>
+        </form>
         <div class="ap-table-wrap">
           <table class="ap-table">
             <thead>
@@ -211,20 +260,36 @@
                 <th>{{ _("admin.col_product") }}</th>
                 <th>{{ _("admin.col_company") }}</th>
                 <th>{{ _("admin.col_category") }}</th>
+                <th>{{ _("admin.f_subcategory") }}</th>
+                <th>{{ _("admin.f_unit") }}</th>
                 <th>{{ _("admin.col_price") }}</th>
               </tr>
             </thead>
             <tbody id="products-tbody">
-              <tr><td colspan="4" class="ap-empty">{{ _("js.loading") }}</td></tr>
+              <tr><td colspan="6" class="ap-empty">{{ _("js.loading") }}</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
       <section class="ap-view" id="tab-notifications" hidden data-title="{{ _('admin.nav_notifications') }}" data-lead="{{ _('admin.notifications_lead') }}">
-        <div class="ap-toolbar">
-          <input type="search" id="notifications-q" class="ap-input" placeholder="{{ _('admin.search_notifications') }}" autocomplete="off" />
-        </div>
+        <form class="ap-filters" id="filters-notifications" data-load="loadNotifications">
+          <div class="ap-filters__grid">
+            <label class="ap-field"><span>{{ _('admin.f_q') }}</span><input name="q" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_type') }}</span><select name="type" class="ap-select" data-meta="notification_types"></select></label>
+            <label class="ap-field"><span>{{ _('admin.col_title') }}</span><input name="title" class="ap-input" /></label>
+            <label class="ap-field"><span>User ID</span><input name="user_id" class="ap-input" /></label>
+            <label class="ap-field"><span>ID</span><input name="id" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_read') }}</span><select name="read" class="ap-select"><option value="">{{ _('admin.filter_all') }}</option><option value="1">{{ _('admin.yes') }}</option><option value="0">{{ _('admin.no') }}</option></select></label>
+            <label class="ap-field"><span>{{ _('admin.f_from') }}</span><input name="created_from" type="date" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_to') }}</span><input name="created_to" type="date" class="ap-input" /></label>
+          </div>
+          <div class="ap-filters__actions">
+            <button type="submit" class="ap-btn ap-btn--solid">{{ _('admin.apply_filters') }}</button>
+            <button type="reset" class="ap-btn ap-btn--ghost">{{ _('admin.reset_filters') }}</button>
+            <span class="ap-filters__count" id="notifications-count"></span>
+          </div>
+        </form>
         <div class="ap-table-wrap">
           <table class="ap-table">
             <thead>
@@ -233,16 +298,35 @@
                 <th>{{ _("admin.col_type") }}</th>
                 <th>{{ _("admin.col_title") }}</th>
                 <th>{{ _("admin.col_user_id") }}</th>
+                <th>{{ _("admin.f_read") }}</th>
               </tr>
             </thead>
             <tbody id="notifications-tbody">
-              <tr><td colspan="4" class="ap-empty">{{ _("js.loading") }}</td></tr>
+              <tr><td colspan="5" class="ap-empty">{{ _("js.loading") }}</td></tr>
             </tbody>
           </table>
         </div>
       </section>
 
       <section class="ap-view" id="tab-ratings" hidden data-title="{{ _('admin.nav_ratings') }}" data-lead="{{ _('admin.ratings_lead') }}">
+        <form class="ap-filters" id="filters-ratings" data-load="loadRatings">
+          <div class="ap-filters__grid">
+            <label class="ap-field"><span>{{ _('admin.f_q') }}</span><input name="q" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_score') }}</span><select name="score" class="ap-select" data-meta="scores"></select></label>
+            <label class="ap-field"><span>{{ _('admin.f_score_min') }}</span><input name="score_min" type="number" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_score_max') }}</span><input name="score_max" type="number" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_from') }}</span><input name="from_user_id" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.col_to') }}</span><input name="to_user_id" class="ap-input" /></label>
+            <label class="ap-field"><span>Request ID</span><input name="request_id" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_from') }}</span><input name="created_from" type="date" class="ap-input" /></label>
+            <label class="ap-field"><span>{{ _('admin.f_to') }}</span><input name="created_to" type="date" class="ap-input" /></label>
+          </div>
+          <div class="ap-filters__actions">
+            <button type="submit" class="ap-btn ap-btn--solid">{{ _('admin.apply_filters') }}</button>
+            <button type="reset" class="ap-btn ap-btn--ghost">{{ _('admin.reset_filters') }}</button>
+            <span class="ap-filters__count" id="ratings-count"></span>
+          </div>
+        </form>
         <div class="ap-table-wrap">
           <table class="ap-table">
             <thead>
@@ -260,6 +344,13 @@
           </table>
         </div>
       </section>
+
+      <datalist id="dl-cities"></datalist>
+      <datalist id="dl-companies"></datalist>
+      <datalist id="dl-categories"></datalist>
+      <datalist id="dl-subcategories"></datalist>
+      <datalist id="dl-units"></datalist>
+      <datalist id="dl-banks"></datalist>
     </div>
   </div>
 
