@@ -1603,6 +1603,13 @@ def enrich_request(item, viewer):
         elif viewer["role"] == "supplier" and accepted_offer and viewer_cid:
             is_deal_party = accepted_offer.get("supplier_id") == viewer_cid
 
+    deal_confirmations = [str(uid) for uid in (item.get("deal_confirmations") or []) if uid]
+    viewer_id = str(viewer.get("id")) if viewer and viewer.get("id") else ""
+    deal_confirmed_by_me = bool(viewer_id and viewer_id in deal_confirmations)
+    deal_confirmed_by_other = False
+    if viewer_id:
+        deal_confirmed_by_other = any(uid != viewer_id for uid in deal_confirmations)
+
     my_rating = None
     can_rate = False
     rate_target_id = None
@@ -1634,6 +1641,9 @@ def enrich_request(item, viewer):
             "deal_partner_phone": deal_partner_phone,
             "deal_partner_email": deal_partner_email,
             "is_deal_party": is_deal_party,
+            "deal_confirmed_by_me": deal_confirmed_by_me,
+            "deal_confirmed_by_other": deal_confirmed_by_other,
+            "deal_confirmations_count": len(set(deal_confirmations)),
             "is_direct": bool(item.get("direct_supplier_id")),
             "my_rating": my_rating,
             "can_rate": can_rate,
@@ -3897,6 +3907,7 @@ def api_request_accept(request_id):
     target["status"] = "deal"
     target["accepted_offer_id"] = offer_id
     target["accepted_supplier_id"] = offer["supplier_id"]
+    target["deal_confirmations"] = []
     target["deal_started_at"] = now_iso()
     target["deal_messages"] = [
         {
@@ -4287,6 +4298,19 @@ def api_request_complete(request_id):
     if user["role"] == "supplier":
         who = (user.get("supplier") or {}).get("company_name") or user.get("name") or who
 
+    confirmations = [str(uid) for uid in (target.get("deal_confirmations") or []) if uid]
+    actor_id = str(user["id"])
+    if actor_id in confirmations:
+        return jsonify(
+            {
+                "ok": True,
+                "message": "Вы уже подтвердили договорённость. Ожидаем вторую сторону.",
+                "request": enrich_request(target, user),
+            }
+        )
+
+    confirmations.append(actor_id)
+    target["deal_confirmations"] = sorted(set(confirmations))
     messages = target.setdefault("deal_messages", [])
     messages.append(
         {
@@ -4294,13 +4318,30 @@ def api_request_complete(request_id):
             "role": "system",
             "sender_id": None,
             "sender_name": "HupHup",
-            "text": f"{who} подтвердил(а) договорённость. Сделка завершена.",
+            "text": f"{who} подтвердил(а) договорённость. Ожидаем подтверждение второй стороны.",
             "created_at": now_iso(),
         }
     )
-    target["status"] = "completed"
-    target["completed_at"] = now_iso()
-    target["completed_by"] = user["id"]
+
+    user_id = str(target.get("user_id") or "")
+    supplier_id = str(target.get("accepted_supplier_id") or "")
+    both_confirmed = bool(user_id and supplier_id and user_id in target["deal_confirmations"] and supplier_id in target["deal_confirmations"])
+
+    if both_confirmed:
+        target["status"] = "completed"
+        target["completed_at"] = now_iso()
+        target["completed_by"] = user["id"]
+        messages.append(
+            {
+                "id": str(uuid.uuid4()),
+                "role": "system",
+                "sender_id": None,
+                "sender_name": "HupHup",
+                "text": "Обе стороны подтвердили договорённость. Сделка завершена.",
+                "created_at": now_iso(),
+            }
+        )
+
     items[index] = target
     save_request(target)
 
@@ -4308,18 +4349,27 @@ def api_request_complete(request_id):
         other_id = target.get("accepted_supplier_id")
     else:
         other_id = target.get("user_id")
-    add_notification(
-        other_id,
-        "deal_completed",
-        "Сделка завершена",
-        f"{who} подтвердил(а) договорённость.",
-        request_id=target["id"],
-    )
+    if both_confirmed:
+        add_notification(
+            other_id,
+            "deal_completed",
+            "Сделка завершена",
+            "Обе стороны подтвердили договорённость.",
+            request_id=target["id"],
+        )
+    else:
+        add_notification(
+            other_id,
+            "deal_confirmed",
+            "Нужно подтверждение сделки",
+            f"{who} подтвердил(а) договорённость. Подтвердите со своей стороны.",
+            request_id=target["id"],
+        )
 
     return jsonify(
         {
             "ok": True,
-            "message": "Сделка завершена",
+            "message": "Сделка завершена" if both_confirmed else "Ваша сторона подтвердила. Ожидаем вторую сторону.",
             "request": enrich_request(target, user),
         }
     )

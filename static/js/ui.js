@@ -153,10 +153,10 @@
         const grow = () => autoGrowTextarea(el);
         el.addEventListener("input", grow);
         el.addEventListener("focus", grow);
-        // Enter sends in deal composers; Shift+Enter = new line
-        if (el.closest(".deal-compose")) {
+        // Enter sends in main composers; Shift+Enter = new line
+        if (el.closest(".deal-compose") || el.id === "search-input") {
           el.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.key === "Enter" && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey && !e.isComposing) {
               e.preventDefault();
               el.form?.requestSubmit();
             }

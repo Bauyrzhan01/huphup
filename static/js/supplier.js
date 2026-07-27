@@ -417,8 +417,8 @@ function renderDealMessages(messages, req) {
 
   const open = req?.status === "deal";
   dealForm.hidden = !open;
-  dealComplete.hidden = !open;
   if (dealInput) dealInput.disabled = !open;
+  syncSupplierCompleteButton(req);
   dealTitle.textContent = open ? t("js.deal_with_client") : t("js.deal_done");
 }
 
@@ -426,6 +426,17 @@ function showRateError(msg) {
   if (!rateError) return;
   rateError.hidden = !msg;
   rateError.textContent = msg || "";
+}
+
+function syncSupplierCompleteButton(req) {
+  if (!dealComplete) return;
+  const open = req?.status === "deal";
+  const confirmedByMe = !!req?.deal_confirmed_by_me;
+  dealComplete.hidden = !open;
+  dealComplete.disabled = !open || confirmedByMe;
+  dealComplete.textContent = confirmedByMe
+    ? t("js.awaiting_other_confirmation")
+    : t("home.deal_complete");
 }
 
 function paintRateStars(score) {
@@ -851,6 +862,9 @@ dealForm?.addEventListener("submit", async (e) => {
 dealComplete?.addEventListener("click", async () => {
   if (!activeDealId) return;
   if (!confirm(t("js.confirm_deal"))) return;
+  dealComplete.disabled = true;
+  const prevText = dealComplete.textContent;
+  dealComplete.textContent = t("js.loading");
   const res = await fetch(`/api/requests/${activeDealId}/complete`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -859,9 +873,11 @@ dealComplete?.addEventListener("click", async () => {
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.ok) {
     alert(data.error || t("js.err_complete"));
+    dealComplete.disabled = false;
+    dealComplete.textContent = prevText || t("home.deal_complete");
     return;
   }
-  stopDealPoll();
+  if (data.request?.status === "completed") stopDealPoll();
   renderDealMessages(data.request?.deal_messages || [], data.request);
   renderRateBlock(data.request);
   loadRequests();
