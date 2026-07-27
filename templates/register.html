@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ _('auth.register_title') }} — HupHup</title>
+  {% set page_title = _('auth.register_title') ~ ' — HupHup' %}
+  {% set page_desc = _('meta.register_desc') %}
+  {% include "partials/head_seo.html" %}
+  <meta name="theme-color" content="#f3f7fc" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bridge.css') }}" />
+</head>
+<body class="auth-body">
+  <div class="auth">
+    <div class="auth__lang">{% include 'partials/lang_switch.html' %}</div>
+
+    <aside class="auth__visual" aria-hidden="false">
+      <canvas id="authFlowCanvas" class="auth__canvas is-idle" data-mode="user" aria-hidden="true"></canvas>
+      <div class="auth__fade" aria-hidden="true"></div>
+      <a href="{{ url_for('index') }}" class="auth__brand" aria-label="HupHup">{% set brand_class = "brand-logo--auth" %}{% include "partials/brand_logo.html" %}</a>
+      <div class="auth__quote">
+        <p class="auth__quote-eyebrow">HupHup</p>
+        <h1 id="auth-quote-title">{{ _('auth.quote_user_title') }}</h1>
+        <p id="auth-quote-text">{{ _('auth.quote_user_text') }}</p>
+      </div>
+    </aside>
+
+    <main class="auth__panel">
+      <div class="auth__panel-inner auth__panel-inner--wide">
+        <a href="{{ url_for('index') }}" class="auth__back">← {{ _('nav.start') }}</a>
+        <form class="auth__card auth__card--wide" id="register-form" novalidate>
+          <input type="hidden" name="role" id="role-input" value="user" />
+          <input type="hidden" name="invite" id="invite-input" value="" />
+
+          <div id="register-step-form">
+            <h1 class="auth__title" id="register-title">{{ _('auth.register_title') }}</h1>
+            <p class="auth__sub" id="register-sub">{{ _('auth.register_sub') }} <a href="{{ url_for('login') }}">{{ _('auth.login_link') }}</a></p>
+            <p class="auth__hint" id="invite-banner" hidden></p>
+
+            <p class="auth__error" id="form-error" hidden role="alert"></p>
+
+            <div class="field field--role" id="role-field">
+              <label>{{ _('auth.role_step') }}</label>
+              <div class="role-toggle" role="group" aria-label="{{ _('auth.role_step') }}">
+                <button type="button" class="is-active" data-role="user" aria-pressed="true">{{ _('auth.role_user') }}</button>
+                <button type="button" data-role="supplier" aria-pressed="false">{{ _('auth.role_supplier') }}</button>
+              </div>
+            </div>
+
+            <div class="auth__fields">
+              <div class="field">
+                <label for="name">{{ _('auth.name') }}</label>
+                <input id="name" name="name" type="text" autocomplete="name" required placeholder="{{ _('auth.name_ph') }}" />
+              </div>
+              <div class="field">
+                <label for="email">{{ _('auth.email') }}</label>
+                <input id="email" name="email" type="email" autocomplete="email" required placeholder="{{ _('auth.email_ph') }}" />
+              </div>
+              <div class="field">
+                <label for="password">{{ _('auth.password') }}</label>
+                <input id="password" name="password" type="password" autocomplete="new-password" required minlength="6" placeholder="{{ _('auth.password_ph') }}" />
+              </div>
+            </div>
+
+            <div class="supplier-only" id="supplier-fields" hidden>
+              <p class="auth__section-label">{{ _('auth.role_supplier') }}</p>
+              <div class="field">
+                <label for="company_name">{{ _('auth.company') }}</label>
+                <input id="company_name" name="company_name" type="text" autocomplete="organization" placeholder="{{ _('auth.company_ph') }}" />
+              </div>
+              <div class="auth__grid-2">
+                <div class="field">
+                  <label for="bin">{{ _('auth.bin') }}</label>
+                  <input id="bin" name="bin" type="text" inputmode="numeric" maxlength="12" pattern="\d{12}" placeholder="{{ _('auth.bin_ph') }}" />
+                </div>
+                <div class="field">
+                  <label for="phone">{{ _('auth.phone') }}</label>
+                  <input id="phone" name="phone" type="tel" placeholder="+7 ..." />
+                </div>
+              </div>
+              <div class="field">
+                <label for="categories">{{ _('auth.categories') }}</label>
+                <select id="categories" name="categories" multiple size="4">
+                  {% for cat in categories %}
+                  <option value="{{ cat }}">{{ cat }}</option>
+                  {% endfor %}
+                </select>
+                <span class="field__hint">{{ _('auth.categories_hint') }}</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn--solid btn--block" id="register-submit">{{ _('auth.submit_register') }}</button>
+          </div>
+
+          <div id="register-step-verify" hidden>
+            <h1 class="auth__title">{{ _('auth.verify_title') }}</h1>
+            <p class="auth__sub" id="verify-lead">{{ _('auth.verify_sub') }} <strong id="verify-email-display"></strong></p>
+            <p class="auth__error" id="verify-error" hidden role="alert"></p>
+            <p class="auth__hint" id="verify-hint" hidden></p>
+            <div class="field">
+              <label for="verify-code">{{ _('auth.verify_code') }}</label>
+              <input
+                id="verify-code"
+                name="verify_code"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                pattern="\d{6}"
+                placeholder="000000"
+              />
+            </div>
+            <button type="button" class="btn btn--solid btn--block" id="verify-submit">{{ _('auth.verify_submit') }}</button>
+            <div class="auth__verify-actions">
+              <button type="button" class="btn btn--ghost btn--block" id="verify-resend">{{ _('auth.verify_resend') }}</button>
+              <button type="button" class="btn btn--ghost btn--block" id="verify-back">{{ _('auth.back') }}</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    window.I18N_LANG = {{ lang|tojson }};
+    window.I18N_MODE = {{ i18n_mode|tojson }};
+    window.I18N_BUNDLE = {{ i18n_bundle|tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/auth_flow.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>

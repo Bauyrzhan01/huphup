@@ -1,0 +1,14 @@
+.venv
+venv
+.git
+.env
+ui_shots
+Test UI design
+**/__pycache__
+*.pyc
+.claude
+ACCOUNTS.md
+*.db
+*.db-*
+data/uploads
+static/uploads

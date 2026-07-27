@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+.DS_Store
+.vercel
+
+# Local runtime data (use seed scripts to regenerate)
+data/users.json
+data/requests.json
+data/notifications.json
+data/ratings.json
+data/*.db
+data/*.db-*
+data/uploads/
+static/uploads/
+ACCOUNTS.md
+
+# Bulky local assets (not needed in deploy)
+ui_shots/
+Test UI design/

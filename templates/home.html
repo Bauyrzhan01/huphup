@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ _("home.new_request") }} — HupHup</title>
+  {% set page_title = _('home.new_request') ~ ' — HupHup' %}
+  {% set page_desc = _('meta.home_desc') %}
+  {% include "partials/head_seo.html" %}
+  <meta name="theme-color" content="#f3f7fc" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bridge.css') }}" />
+</head>
+<body>
+  {% include "partials/page_loader.html" %}
+  <div class="notify" id="notify">
+    <button type="button" class="notify__btn" id="notify-btn" aria-label="{{ _('notify.title') }}" aria-expanded="false" aria-controls="notify-panel">
+      <span class="notify__ripple" aria-hidden="true"></span>
+      <svg class="notify__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9" />
+        <path d="M10 21a2 2 0 0 0 4 0" />
+      </svg>
+      <span class="notify__badge" id="notify-badge" hidden>0</span>
+    </button>
+    <div class="notify__panel" id="notify-panel" role="dialog" aria-label="{{ _('notify.title') }}">
+      <div class="notify__head">
+        <span>{{ _("notify.title") }}</span>
+        <button type="button" id="notify-read-all">{{ _("notify.read_all") }}</button>
+      </div>
+      <div class="notify__list" id="notify-list"></div>
+    </div>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <a href="{{ url_for('home') }}" class="sidebar__brand" aria-label="HupHup">{% set brand_class = "brand-logo--sidebar" %}{% include "partials/brand_logo.html" %}</a>
+      <nav class="sidebar__nav">
+        <a class="sidebar__link is-active" href="#home" data-view="home" id="nav-home">{{ _("home.new_request") }}</a>
+        <a class="sidebar__link" href="#favorites" data-view="favorites" id="nav-favorites">{{ _("home.favorites") }}</a>
+        <a class="sidebar__link" href="#history" data-view="history" id="nav-history">{{ _("home.history") }}</a>
+        <a class="sidebar__link" href="#profile" data-view="profile" id="nav-profile">{{ _("home.profile") }}</a>
+      </nav>
+      <div class="sidebar__section" id="order-history">
+        <p class="sidebar__label">{{ _("home.recent") }}</p>
+        <div class="history-list" id="history-list">
+          <p class="history-empty shell-side-empty">{{ _("js.no_orders") }}</p>
+        </div>
+      </div>
+      <div class="sidebar__user">
+        <span class="avatar avatar--md avatar--t{{ avatar_tone }}" aria-hidden="true" id="user-avatar">{{ avatar_initials }}</span>
+        <div class="sidebar__user-meta">
+          <button type="button" class="sidebar__user-name sidebar__user-name--btn" id="open-profile">{{ user.name }}</button>
+          <p class="sidebar__user-role">{{ _("home.buyer") }}</p>
+        </div>
+        <a class="sidebar__logout" href="{{ url_for('logout') }}">{{ _("home.logout") }}</a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="sidebar-backdrop" id="sidebar-backdrop" hidden aria-hidden="true"></div>
+      <div class="mobile-bar">
+        <button type="button" class="mobile-bar__btn" id="menuOpen">{{ _("nav.menu") }}</button>
+        <span class="mobile-bar__brand" aria-label="HupHup">{% set brand_class = "brand-logo--mobile" %}{% include "partials/brand_logo.html" %}</span>
+        <span class="mobile-bar__spacer" aria-hidden="true"></span>
+      </div>
+
+      <section class="view chat-view" id="view-home">
+        <div class="chat-empty" id="chat-empty-state">
+          <span class="avatar avatar--xl avatar--t{{ avatar_tone }} chat-empty__avatar" aria-hidden="true">{{ avatar_initials }}</span>
+          <h1 class="chat-empty__greet">{{ _("home.greet", name=first_name) }}</h1>
+          <p class="chat-empty__lead">{{ _("home.lead") }}</p>
+        </div>
+
+        <form class="composer" id="search-form">
+          <textarea id="search-input" name="q" rows="1" placeholder="{{ _('home.placeholder') }}" required></textarea>
+          <button class="composer__send" type="submit" aria-label="{{ _('js.find') }}">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+        <p class="form-error" id="search-error" hidden></p>
+
+        <section class="shell-results results-stack" id="results" hidden>
+          <div class="chat-panel" id="chat-panel">
+            <h2 class="chat-title" id="chat-title" hidden>{{ _("js.clarify") }}</h2>
+            <div class="chat-bubble" id="chat-summary"></div>
+            <ul class="chat-items" id="chat-items" hidden></ul>
+            <div class="chat-thread" id="chat-thread" hidden></div>
+          </div>
+
+          <div class="offers-block" id="offers-block" hidden>
+            <div class="offers-block__head">
+              <h2>{{ _("home.offers_title") }}</h2>
+              <p class="offers-block__lead" id="offers-lead" hidden>{{ _("home.offers_lead") }}</p>
+            </div>
+            <div id="offers-list"></div>
+            <p class="shell-empty" id="offers-empty" hidden>{{ _("home.offers_empty") }}</p>
+          </div>
+
+          <div class="deal-block" id="deal-block" hidden>
+            <div class="deal-head">
+              <h2 id="deal-title">{{ _("home.deal_title") }}</h2>
+              <span class="deal-partner" id="deal-partner"></span>
+            </div>
+            <div class="deal-thread" id="deal-thread"></div>
+            <form class="deal-compose" id="deal-form">
+              <input type="file" id="deal-file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/*" hidden />
+              <button type="button" class="btn btn--ghost btn--sm deal-attach-btn" id="deal-attach" title="{{ _('js.attach_file') }}" aria-label="{{ _('js.attach_file') }}">📎</button>
+              <input type="text" id="deal-input" placeholder="{{ _('js.message_ph') }}" autocomplete="off" maxlength="2000" />
+              <button class="btn btn--solid" type="submit">{{ _("js.send") }}</button>
+            </form>
+            <div class="deal-actions" id="deal-actions">
+              <button class="btn btn--solid" type="button" id="deal-complete">{{ _("home.deal_complete") }}</button>
+            </div>
+            <div class="deal-next" id="deal-next" hidden>
+              <h3 class="deal-next__title">{{ _("home.deal_next_title") }}</h3>
+              <p class="deal-next__hint" id="deal-next-hint">{{ _("home.deal_next_rate") }}</p>
+              <div class="deal-next__contacts" id="deal-next-contacts"></div>
+              <div class="deal-next__actions">
+                <button type="button" class="btn btn--ghost btn--sm" id="deal-repeat">{{ _("home.deal_next_repeat") }}</button>
+              </div>
+            </div>
+            <div class="rate-block" id="rate-block" hidden>
+              <h3 class="rate-block__title" id="rate-title">{{ _("home.rate_title") }}</h3>
+              <div class="rate-stars" id="rate-stars" role="group" aria-label="{{ _('js.rate_stars') }}"></div>
+              <textarea id="rate-comment" class="rate-comment" rows="2" maxlength="500" placeholder="{{ _('js.comment_ph') }}"></textarea>
+              <button type="button" class="btn btn--solid btn--sm" id="rate-submit">{{ _("home.rate_send") }}</button>
+              <p class="rate-done" id="rate-done" hidden></p>
+              <p class="form-error" id="rate-error" hidden></p>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="view favorites-view" id="view-favorites" hidden>
+        <header class="catalog__head catalog-top">
+          <h1 class="catalog__title">{{ _("home.fav_title") }}</h1>
+          <p class="catalog__lead">{{ _("home.fav_lead") }}</p>
+        </header>
+        <div class="fav-section">
+          <h2 class="fav-section__title">{{ _("js.products") }}</h2>
+          <div class="product-grid" id="fav-products"></div>
+          <p class="shell-empty" id="fav-products-empty" hidden>{{ _("js.no_fav_products") }}</p>
+        </div>
+        <div class="fav-section">
+          <h2 class="fav-section__title">{{ _("js.suppliers") }}</h2>
+          <div class="fav-suppliers" id="fav-suppliers"></div>
+          <p class="shell-empty" id="fav-suppliers-empty" hidden>{{ _("js.no_fav_suppliers") }}</p>
+        </div>
+      </section>
+
+      <section class="view history-view" id="view-history" hidden>
+        <header class="catalog__head catalog-top">
+          <h1 class="catalog__title">{{ _("home.hist_title") }}</h1>
+          <p class="catalog__lead">{{ _("home.hist_lead") }}</p>
+        </header>
+        <div class="history-toolbar">
+          <div class="history-filters" id="history-filters" role="tablist">
+            <button type="button" class="history-filter is-active" data-filter="all">{{ _("home.filter_all") }}</button>
+            <button type="button" class="history-filter" data-filter="sent">{{ _("home.filter_sent") }}</button>
+            <button type="button" class="history-filter" data-filter="deal">{{ _("home.filter_deal") }}</button>
+            <button type="button" class="history-filter" data-filter="completed">{{ _("home.filter_done") }}</button>
+            <button type="button" class="history-filter" data-filter="cancelled">{{ _("home.filter_cancelled") }}</button>
+          </div>
+          <input type="search" class="history-search" id="history-search" placeholder="{{ _('home.search_ph') }}" autocomplete="off" />
+        </div>
+        <div class="history-full-list" id="history-full-list">
+          <p class="shell-empty">{{ _("js.loading") }}</p>
+        </div>
+      </section>
+
+      <section class="view profile-view profile-view--buyer" id="view-profile" hidden>
+        <header class="profile-hero">
+          <span class="avatar avatar--xl avatar--t{{ avatar_tone }} profile-hero__avatar" aria-hidden="true" id="profile-hero-avatar">{{ avatar_initials }}</span>
+          <div class="profile-hero__meta">
+            <h1 class="profile-hero__name" id="profile-hero-name">{{ user.name }}</h1>
+            <p class="profile-hero__role">{{ _("home.buyer") }}</p>
+            <p class="profile-hero__email">{{ user.email }}</p>
+            <p class="profile-hero__since" id="profile-member-since" data-since="{{ user.created_at or '' }}"></p>
+            <p class="profile-hero__lead">{{ _("home.profile_lead") }}</p>
+          </div>
+          <div class="profile-hero__quick" role="navigation" aria-label="{{ _('home.profile') }}">
+            <button type="button" class="btn btn--ghost btn--sm profile-quick-link" data-goto="history">{{ _("home.profile_quick_history") }}</button>
+            <button type="button" class="btn btn--ghost btn--sm profile-quick-link" data-goto="favorites">{{ _("home.profile_quick_favorites") }}</button>
+          </div>
+        </header>
+
+        <div class="profile-complete" id="profile-complete" aria-live="polite">
+          <div class="profile-complete__top">
+            <div>
+              <p class="profile-complete__title">{{ _("home.profile_complete_title") }}</p>
+              <p class="profile-complete__hint">{{ _("home.profile_complete_hint") }}</p>
+            </div>
+            <span class="profile-complete__pct" id="profile-complete-pct">0%</span>
+          </div>
+          <div class="profile-complete__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="profile-complete-bar">
+            <span class="profile-complete__fill" id="profile-complete-fill"></span>
+          </div>
+        </div>
+
+        <div class="analytics-grid profile-stats" id="profile-stats-grid">
+          <p class="shell-empty">{{ _("js.loading") }}</p>
+        </div>
+
+        <form class="profile-form" id="profile-form" novalidate>
+          <section class="profile-card">
+            <h2 class="profile-section-title">{{ _("home.profile_contacts") }}</h2>
+            <p class="dash-sub">{{ _("home.profile_contacts_lead") }}</p>
+            <div class="form-grid">
+              <label>
+                {{ _("auth.name") }}
+                <input type="text" name="name" id="profile-name" value="{{ user.name }}" required autocomplete="name" maxlength="120" />
+              </label>
+              <label>
+                {{ _("auth.email") }}
+                <input type="email" value="{{ user.email }}" disabled title="{{ _('js.email_readonly') }}" />
+              </label>
+              <label>
+                {{ _("auth.phone") }}
+                <input type="tel" name="phone" id="profile-phone" value="{{ user.phone or '' }}" placeholder="+7 700 000 00 00" autocomplete="tel" maxlength="40" />
+              </label>
+              <label>
+                {{ _("js.city") }}
+                <input type="text" name="city" id="profile-city" value="{{ user.city or '' }}" placeholder="Астана" autocomplete="address-level2" maxlength="80" />
+              </label>
+              <label>
+                {{ _("js.position") }}
+                <input type="text" name="position" id="profile-position" value="{{ user.position or '' }}" placeholder="{{ _('home.profile_position_ph') }}" autocomplete="organization-title" maxlength="80" />
+              </label>
+            </div>
+          </section>
+
+          <section class="profile-card">
+            <h2 class="profile-section-title">{{ _("home.profile_org") }}</h2>
+            <p class="dash-sub">{{ _("home.profile_org_lead") }}</p>
+            <div class="form-grid">
+              <label>
+                {{ _("home.profile_org_name") }}
+                <input type="text" name="company" id="profile-company" value="{{ user.company or '' }}" autocomplete="organization" maxlength="120" placeholder="{{ _('home.profile_org_ph') }}" />
+              </label>
+              <label>
+                {{ _("home.profile_address") }}
+                <input type="text" name="address" id="profile-address" value="{{ user.address or '' }}" autocomplete="street-address" maxlength="200" placeholder="{{ _('home.profile_address_ph') }}" />
+              </label>
+            </div>
+          </section>
+
+          <section class="profile-card">
+            <h2 class="profile-section-title">{{ _("home.profile_about") }}</h2>
+            <div class="form-grid">
+              <label class="full">
+                {{ _("home.profile_purchases") }}
+                <textarea name="about" id="profile-about" rows="2" maxlength="500" placeholder="{{ _('home.profile_about_ph') }}">{{ user.about or '' }}</textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="profile-card">
+            <div class="profile-card__head">
+              <h2 class="profile-section-title">{{ _("home.profile_interests") }}</h2>
+              <div class="profile-interests-meta">
+                <span id="profile-interest-count">{{ _("home.profile_interest_count", n=(user.preferred_categories or [])|length) }}</span>
+                <button type="button" class="btn btn--ghost btn--sm" id="profile-clear-interests">{{ _("home.profile_clear_interests") }}</button>
+              </div>
+            </div>
+            <p class="field-hint">{{ _("home.profile_interests_hint") }}</p>
+            <div class="profile-chips" id="profile-chips" role="group" aria-label="{{ _('auth.categories') }}">
+              {% for cat in categories %}
+              <button
+                type="button"
+                class="profile-chip{% if cat in (user.preferred_categories or []) %} is-on{% endif %}"
+                data-cat="{{ cat }}"
+                aria-pressed="{{ 'true' if cat in (user.preferred_categories or []) else 'false' }}"
+              >{{ cat }}</button>
+              {% endfor %}
+            </div>
+            <select name="preferred_categories" id="profile-preferred-categories" multiple hidden tabindex="-1" aria-hidden="true">
+              {% for cat in categories %}
+              <option value="{{ cat }}" {% if cat in (user.preferred_categories or []) %}selected{% endif %}>{{ cat }}</option>
+              {% endfor %}
+            </select>
+          </section>
+
+          <p class="form-error" id="profile-error" hidden role="alert"></p>
+          <p class="form-success" id="profile-success" hidden role="status"></p>
+          <div class="form-actions-row profile-form__actions">
+            <button class="btn btn--solid" type="submit" id="profile-save-btn">{{ _("js.save_profile") }}</button>
+          </div>
+        </form>
+
+        <section class="profile-settings profile-card" id="profile-settings">
+          <h2 class="profile-section-title">{{ _("home.profile_settings") }}</h2>
+          <p class="dash-sub">{{ _("home.profile_settings_lead") }}</p>
+          <div class="profile-lang">
+            <p class="profile-lang__label">{{ _("home.profile_language") }}</p>
+            <div class="profile-lang__switch">
+              {% set lang_next = 'profile' %}
+              {% include 'partials/lang_switch.html' %}
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-security profile-card">
+          <h2 class="profile-section-title">{{ _("home.profile_security") }}</h2>
+          <p class="dash-sub">{{ _("home.profile_security_lead") }}</p>
+          <form class="profile-form profile-password-form" id="password-form" novalidate>
+            <div class="form-grid">
+              <label>
+                {{ _("home.profile_current_password") }}
+                <input type="password" name="current_password" autocomplete="current-password" required minlength="6" />
+              </label>
+              <label>
+                {{ _("home.profile_new_password") }}
+                <input type="password" name="new_password" id="profile-new-password" autocomplete="new-password" required minlength="6" />
+              </label>
+              <label class="full">
+                {{ _("home.profile_confirm_password") }}
+                <input type="password" name="confirm_password" id="profile-confirm-password" autocomplete="new-password" required minlength="6" />
+              </label>
+            </div>
+            <p class="form-error" id="password-error" hidden role="alert"></p>
+            <p class="form-success" id="password-success" hidden role="status"></p>
+            <div class="form-actions-row">
+              <button class="btn btn--solid" type="submit">{{ _("home.profile_change_password") }}</button>
+            </div>
+          </form>
+        </section>
+      </section>
+
+      <section class="view supplier-profile-view" id="view-supplier" hidden>
+        <button type="button" class="crumb supplier-back" id="supplier-back">{{ _("js.back") }}</button>
+        <header class="supplier-profile__head" id="supplier-profile-head">
+          <div class="supplier-profile__title-row">
+            <h1 class="catalog__title" id="supplier-profile-name">{{ _("js.supplier") }}</h1>
+            <div id="supplier-profile-fav"></div>
+          </div>
+          <p class="catalog__lead" id="supplier-profile-meta"></p>
+          <p class="supplier-profile__desc" id="supplier-profile-desc"></p>
+          <div class="supplier-profile__contacts" id="supplier-profile-contacts"></div>
+        </header>
+
+        <div class="fav-section">
+          <h2 class="fav-section__title">{{ _("js.supplier_products") }}</h2>
+          <div class="product-grid" id="supplier-profile-products"></div>
+          <p class="shell-empty" id="supplier-profile-products-empty" hidden>{{ _("js.no_supplier_products") }}</p>
+        </div>
+
+        <div class="supplier-direct">
+          <h2 class="fav-section__title">{{ _("js.direct_request") }}</h2>
+          <p class="catalog__lead">{{ _("js.direct_lead") }}</p>
+          <form class="composer supplier-direct-form" id="supplier-direct-form">
+            <textarea id="supplier-direct-input" rows="2" placeholder="{{ _('js.direct_ph') }}" required></textarea>
+            <button class="composer__send" type="submit" aria-label="{{ _('js.send') }}">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+          </form>
+          <p class="form-error" id="supplier-direct-error" hidden></p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    window.I18N_LANG = {{ lang|tojson }};
+    window.I18N_MODE = {{ i18n_mode|tojson }};
+    window.I18N_BUNDLE = {{ i18n_bundle|tojson }};
+    window.CATEGORY_OPTIONS = {{ categories|default([], true)|tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/supplier_profile.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/history.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+</body>
+</html>

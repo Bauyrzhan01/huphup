@@ -1,0 +1,1444 @@
+{
+  "categories": [
+    {
+      "id": "stroymaterials",
+      "name": "Стройматериалы",
+      "subcategories": [
+        {
+          "id": "concrete",
+          "name": "Бетон и цемент"
+        },
+        {
+          "id": "brick",
+          "name": "Кирпич и блоки"
+        },
+        {
+          "id": "wood",
+          "name": "Пиломатериалы"
+        },
+        {
+          "id": "insulation",
+          "name": "Утеплитель и кровля"
+        }
+      ]
+    },
+    {
+      "id": "construction",
+      "name": "Строительство",
+      "subcategories": [
+        {
+          "id": "genpodryad",
+          "name": "Генподряд"
+        },
+        {
+          "id": "roads",
+          "name": "Дороги и инфраструктура"
+        },
+        {
+          "id": "facade",
+          "name": "Фасады"
+        }
+      ]
+    },
+    {
+      "id": "it",
+      "name": "IT и ПО",
+      "subcategories": [
+        {
+          "id": "web",
+          "name": "Сайты и веб"
+        },
+        {
+          "id": "mobile",
+          "name": "Мобильные приложения"
+        },
+        {
+          "id": "crm",
+          "name": "CRM / ERP"
+        },
+        {
+          "id": "outstaff",
+          "name": "Разработчики (outstaff)"
+        }
+      ]
+    },
+    {
+      "id": "office_tech",
+      "name": "Оргтехника и компьютеры",
+      "subcategories": [
+        {
+          "id": "pc",
+          "name": "Компьютеры и ноутбуки"
+        },
+        {
+          "id": "print",
+          "name": "Принтеры и МФУ"
+        },
+        {
+          "id": "periphery",
+          "name": "Периферия"
+        }
+      ]
+    },
+    {
+      "id": "furniture",
+      "name": "Мебель",
+      "subcategories": [
+        {
+          "id": "office_furniture",
+          "name": "Офисная мебель"
+        },
+        {
+          "id": "home_furniture",
+          "name": "Домашняя мебель"
+        },
+        {
+          "id": "custom_furniture",
+          "name": "Мебель на заказ"
+        }
+      ]
+    },
+    {
+      "id": "food",
+      "name": "Продукты питания",
+      "subcategories": [
+        {
+          "id": "dairy",
+          "name": "Молочные продукты"
+        },
+        {
+          "id": "meat",
+          "name": "Мясо и полуфабрикаты"
+        },
+        {
+          "id": "grocery",
+          "name": "Бакалея"
+        }
+      ]
+    },
+    {
+      "id": "transport",
+      "name": "Транспорт",
+      "subcategories": [
+        {
+          "id": "cargo",
+          "name": "Грузоперевозки"
+        },
+        {
+          "id": "rent",
+          "name": "Аренда транспорта"
+        }
+      ]
+    },
+    {
+      "id": "electro",
+      "name": "Электротехника",
+      "subcategories": [
+        {
+          "id": "cable",
+          "name": "Кабели и провода"
+        },
+        {
+          "id": "lighting",
+          "name": "Освещение"
+        },
+        {
+          "id": "panels",
+          "name": "Щиты и автоматика"
+        }
+      ]
+    },
+    {
+      "id": "ремонт_и_отделка",
+      "name": "Ремонт и отделка",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "оборудование",
+      "name": "Оборудование",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "промышленное_оборудование",
+      "name": "Промышленное оборудование",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "телекоммуникации",
+      "name": "Телекоммуникации",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "сельское_хозяйство",
+      "name": "Сельское хозяйство",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "логистика_и_доставка",
+      "name": "Логистика и доставка",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "автозапчасти",
+      "name": "Автозапчасти",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "одежда_и_текстиль",
+      "name": "Одежда и текстиль",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "медицина_и_фармацевтика",
+      "name": "Медицина и фармацевтика",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "химия_и_сырьё",
+      "name": "Химия и сырьё",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "безопасность_и_охрана",
+      "name": "Безопасность и охрана",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "клининг_и_хозяйственные_товары",
+      "name": "Клининг и хозяйственные товары",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "канцтовары",
+      "name": "Канцтовары",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "реклама_и_полиграфия",
+      "name": "Реклама и полиграфия",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "образование_и_обучение",
+      "name": "Образование и обучение",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "консалтинг",
+      "name": "Консалтинг",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "юридические_услуги",
+      "name": "Юридические услуги",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "финансовые_услуги",
+      "name": "Финансовые услуги",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "энергетика",
+      "name": "Энергетика",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "нефть_и_газ",
+      "name": "Нефть и газ",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "металлургия",
+      "name": "Металлургия",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "услуги",
+      "name": "Услуги",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    },
+    {
+      "id": "другое",
+      "name": "Другое",
+      "subcategories": [
+        {
+          "id": "general",
+          "name": "Общее"
+        }
+      ]
+    }
+  ],
+  "category_names": [
+    "Стройматериалы",
+    "Строительство",
+    "IT и ПО",
+    "Оргтехника и компьютеры",
+    "Мебель",
+    "Продукты питания",
+    "Транспорт",
+    "Электротехника",
+    "Ремонт и отделка",
+    "Оборудование",
+    "Промышленное оборудование",
+    "Телекоммуникации",
+    "Сельское хозяйство",
+    "Логистика и доставка",
+    "Автозапчасти",
+    "Одежда и текстиль",
+    "Медицина и фармацевтика",
+    "Химия и сырьё",
+    "Безопасность и охрана",
+    "Клининг и хозяйственные товары",
+    "Канцтовары",
+    "Реклама и полиграфия",
+    "Образование и обучение",
+    "Консалтинг",
+    "Юридические услуги",
+    "Финансовые услуги",
+    "Энергетика",
+    "Нефть и газ",
+    "Металлургия",
+    "Услуги",
+    "Другое"
+  ],
+  "templates": [
+    {
+      "id": "tpl-стройматериалы-concrete-бетон-м300",
+      "name": "Бетон М300",
+      "category": "Стройматериалы",
+      "subcategory_id": "concrete",
+      "subcategory": "Бетон и цемент",
+      "unit": "м³",
+      "description": "Товарный бетон М300 с доставкой",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-стройматериалы-concrete-бетон-м350",
+      "name": "Бетон М350",
+      "category": "Стройматериалы",
+      "subcategory_id": "concrete",
+      "subcategory": "Бетон и цемент",
+      "unit": "м³",
+      "description": "Товарный бетон М350",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-стройматериалы-concrete-цемент-м400",
+      "name": "Цемент М400",
+      "category": "Стройматериалы",
+      "subcategory_id": "concrete",
+      "subcategory": "Бетон и цемент",
+      "unit": "мешок",
+      "description": "Портландцемент М400, 50 кг",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-стройматериалы-concrete-цемент-м500",
+      "name": "Цемент М500",
+      "category": "Стройматериалы",
+      "subcategory_id": "concrete",
+      "subcategory": "Бетон и цемент",
+      "unit": "мешок",
+      "description": "Портландцемент М500, 50 кг",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-стройматериалы-brick-кирпич-керамический",
+      "name": "Кирпич керамический",
+      "category": "Стройматериалы",
+      "subcategory_id": "brick",
+      "subcategory": "Кирпич и блоки",
+      "unit": "шт",
+      "description": "Рядовой керамический кирпич",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-стройматериалы-brick-блок-газобетонный",
+      "name": "Блок газобетонный",
+      "category": "Стройматериалы",
+      "subcategory_id": "brick",
+      "subcategory": "Кирпич и блоки",
+      "unit": "шт",
+      "description": "Газоблок D500",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-стройматериалы-wood-брус-100x100",
+      "name": "Брус 100x100",
+      "category": "Стройматериалы",
+      "subcategory_id": "wood",
+      "subcategory": "Пиломатериалы",
+      "unit": "м³",
+      "description": "Хвойный брус естественной влажности",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-стройматериалы-wood-доска-обрезная-50x150",
+      "name": "Доска обрезная 50x150",
+      "category": "Стройматериалы",
+      "subcategory_id": "wood",
+      "subcategory": "Пиломатериалы",
+      "unit": "м³",
+      "description": "Обрезная доска, 6 м",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-стройматериалы-insulation-минеральная-вата",
+      "name": "Минеральная вата",
+      "category": "Стройматериалы",
+      "subcategory_id": "insulation",
+      "subcategory": "Утеплитель и кровля",
+      "unit": "уп",
+      "description": "Утеплитель 50 мм",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-стройматериалы-insulation-профнастил",
+      "name": "Профнастил",
+      "category": "Стройматериалы",
+      "subcategory_id": "insulation",
+      "subcategory": "Утеплитель и кровля",
+      "unit": "м²",
+      "description": "Кровельный профнастил",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-строительство-genpodryad-генподряд-жилого-дома",
+      "name": "Генподряд жилого дома",
+      "category": "Строительство",
+      "subcategory_id": "genpodryad",
+      "subcategory": "Генподряд",
+      "unit": "объект",
+      "description": "Полный цикл строительства",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-строительство-genpodryad-генподряд-коммерческого-объекта",
+      "name": "Генподряд коммерческого объекта",
+      "category": "Строительство",
+      "subcategory_id": "genpodryad",
+      "subcategory": "Генподряд",
+      "unit": "объект",
+      "description": "Строительство под ключ",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-строительство-roads-асфальтирование",
+      "name": "Асфальтирование",
+      "category": "Строительство",
+      "subcategory_id": "roads",
+      "subcategory": "Дороги и инфраструктура",
+      "unit": "м²",
+      "description": "Укладка асфальта",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-строительство-facade-вентилируемый-фасад",
+      "name": "Вентилируемый фасад",
+      "category": "Строительство",
+      "subcategory_id": "facade",
+      "subcategory": "Фасады",
+      "unit": "м²",
+      "description": "Монтаж фасадных систем",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-it-и-по-web-корпоративный-сайт",
+      "name": "Корпоративный сайт",
+      "category": "IT и ПО",
+      "subcategory_id": "web",
+      "subcategory": "Сайты и веб",
+      "unit": "проект",
+      "description": "Дизайн + вёрстка + CMS",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-it-и-по-mobile-мобильное-приложение",
+      "name": "Мобильное приложение",
+      "category": "IT и ПО",
+      "subcategory_id": "mobile",
+      "subcategory": "Мобильные приложения",
+      "unit": "проект",
+      "description": "iOS и Android",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-it-и-по-crm-внедрение-crm",
+      "name": "Внедрение CRM",
+      "category": "IT и ПО",
+      "subcategory_id": "crm",
+      "subcategory": "CRM / ERP",
+      "unit": "проект",
+      "description": "Настройка и интеграции",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-it-и-по-outstaff-senior-python-разработчик",
+      "name": "Senior Python разработчик",
+      "category": "IT и ПО",
+      "subcategory_id": "outstaff",
+      "subcategory": "Разработчики (outstaff)",
+      "unit": "мес",
+      "description": "Full-time outstaff",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-it-и-по-outstaff-middle-react-разработчик",
+      "name": "Middle React разработчик",
+      "category": "IT и ПО",
+      "subcategory_id": "outstaff",
+      "subcategory": "Разработчики (outstaff)",
+      "unit": "мес",
+      "description": "Full-time outstaff",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-оргтехника-и-компьютеры-pc-офисный-пк",
+      "name": "Офисный ПК",
+      "category": "Оргтехника и компьютеры",
+      "subcategory_id": "pc",
+      "subcategory": "Компьютеры и ноутбуки",
+      "unit": "шт",
+      "description": "Intel i5 / 16GB / SSD 512",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-оргтехника-и-компьютеры-pc-ноутбук-15-6",
+      "name": "Ноутбук 15.6\"",
+      "category": "Оргтехника и компьютеры",
+      "subcategory_id": "pc",
+      "subcategory": "Компьютеры и ноутбуки",
+      "unit": "шт",
+      "description": "Для офиса и учёбы",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-оргтехника-и-компьютеры-print-мфу-лазерное",
+      "name": "МФУ лазерное",
+      "category": "Оргтехника и компьютеры",
+      "subcategory_id": "print",
+      "subcategory": "Принтеры и МФУ",
+      "unit": "шт",
+      "description": "Печать / сканер / копир",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-оргтехника-и-компьютеры-periphery-клавиатура---мышь",
+      "name": "Клавиатура + мышь",
+      "category": "Оргтехника и компьютеры",
+      "subcategory_id": "periphery",
+      "subcategory": "Периферия",
+      "unit": "комплект",
+      "description": "Беспроводной набор",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-мебель-office-furniture-офисный-стол",
+      "name": "Офисный стол",
+      "category": "Мебель",
+      "subcategory_id": "office_furniture",
+      "subcategory": "Офисная мебель",
+      "unit": "шт",
+      "description": "120x60 см",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-мебель-office-furniture-кресло-руководителя",
+      "name": "Кресло руководителя",
+      "category": "Мебель",
+      "subcategory_id": "office_furniture",
+      "subcategory": "Офисная мебель",
+      "unit": "шт",
+      "description": "Эргономичное кресло",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-мебель-home-furniture-диван-3-местный",
+      "name": "Диван 3-местный",
+      "category": "Мебель",
+      "subcategory_id": "home_furniture",
+      "subcategory": "Домашняя мебель",
+      "unit": "шт",
+      "description": "Тканевая обивка",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-мебель-custom-furniture-кухня-на-заказ",
+      "name": "Кухня на заказ",
+      "category": "Мебель",
+      "subcategory_id": "custom_furniture",
+      "subcategory": "Мебель на заказ",
+      "unit": "проект",
+      "description": "По размерам клиента",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-продукты-питания-dairy-молоко-3-2-",
+      "name": "Молоко 3.2%",
+      "category": "Продукты питания",
+      "subcategory_id": "dairy",
+      "subcategory": "Молочные продукты",
+      "unit": "л",
+      "description": "Опт от 100 л",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-продукты-питания-meat-говядина-охлаждённая",
+      "name": "Говядина охлаждённая",
+      "category": "Продукты питания",
+      "subcategory_id": "meat",
+      "subcategory": "Мясо и полуфабрикаты",
+      "unit": "кг",
+      "description": "Оптовые поставки",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-продукты-питания-grocery-рис-оптом",
+      "name": "Рис оптом",
+      "category": "Продукты питания",
+      "subcategory_id": "grocery",
+      "subcategory": "Бакалея",
+      "unit": "кг",
+      "description": "Мешок 25 кг",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-транспорт-cargo-грузоперевозка-20-т",
+      "name": "Грузоперевозка 20 т",
+      "category": "Транспорт",
+      "subcategory_id": "cargo",
+      "subcategory": "Грузоперевозки",
+      "unit": "рейс",
+      "description": "Межгород",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-транспорт-rent-аренда-самосвала",
+      "name": "Аренда самосвала",
+      "category": "Транспорт",
+      "subcategory_id": "rent",
+      "subcategory": "Аренда транспорта",
+      "unit": "смена",
+      "description": "С водителем",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-электротехника-cable-кабель-ввг-3x2-5",
+      "name": "Кабель ВВГ 3x2.5",
+      "category": "Электротехника",
+      "subcategory_id": "cable",
+      "subcategory": "Кабели и провода",
+      "unit": "м",
+      "description": "Медный кабель",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-электротехника-lighting-led-светильник",
+      "name": "LED светильник",
+      "category": "Электротехника",
+      "subcategory_id": "lighting",
+      "subcategory": "Освещение",
+      "unit": "шт",
+      "description": "Офисный 36W",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-электротехника-panels-автомат-16а",
+      "name": "Автомат 16А",
+      "category": "Электротехника",
+      "subcategory_id": "panels",
+      "subcategory": "Щиты и автоматика",
+      "unit": "шт",
+      "description": "Однополюсный",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-ремонт-и-отделка-general-штукатурные-работы",
+      "name": "Штукатурные работы",
+      "category": "Ремонт и отделка",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "м²",
+      "description": "Внутренняя отделка",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-ремонт-и-отделка-general-поклейка-обоев",
+      "name": "Поклейка обоев",
+      "category": "Ремонт и отделка",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "м²",
+      "description": "Подготовка + поклейка",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-оборудование-general-промышленный-станок",
+      "name": "Промышленный станок",
+      "category": "Оборудование",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "шт",
+      "description": "Поставка и пусконаладка",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-промышленное-оборудование-general-конвейерная-линия",
+      "name": "Конвейерная линия",
+      "category": "Промышленное оборудование",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "комплект",
+      "description": "Проектирование и монтаж",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-телекоммуникации-general-монтаж-скс",
+      "name": "Монтаж СКС",
+      "category": "Телекоммуникации",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "порт",
+      "description": "Структурированная кабельная сеть",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-сельское-хозяйство-general-корма-для-скота",
+      "name": "Корма для скота",
+      "category": "Сельское хозяйство",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "т",
+      "description": "Оптовые поставки",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-логистика-и-доставка-general-складское-хранение",
+      "name": "Складское хранение",
+      "category": "Логистика и доставка",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "м²/мес",
+      "description": "Отапливаемый склад",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-логистика-и-доставка-general-курьерская-доставка",
+      "name": "Курьерская доставка",
+      "category": "Логистика и доставка",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "заказ",
+      "description": "По городу",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-автозапчасти-general-фильтр-масляный",
+      "name": "Фильтр масляный",
+      "category": "Автозапчасти",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "шт",
+      "description": "Опт",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-одежда-и-текстиль-general-спецодежда",
+      "name": "Спецодежда",
+      "category": "Одежда и текстиль",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "комплект",
+      "description": "Летний / зимний",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-медицина-и-фармацевтика-general-медрасходники",
+      "name": "Медрасходники",
+      "category": "Медицина и фармацевтика",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "уп",
+      "description": "Оптовая поставка",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-химия-и-сырьё-general-промышленная-химия",
+      "name": "Промышленная химия",
+      "category": "Химия и сырьё",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "кг",
+      "description": "По ТЗ",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-безопасность-и-охрана-general-видеонаблюдение",
+      "name": "Видеонаблюдение",
+      "category": "Безопасность и охрана",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "комплект",
+      "description": "Монтаж под ключ",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-клининг-и-хозяйственные-товары-general-клининг-офиса",
+      "name": "Клининг офиса",
+      "category": "Клининг и хозяйственные товары",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "м²",
+      "description": "Регулярная уборка",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-канцтовары-general-офисный-набор",
+      "name": "Офисный набор",
+      "category": "Канцтовары",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "уп",
+      "description": "Бумага A4 и расходники",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-реклама-и-полиграфия-general-печать-баннеров",
+      "name": "Печать баннеров",
+      "category": "Реклама и полиграфия",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "м²",
+      "description": "Широкоформатная печать",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-образование-и-обучение-general-корпоративный-тренинг",
+      "name": "Корпоративный тренинг",
+      "category": "Образование и обучение",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "час",
+      "description": "Очное / онлайн",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-консалтинг-general-бизнес-консалтинг",
+      "name": "Бизнес-консалтинг",
+      "category": "Консалтинг",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "час",
+      "description": "Аудит и рекомендации",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-юридические-услуги-general-юридическое-сопровождение",
+      "name": "Юридическое сопровождение",
+      "category": "Юридические услуги",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "мес",
+      "description": "Договорное сопровождение",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-финансовые-услуги-general-бухгалтерское-обслуживание",
+      "name": "Бухгалтерское обслуживание",
+      "category": "Финансовые услуги",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "мес",
+      "description": "Аутсорс бухгалтерии",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-энергетика-general-электромонтаж",
+      "name": "Электромонтаж",
+      "category": "Энергетика",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "объект",
+      "description": "Силовые сети",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-нефть-и-газ-general-нефтесервис",
+      "name": "Нефтесервис",
+      "category": "Нефть и газ",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "услуга",
+      "description": "По проекту",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-металлургия-general-металлопрокат",
+      "name": "Металлопрокат",
+      "category": "Металлургия",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "т",
+      "description": "Оптовые поставки",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-услуги-general-комплексная-услуга",
+      "name": "Комплексная услуга",
+      "category": "Услуги",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "услуга",
+      "description": "По согласованию",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    },
+    {
+      "id": "tpl-другое-general-прочая-позиция",
+      "name": "Прочая позиция",
+      "category": "Другое",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "шт",
+      "description": "Уточняется в заявке",
+      "image_url": "/static/img/catalog-placeholder.svg"
+    }
+  ],
+  "products": [
+    {
+      "id": "b5cdf4e1-24ed-45dd-b250-2c72f45334ad",
+      "name": "Бетон М300",
+      "category": "Стройматериалы",
+      "subcategory_id": "concrete",
+      "subcategory": "Бетон и цемент",
+      "unit": "м³",
+      "description": "Товарный бетон М300 с доставкой",
+      "supplier_id": "93e2755b-0ea9-4590-90e2-419370978f2a",
+      "supplier_name": "StroyMarket Astana",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "3567ba8d-9f2d-4416-a141-72643ee1ab95",
+      "name": "Цемент М400",
+      "category": "Стройматериалы",
+      "subcategory_id": "concrete",
+      "subcategory": "Бетон и цемент",
+      "unit": "мешок",
+      "description": "Портландцемент М400, 50 кг",
+      "supplier_id": "7536bf89-156e-455d-9129-d4bc1efe2b15",
+      "supplier_name": "Material Trade",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "25c2373a-2efa-43eb-9980-df5c6c1778d9",
+      "name": "Кирпич керамический",
+      "category": "Стройматериалы",
+      "subcategory_id": "brick",
+      "subcategory": "Кирпич и блоки",
+      "unit": "шт",
+      "description": "Рядовой керамический кирпич",
+      "supplier_id": "9f0c5793-50f9-4afc-bc82-e70ccb1f9d7f",
+      "supplier_name": "BuildSupply",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "b2c6c990-0ee1-4ccf-853c-b09a4c5053df",
+      "name": "Брус 100x100",
+      "category": "Стройматериалы",
+      "subcategory_id": "wood",
+      "subcategory": "Пиломатериалы",
+      "unit": "м³",
+      "description": "Хвойный брус естественной влажности",
+      "supplier_id": "524812a7-1c61-41f0-ae15-19c3bfe8b954",
+      "supplier_name": "Qurylys Baza",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "4547b6fe-5938-48e4-85d8-351cddd20029",
+      "name": "Доска обрезная 50x150",
+      "category": "Стройматериалы",
+      "subcategory_id": "wood",
+      "subcategory": "Пиломатериалы",
+      "unit": "м³",
+      "description": "Обрезная доска, 6 м",
+      "supplier_id": "93e2755b-0ea9-4590-90e2-419370978f2a",
+      "supplier_name": "StroyMarket Astana",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "ff50e2e5-f59b-44e2-8c07-0c9a56745bfe",
+      "name": "Минеральная вата",
+      "category": "Стройматериалы",
+      "subcategory_id": "insulation",
+      "subcategory": "Утеплитель и кровля",
+      "unit": "уп",
+      "description": "Утеплитель 50 мм",
+      "supplier_id": "7536bf89-156e-455d-9129-d4bc1efe2b15",
+      "supplier_name": "Material Trade",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "0ba7a48e-8e50-4c9f-8786-87c596b0733e",
+      "name": "Генподряд жилого дома",
+      "category": "Строительство",
+      "subcategory_id": "genpodryad",
+      "subcategory": "Генподряд",
+      "unit": "объект",
+      "description": "Полный цикл строительства",
+      "supplier_id": "011bbacc-1de9-4921-8889-5c2197650f09",
+      "supplier_name": "Astana Build Group",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "7f35a9f5-a6e5-4db7-b94e-e07a9aa8effc",
+      "name": "Асфальтирование",
+      "category": "Строительство",
+      "subcategory_id": "roads",
+      "subcategory": "Дороги и инфраструктура",
+      "unit": "м²",
+      "description": "Укладка асфальта",
+      "supplier_id": "c33d0ae3-4cca-4b69-91e8-d503fda5e7de",
+      "supplier_name": "Almaty Construction",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "9bd37d9a-7ce6-4c76-84bb-442f3dbaddfa",
+      "name": "Вентилируемый фасад",
+      "category": "Строительство",
+      "subcategory_id": "facade",
+      "subcategory": "Фасады",
+      "unit": "м²",
+      "description": "Монтаж фасадных систем",
+      "supplier_id": "0d4e875e-5fe0-4612-93ed-88fdbc6d085d",
+      "supplier_name": "Qurylys Pro",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "bf4af093-42ff-47d5-9709-02ad84a77d9a",
+      "name": "Корпоративный сайт",
+      "category": "IT и ПО",
+      "subcategory_id": "web",
+      "subcategory": "Сайты и веб",
+      "unit": "проект",
+      "description": "Дизайн + вёрстка + CMS",
+      "supplier_id": "e5bd895b-593c-477a-b516-fe8ffdd3801b",
+      "supplier_name": "Digital Steppe",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "20722f01-4bcb-4093-9c76-1d2d3b4b3639",
+      "name": "Мобильное приложение",
+      "category": "IT и ПО",
+      "subcategory_id": "mobile",
+      "subcategory": "Мобильные приложения",
+      "unit": "проект",
+      "description": "iOS и Android",
+      "supplier_id": "2a8a9ab0-192e-4f2a-aec2-fd2db7d9a3d1",
+      "supplier_name": "CodeForge KZ",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "13ff34f8-7031-49e3-83b0-3d2f1583b52c",
+      "name": "Внедрение CRM",
+      "category": "IT и ПО",
+      "subcategory_id": "crm",
+      "subcategory": "CRM / ERP",
+      "unit": "проект",
+      "description": "Настройка и интеграции",
+      "supplier_id": "07ced562-0687-41d2-a2dd-5e1178b89ae2",
+      "supplier_name": "SoftNova",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "276e66a4-b963-4c12-a5eb-37dfe87c81a9",
+      "name": "Senior Python разработчик",
+      "category": "IT и ПО",
+      "subcategory_id": "outstaff",
+      "subcategory": "Разработчики (outstaff)",
+      "unit": "мес",
+      "description": "Full-time outstaff",
+      "supplier_id": "dba6ea35-c774-44ce-bbea-8095f802c7d4",
+      "supplier_name": "ByteWorks",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "46059357-aba9-4a05-aab0-a632eb13860e",
+      "name": "Middle React разработчик",
+      "category": "IT и ПО",
+      "subcategory_id": "outstaff",
+      "subcategory": "Разработчики (outstaff)",
+      "unit": "мес",
+      "description": "Full-time outstaff",
+      "supplier_id": "e5bd895b-593c-477a-b516-fe8ffdd3801b",
+      "supplier_name": "Digital Steppe",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "197b39be-3c17-4861-a630-e44a4fe1aae9",
+      "name": "Офисный ПК",
+      "category": "Оргтехника и компьютеры",
+      "subcategory_id": "pc",
+      "subcategory": "Компьютеры и ноутбуки",
+      "unit": "шт",
+      "description": "Intel i5 / 16GB / SSD 512",
+      "supplier_id": "cce52de1-e30c-4339-aa1b-d57a5c4c87c5",
+      "supplier_name": "PC Market Astana",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "7bfb65ed-8390-41a7-8e12-c3c6eb4c995b",
+      "name": "Ноутбук 15.6\"",
+      "category": "Оргтехника и компьютеры",
+      "subcategory_id": "pc",
+      "subcategory": "Компьютеры и ноутбуки",
+      "unit": "шт",
+      "description": "Для офиса и учёбы",
+      "supplier_id": "dabb4f2d-0e24-4402-aaeb-fdd0e30ba01b",
+      "supplier_name": "OfficeTech",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "71c73e47-327c-49c6-b7c5-4b6159ee3840",
+      "name": "МФУ лазерное",
+      "category": "Оргтехника и компьютеры",
+      "subcategory_id": "print",
+      "subcategory": "Принтеры и МФУ",
+      "unit": "шт",
+      "description": "Печать / сканер / копир",
+      "supplier_id": "75a090cf-d811-4188-978a-7f916dc394f8",
+      "supplier_name": "CompTrade",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "16d8a048-39cc-4df2-aeee-ab7e6831219a",
+      "name": "Клавиатура + мышь",
+      "category": "Оргтехника и компьютеры",
+      "subcategory_id": "periphery",
+      "subcategory": "Периферия",
+      "unit": "комплект",
+      "description": "Беспроводной набор",
+      "supplier_id": "cce52de1-e30c-4339-aa1b-d57a5c4c87c5",
+      "supplier_name": "PC Market Astana",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "7a104c55-eefc-4073-93cd-376711853427",
+      "name": "Офисный стол",
+      "category": "Мебель",
+      "subcategory_id": "office_furniture",
+      "subcategory": "Офисная мебель",
+      "unit": "шт",
+      "description": "120x60 см",
+      "supplier_id": "24e9cb0f-2f7c-49fa-9e7c-f14d8d7bc393",
+      "supplier_name": "Mebel House",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "34c98f78-4724-4217-ab5c-d31c1aeaddca",
+      "name": "Кресло руководителя",
+      "category": "Мебель",
+      "subcategory_id": "office_furniture",
+      "subcategory": "Офисная мебель",
+      "unit": "шт",
+      "description": "Эргономичное кресло",
+      "supplier_id": "c5357728-cbba-46d4-a926-abd87df5c5ac",
+      "supplier_name": "WoodCraft KZ",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "dca72b85-e46a-4474-8cac-601295f89f13",
+      "name": "Диван 3-местный",
+      "category": "Мебель",
+      "subcategory_id": "home_furniture",
+      "subcategory": "Домашняя мебель",
+      "unit": "шт",
+      "description": "Тканевая обивка",
+      "supplier_id": "8d12dd57-3b43-4d39-97b5-d3bc9176f97b",
+      "supplier_name": "Office Soft",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "54a3c065-2743-4742-8022-a6c9644bbada",
+      "name": "Кухня на заказ",
+      "category": "Мебель",
+      "subcategory_id": "custom_furniture",
+      "subcategory": "Мебель на заказ",
+      "unit": "проект",
+      "description": "По размерам клиента",
+      "supplier_id": "99900ce4-2a65-4255-9db6-1d5fe38af373",
+      "supplier_name": "Comfort Space",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "c38a4c56-62f2-4619-aae2-9d0dbb04f3dc",
+      "name": "Молоко 3.2%",
+      "category": "Продукты питания",
+      "subcategory_id": "dairy",
+      "subcategory": "Молочные продукты",
+      "unit": "л",
+      "description": "Опт от 100 л",
+      "supplier_id": "09824a0d-e4d8-44e4-9d68-acd07fc5840c",
+      "supplier_name": "FoodTrade Astana",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "9f53bbf8-0d24-4e91-9b98-fbd64160ab69",
+      "name": "Говядина охлаждённая",
+      "category": "Продукты питания",
+      "subcategory_id": "meat",
+      "subcategory": "Мясо и полуфабрикаты",
+      "unit": "кг",
+      "description": "Оптовые поставки",
+      "supplier_id": "8eb91061-b969-4bf6-9198-f20d1428ac88",
+      "supplier_name": "AgroFood Supply",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "08c7c6d5-5811-4ed5-b18c-bd5b6c27cc5f",
+      "name": "Рис оптом",
+      "category": "Продукты питания",
+      "subcategory_id": "grocery",
+      "subcategory": "Бакалея",
+      "unit": "кг",
+      "description": "Мешок 25 кг",
+      "supplier_id": "07ffd66d-db9a-4890-bfd0-ddbef44c115a",
+      "supplier_name": "Fresh Market KZ",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "c8b8823f-8170-476d-81ce-af9011fa7421",
+      "name": "Перевозка по городу",
+      "category": "Транспорт",
+      "subcategory_id": "cargo",
+      "subcategory": "Грузоперевозки",
+      "unit": "рейс",
+      "description": "Газель до 1.5 т",
+      "supplier_id": "7c58b29d-4b4d-449a-8c53-f3bf89947f71",
+      "supplier_name": "TransKZ Logistics",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "99ea0840-5a76-4149-94a3-4b4345fa31ad",
+      "name": "Аренда самосвала",
+      "category": "Транспорт",
+      "subcategory_id": "rent",
+      "subcategory": "Аренда транспорта",
+      "unit": "смена",
+      "description": "С водителем",
+      "supplier_id": "303e2b19-7968-4f5d-abe1-d0a62a33259f",
+      "supplier_name": "AutoFleet",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "74ad5f8f-1c5a-45ec-bee9-ae556a6feeed",
+      "name": "Кабель ВВГ 3x2.5",
+      "category": "Электротехника",
+      "subcategory_id": "cable",
+      "subcategory": "Кабели и провода",
+      "unit": "м",
+      "description": "Медный кабель",
+      "supplier_id": "2dd28299-eba8-4033-bcaf-84112502c492",
+      "supplier_name": "ElectroKZ",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "88369493-afcd-4cee-baf7-21d747f532e2",
+      "name": "LED светильник",
+      "category": "Электротехника",
+      "subcategory_id": "lighting",
+      "subcategory": "Освещение",
+      "unit": "шт",
+      "description": "Офисный 36W",
+      "supplier_id": "212b186c-4890-4d10-8297-cde66abea659",
+      "supplier_name": "Volt Trade",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "id": "49526c39-343e-4894-87f0-12680fa6aa7b",
+      "name": "Автомат 16А",
+      "category": "Электротехника",
+      "subcategory_id": "panels",
+      "subcategory": "Щиты и автоматика",
+      "unit": "шт",
+      "description": "Однополюсный",
+      "supplier_id": "a8398863-16d0-4f61-9b22-8bad0710f4f0",
+      "supplier_name": "PowerLine Supply",
+      "created_at": "2026-07-10T09:42:06.071870Z"
+    },
+    {
+      "name": "Test Product Fix",
+      "category": "Строительство",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "шт",
+      "description": "test",
+      "supplier_id": "011bbacc-1de9-4921-8889-5c2197650f09",
+      "supplier_name": "Astana Build Group",
+      "id": "17e93fa2-d206-41f1-ae83-1d43befc2396",
+      "created_at": "2026-07-10T11:07:09.135218Z",
+      "updated_at": "2026-07-10T11:07:09.135230Z"
+    },
+    {
+      "name": "Тестовый бетон",
+      "category": "Стройматериалы",
+      "subcategory_id": "concrete",
+      "subcategory": "Бетон и цемент",
+      "unit": "м3",
+      "description": "без цены",
+      "supplier_id": "dc8b212b-cbb8-4312-b128-eeecb7d12542",
+      "supplier_name": "Test Co",
+      "id": "30e2e8e5-314f-4b97-a491-1e95a4e1f8bd",
+      "created_at": "2026-07-10T11:13:13.318592Z",
+      "updated_at": "2026-07-10T11:13:13.318604Z"
+    },
+    {
+      "name": "Y",
+      "category": "Стройматериалы",
+      "subcategory_id": "general",
+      "subcategory": "Общее",
+      "unit": "шт",
+      "description": "",
+      "supplier_id": "dc8b212b-cbb8-4312-b128-eeecb7d12542",
+      "supplier_name": "Test Co",
+      "id": "a7707b38-8c36-4134-b7e5-30d0c62b9c32",
+      "created_at": "2026-07-10T11:13:13.336733Z",
+      "updated_at": "2026-07-10T11:13:13.336744Z"
+    },
+    {
+      "name": "Live product",
+      "category": "Стройматериалы",
+      "subcategory_id": "concrete",
+      "subcategory": "Бетон и цемент",
+      "unit": "м3",
+      "description": "ok",
+      "supplier_id": "3af7367c-350a-4653-b99b-3a38e6290ba7",
+      "supplier_name": "LiveCo",
+      "id": "9c451be4-c3dc-467c-95b3-55734834bacb",
+      "created_at": "2026-07-10T11:14:50.923037Z",
+      "updated_at": "2026-07-10T11:14:50.923048Z"
+    },
+    {
+      "name": "бетон",
+      "category": "Стройматериалы",
+      "subcategory_id": "concrete",
+      "subcategory": "Бетон и цемент",
+      "unit": "шт",
+      "description": "мошный34кенгшщдзжваждпьждвап",
+      "supplier_id": "a2e571e7-314d-4c56-9280-983eb14841fe",
+      "supplier_name": "123456789",
+      "id": "2e861378-fb61-4285-85e6-71fdaae8cde8",
+      "created_at": "2026-07-10T11:15:12.643670Z",
+      "updated_at": "2026-07-10T11:15:12.643682Z"
+    }
+  ]
+}

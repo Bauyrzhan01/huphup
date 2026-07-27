@@ -1,0 +1,9 @@
+<div class="lang-switch" role="group" aria-label="Language">
+  {% for code in langs %}
+  <a
+    href="{% if lang_next %}{{ url_for('set_lang', code=code, next=lang_next) }}{% else %}{{ url_for('set_lang', code=code) }}{% endif %}"
+    class="lang-switch__btn{% if lang == code %} is-active{% endif %}"
+    hreflang="{{ code }}"
+  >{{ _('lang.' + code) }}</a>
+  {% endfor %}
+</div>
