@@ -3971,6 +3971,25 @@ def api_request_accept(request_id):
     )
 
 
+@app.route("/api/requests/<request_id>", methods=["GET"])
+@api_login_required
+def api_request_get(request_id):
+    user = current_user()
+    _items, _index, target = find_request(request_id)
+    if not target:
+        return jsonify({"ok": False, "error": "Заявка не найдена"}), 404
+
+    if user["role"] == "user":
+        if target.get("user_id") != user["id"]:
+            return jsonify({"ok": False, "error": "Нет доступа к заявке"}), 403
+    else:
+        cid = company_id(user)
+        if not cid or not supplier_can_see_request(target, cid):
+            return jsonify({"ok": False, "error": "Нет доступа к заявке"}), 403
+
+    return jsonify({"ok": True, "request": enrich_request(target, user)})
+
+
 @app.route("/api/requests/<request_id>/cancel", methods=["POST"])
 @api_login_required
 def api_request_cancel(request_id):

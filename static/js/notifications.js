@@ -120,6 +120,27 @@
     }
   }
 
+  async function openRequestFromNotification(requestId) {
+    const rid = String(requestId || "").trim();
+    if (!rid) return;
+    try {
+      const res = await fetch(`/api/requests/${encodeURIComponent(rid)}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok || !data.request) return;
+      const req = data.request;
+      if (typeof window.showRequest === "function") {
+        if (typeof window.showView === "function") window.showView("home");
+        window.showRequest(req);
+        return;
+      }
+      if (typeof window.openSupplierRequestFromNotification === "function") {
+        await window.openSupplierRequestFromNotification(req);
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
   let closeTimer = null;
 
   function toggle(force) {
@@ -169,8 +190,12 @@
     const item = e.target.closest(".notify__item");
     if (!item) return;
     const id = item.dataset.id;
+    const requestId = item.dataset.request;
     if (id && item.classList.contains("is-unread")) {
       markRead(id, false);
+    }
+    if (requestId) {
+      openRequestFromNotification(requestId);
     }
     toggle(false);
   });

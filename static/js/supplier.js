@@ -917,6 +917,15 @@ async function loadRequests() {
   renderRequests(data.items || []);
 }
 
+window.openSupplierRequestFromNotification = async function (req) {
+  if (!req) return;
+  showTab("requests");
+  await loadRequests();
+  if (req.status === "deal" || req.status === "completed") {
+    openDeal(req);
+  }
+};
+
 /* ---------- Team (owner) ---------- */
 async function loadTeamPanel() {
   if (!window.IS_SUPPLIER_OWNER) return;
