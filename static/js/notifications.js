@@ -11,19 +11,32 @@
   let open = false;
   let items = [];
   let lastUnread = 0;
+  const tr = (key, params) => {
+    if (typeof window.t === "function") return window.t(key, params);
+    return key;
+  };
 
   function timeAgo(iso) {
     if (!iso) return "";
     const t = Date.parse(iso);
     if (!t) return "";
     const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
-    if (sec < 60) return t("js.just_now");
-    if (sec < 3600) return t("js.min_ago", { n: Math.floor(sec / 60) });
-    if (sec < 86400) return t("js.h_ago", { n: Math.floor(sec / 3600) });
-    return t("js.d_ago", { n: Math.floor(sec / 86400) });
+    if (sec < 60) return tr("js.just_now");
+    if (sec < 3600) return tr("js.min_ago", { n: Math.floor(sec / 60) });
+    if (sec < 86400) return tr("js.h_ago", { n: Math.floor(sec / 3600) });
+    return tr("js.d_ago", { n: Math.floor(sec / 86400) });
   }
 
-  const escapeHtml = window.tbEscapeHtml;
+  const escapeHtml =
+    typeof window.tbEscapeHtml === "function"
+      ? window.tbEscapeHtml
+      : (v) =>
+          String(v ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
 
   function setBadge(n) {
     if (!badge || !btn) return;
@@ -57,19 +70,22 @@
     if (!list) return;
     const animate = opts.animate !== false;
     if (!items.length) {
-      list.innerHTML = `<p class="notify__empty">${t("notify.empty")}</p>`;
+      list.innerHTML = `<p class="notify__empty">${tr("notify.empty")}</p>`;
       return;
     }
-    list.innerHTML = items
-      .map(
-        (n) => `
+    const rowsHtml = items
+      .map((n) => {
+        const title = n.title || tr("notify.title");
+        const body = n.body || "";
+        return `
       <button type="button" class="notify__item${n.read ? "" : " is-unread"}" data-id="${n.id}" data-request="${n.request_id || ""}">
-        <span class="notify__item-title">${escapeHtml(n.title || "")}</span>
-        <span class="notify__item-body">${escapeHtml(n.body || "")}</span>
+        <span class="notify__item-title">${escapeHtml(title)}</span>
+        <span class="notify__item-body">${escapeHtml(body)}</span>
         <span class="notify__item-time">${timeAgo(n.created_at)}</span>
       </button>`
-      )
+      })
       .join("");
+    list.innerHTML = rowsHtml;
 
     const rows = [...list.querySelectorAll(".notify__item")];
     if (!animate) {
