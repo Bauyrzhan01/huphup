@@ -12,8 +12,9 @@
   --accent-deep: #0055ff;
   --accent-grad: linear-gradient(145deg, #0095ff 0%, #0055ff 100%);
   --accent-soft: rgba(0, 149, 255, 0.08);
-  --radius: 4px;
-  --radius-md: 6px;
+  --radius: 12px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
   --shadow-sm: 0 1px 2px rgba(0, 11, 34, 0.05);
   --shadow-md: 0 4px 16px rgba(0, 11, 34, 0.07);
   --shadow-accent: 0 2px 8px rgba(0, 85, 255, 0.14);
@@ -65,6 +66,36 @@ button {
   background: none;
   border: none;
   cursor: pointer;
+}
+
+/* Rounded controls: buttons + text fields */
+.btn,
+.btn-primary,
+.btn-ghost,
+button.sidebar__link,
+.mobile-bar__btn,
+.composer__send,
+.profile-chip,
+.history-filter,
+.dash-filter,
+.oversee-filter,
+.chip,
+.cat-check,
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="hidden"]),
+select,
+textarea,
+.field input,
+.field select,
+.field textarea,
+.auth .field input,
+.auth .field select,
+.auth .field textarea,
+.composer,
+.offer-panel__input,
+.deal-compose input[type="text"],
+.history-search,
+.rate-comment {
+  border-radius: var(--radius-md);
 }
 
 ul,
@@ -1820,7 +1851,7 @@ ol {
 
 .auth .field select[multiple] option {
   padding: 6px 8px;
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .auth .field select[multiple] option:checked {
@@ -2326,7 +2357,7 @@ ol {
   font-size: 14px;
   line-height: 1.5;
   padding: 12px 14px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   animation: msgIn 0.4s var(--ease) forwards;
 }
 
@@ -2363,7 +2394,7 @@ ol {
   font-weight: 600;
   padding: 8px 14px;
   border: 1px solid var(--line-strong);
-  border-radius: 2px;
+  border-radius: var(--radius);
   transition: background 0.2s, color 0.2s;
 }
 
@@ -2382,7 +2413,7 @@ ol {
 .offers {
   align-self: stretch;
   border: 1px solid var(--line-strong);
-  border-radius: 2px;
+  border-radius: var(--radius);
   overflow: hidden;
   animation: msgIn 0.45s var(--ease) forwards;
 }
@@ -2543,7 +2574,7 @@ ol {
   max-width: 420px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   outline: none;
 }
 
@@ -2700,7 +2731,7 @@ ol {
   padding: 12px 16px;
   font-size: 13px;
   font-weight: 600;
-  border-radius: 2px;
+  border-radius: var(--radius);
   z-index: 200;
   opacity: 0;
   transform: translateY(8px);
@@ -2926,7 +2957,7 @@ ol {
   72% {
     clip-path: inset(-10% -10% -10% -10%);
     transform: translate3d(1px, -2px, 0) scale(0.97) rotate(-1deg);
-    border-radius: 2px;
+    border-radius: var(--radius);
   }
   100% {
     opacity: 1;

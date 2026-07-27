@@ -160,7 +160,7 @@
 
 .chat-msg-bubble {
   padding: 12px 14px;
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .chat-msg.bot .chat-msg-bubble {
@@ -184,7 +184,7 @@
   font-weight: 600;
   padding: 8px 14px;
   border: 1px solid var(--line-strong);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
   cursor: pointer;
 }
@@ -229,7 +229,7 @@
   width: 100%;
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .offer-table {
@@ -313,7 +313,7 @@
   color: var(--ink);
   border: 1px solid var(--line-strong);
   padding: 2px 6px;
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .offer-table__price .offer-chip,
@@ -379,7 +379,7 @@
   margin-bottom: 8px;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #fff;
 }
 
@@ -398,7 +398,7 @@
 .request-card,
 .supplier-card {
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 14px 16px;
   margin-bottom: 10px;
   background: var(--bg);
@@ -413,7 +413,7 @@
 
 .product-manage-card {
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 0;
   margin-bottom: 0;
   background: var(--bg);
@@ -480,7 +480,7 @@
   width: 112px;
   height: 72px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: #eef1f5;
 }
@@ -500,7 +500,7 @@
   height: 24px;
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
   font-size: 14px;
@@ -540,7 +540,7 @@
   font-weight: 600;
   color: #fff;
   background: rgba(20, 24, 30, 0.72);
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .offer-card.is-selected,
@@ -616,7 +616,7 @@
 .deal-block,
 .deal-section {
   border: 1px solid var(--line-strong);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 16px;
   margin-top: 16px;
   background: var(--bg);
@@ -674,7 +674,7 @@
 
 .deal-msg-bubble {
   padding: 10px 12px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg-soft);
   border: 1px solid var(--line);
   font-size: 14px;
@@ -709,7 +709,7 @@
 .deal-compose input[type="text"] {
   flex: 1;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 12px 14px;
   outline: none;
 }
@@ -761,7 +761,7 @@
   width: 36px;
   height: 36px;
   border: 1px solid var(--line-strong);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
   color: var(--ink-muted);
   font-size: 18px;
@@ -780,7 +780,7 @@
 .rate-comment {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 10px 12px;
   font: inherit;
   resize: vertical;
@@ -838,7 +838,7 @@
   font-weight: 600;
   padding: 8px 12px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
   color: var(--ink-muted);
   cursor: pointer;
@@ -856,7 +856,7 @@
   min-width: 180px;
   max-width: 320px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 10px 12px;
   font: inherit;
   outline: none;
@@ -873,7 +873,7 @@
 
 .history-card {
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 16px 18px;
   background: var(--bg);
   display: grid;
@@ -945,7 +945,7 @@
 
 .cat-card {
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 16px;
   text-align: left;
   background: var(--bg);
@@ -967,7 +967,7 @@
 
 .product-card {
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -978,7 +978,7 @@
   width: 100%;
   aspect-ratio: 16 / 10;
   object-fit: cover;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #eef1f5;
   border: 1px solid var(--line);
 }
@@ -1032,7 +1032,7 @@
   height: 34px;
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
   color: var(--ink-muted);
   cursor: pointer;
@@ -1405,7 +1405,7 @@
   margin-top: 12px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg-soft);
 }
 
@@ -1446,7 +1446,7 @@
   margin: 0 0 16px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
 }
 
@@ -1465,7 +1465,7 @@
   min-height: 36px;
   padding: 7px 9px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   font: inherit;
   font-size: 13px;
   text-transform: none;
@@ -1597,7 +1597,7 @@
   align-items: center;
   padding: 14px 18px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background:
     linear-gradient(135deg, rgba(0, 149, 255, 0.06) 0%, rgba(255, 255, 255, 0) 48%),
     var(--bg);
@@ -1668,7 +1668,7 @@
 
 .profile-complete {
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 10px 14px;
   margin-bottom: 0;
   background: var(--bg);
@@ -1778,7 +1778,7 @@
 
 .profile-card {
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 14px 16px 10px;
   margin-bottom: 0;
   background: var(--bg);
@@ -1847,7 +1847,7 @@
   font-size: 12px;
   font-weight: 600;
   padding: 6px 10px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
@@ -1882,7 +1882,7 @@
   min-height: 64px;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   font: inherit;
   resize: vertical;
   box-sizing: border-box;
@@ -1919,7 +1919,7 @@
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   backdrop-filter: blur(8px);
 }
 
@@ -2183,7 +2183,7 @@ a.sidebar__link {
   border: 1px solid var(--line);
   padding: 16px;
   margin-bottom: 16px;
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .form-grid {
@@ -2219,7 +2219,7 @@ a.sidebar__link {
   color: var(--ink);
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
   width: 100%;
   box-sizing: border-box;
@@ -2303,7 +2303,7 @@ a.sidebar__link {
 .offer-form input {
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .offer-form-actions {
@@ -2339,7 +2339,7 @@ a.sidebar__link {
   font-weight: 600;
   padding: 6px 10px;
   border: 1px solid var(--line-strong);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
   cursor: pointer;
 }
@@ -2357,7 +2357,7 @@ a.sidebar__link {
 
 .analytics-card {
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   padding: 18px 16px;
   background: var(--bg);
 }
@@ -2393,7 +2393,7 @@ a.sidebar__link {
   text-transform: uppercase;
   padding: 3px 8px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   margin-bottom: 8px;
 }
 
@@ -2417,7 +2417,7 @@ select[multiple] {
   min-height: 120px;
   padding: 8px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   font: inherit;
 }
 
@@ -2591,7 +2591,7 @@ textarea:focus-visible,
   min-width: 88px;
   padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
   display: grid;
   gap: 2px;
@@ -2630,7 +2630,7 @@ textarea:focus-visible,
 .admin-table-wrap {
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
 }
 
@@ -3282,7 +3282,7 @@ textarea:focus-visible,
   margin: 0;
   padding: 9px 10px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: var(--bg);
   font-size: 12.5px;
   font-weight: 600;
