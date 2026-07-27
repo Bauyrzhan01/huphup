@@ -93,6 +93,19 @@ def _init_schema(conn: sqlite3.Connection) -> None:
           key TEXT PRIMARY KEY,
           payload TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS analytics_events (
+          id TEXT PRIMARY KEY,
+          ts REAL NOT NULL,
+          kind TEXT NOT NULL,
+          path TEXT,
+          user_id TEXT,
+          role TEXT,
+          visitor_id TEXT,
+          meta TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_analytics_ts ON analytics_events(ts);
+        CREATE INDEX IF NOT EXISTS idx_analytics_kind ON analytics_events(kind);
+        CREATE INDEX IF NOT EXISTS idx_analytics_visitor_ts ON analytics_events(visitor_id, ts);
         """
     )
     conn.commit()
@@ -292,3 +305,133 @@ def ensure_migrated() -> None:
         migrate_from_json(PACKAGE_DATA_DIR)
     else:
         _migrated_ok = True
+
+
+# --- Analytics (live dashboard) ---
+
+
+def record_analytics_event(
+    kind: str,
+    *,
+    path: str = "",
+    user_id: str = "",
+    role: str = "",
+    visitor_id: str = "",
+    meta: dict | None = None,
+    ts: float | None = None,
+) -> None:
+    """Записать событие аналитики (best-effort)."""
+    if not use_sqlite():
+        return
+    event_id = str(__import__("uuid").uuid4())
+    when = float(ts if ts is not None else __import__("time").time())
+    try:
+        with transaction() as conn:
+            conn.execute(
+                """
+                INSERT INTO analytics_events
+                  (id, ts, kind, path, user_id, role, visitor_id, meta)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event_id,
+                    when,
+                    str(kind or "event")[:64],
+                    str(path or "")[:240],
+                    str(user_id or "")[:64],
+                    str(role or "")[:32],
+                    str(visitor_id or "")[:80],
+                    _dumps(meta or {}),
+                ),
+            )
+            # Keep last ~14 days to bound /tmp growth on Vercel
+            cutoff = when - 14 * 86400
+            conn.execute("DELETE FROM analytics_events WHERE ts < ?", (cutoff,))
+    except Exception:
+        # Analytics must never break the product path
+        return
+
+
+def fetch_analytics_events(since_ts: float, kinds: list[str] | None = None) -> list[dict]:
+    if not use_sqlite():
+        return []
+    conn = connect()
+    with _lock:
+        if kinds:
+            placeholders = ",".join("?" for _ in kinds)
+            rows = conn.execute(
+                f"""
+                SELECT id, ts, kind, path, user_id, role, visitor_id, meta
+                FROM analytics_events
+                WHERE ts >= ? AND kind IN ({placeholders})
+                ORDER BY ts ASC
+                """,
+                (since_ts, *kinds),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """
+                SELECT id, ts, kind, path, user_id, role, visitor_id, meta
+                FROM analytics_events
+                WHERE ts >= ?
+                ORDER BY ts ASC
+                """,
+                (since_ts,),
+            ).fetchall()
+    out = []
+    for r in rows:
+        try:
+            meta = _loads(r["meta"]) if r["meta"] else {}
+        except Exception:
+            meta = {}
+        out.append(
+            {
+                "id": r["id"],
+                "ts": float(r["ts"]),
+                "kind": r["kind"],
+                "path": r["path"] or "",
+                "user_id": r["user_id"] or "",
+                "role": r["role"] or "",
+                "visitor_id": r["visitor_id"] or "",
+                "meta": meta if isinstance(meta, dict) else {},
+            }
+        )
+    return out
+
+
+def count_analytics(since_ts: float, kind: str | None = None) -> int:
+    if not use_sqlite():
+        return 0
+    conn = connect()
+    with _lock:
+        if kind:
+            row = conn.execute(
+                "SELECT COUNT(*) AS c FROM analytics_events WHERE ts >= ? AND kind = ?",
+                (since_ts, kind),
+            ).fetchone()
+        else:
+            row = conn.execute(
+                "SELECT COUNT(*) AS c FROM analytics_events WHERE ts >= ?",
+                (since_ts,),
+            ).fetchone()
+    return int(row["c"] if row else 0)
+
+
+def distinct_visitors(since_ts: float, online_window_sec: float = 120) -> int:
+    """Уникальные visitor_id с pulse/page_view за окно (онлайн сейчас)."""
+    if not use_sqlite():
+        return 0
+    since = since_ts
+    conn = connect()
+    with _lock:
+        row = conn.execute(
+            """
+            SELECT COUNT(DISTINCT visitor_id) AS c
+            FROM analytics_events
+            WHERE ts >= ?
+              AND visitor_id != ''
+              AND kind IN ('pulse', 'page_view')
+            """,
+            (since,),
+        ).fetchone()
+    return int(row["c"] if row else 0)

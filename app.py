@@ -12,12 +12,14 @@ from flask import (
     redirect,
     url_for,
     send_file,
+    send_from_directory,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from pathlib import Path
 from functools import wraps
 from datetime import datetime, timezone, timedelta
 from urllib.parse import urlparse
+from jinja2 import ChoiceLoader, FileSystemLoader
 import hashlib
 import hmac
 import json
@@ -61,6 +63,17 @@ from mailer import send_mail, smtp_configured
 # --- Конфиг приложения / безопасность ---
 
 app = Flask(__name__)
+
+# Admin UI lives in admin_panel/ (separate templates + static)
+import admin_panel as admin_panel_pkg
+
+_APP_TEMPLATES = Path(__file__).resolve().parent / "templates"
+app.jinja_loader = ChoiceLoader(
+    [
+        FileSystemLoader(str(_APP_TEMPLATES)),
+        FileSystemLoader(str(admin_panel_pkg.TEMPLATES)),
+    ]
+)
 
 _DEFAULT_SECRET = "tenderbauka-dev-secret-change-me"
 app.secret_key = (
@@ -159,10 +172,32 @@ def ensure_csrf_token():
     return token
 
 
+def track_event(kind: str, *, path: str = "", meta: dict | None = None, visitor_id: str = ""):
+    """Best-effort analytics event. Safe from any request path."""
+    try:
+        uid = session.get("user_id")
+        user = find_user_by_id(uid) if uid else None
+        db_store.record_analytics_event(
+            kind,
+            path=path or (request.path if request else ""),
+            user_id=(user or {}).get("id") or (uid or ""),
+            role=(user or {}).get("role") or session.get("role") or "",
+            visitor_id=visitor_id or "",
+            meta=meta,
+        )
+    except Exception:
+        return
+
+
 @app.before_request
 def enforce_api_guards():
     """Rate-limit и CSRF-проверка для мутирующих вызовов /api/*."""
     if not request.path.startswith("/api/"):
+        return None
+    # Presence pulse: GET/POST without CSRF (beacon-friendly)
+    if request.path == "/api/analytics/pulse":
+        if not check_rate_limit("analytics_pulse", 120, 60):
+            return jsonify({"ok": False, "error": "rate"}), 429
         return None
     if request.method in ("POST", "PUT", "DELETE", "PATCH"):
         if not check_rate_limit("api_mut", API_RATE_LIMIT, API_RATE_WINDOW_SEC):
@@ -2455,6 +2490,11 @@ def api_register_verify():
     _, err = _finalize_registration(user)
     if err:
         return err
+    track_event(
+        "register",
+        path="/api/register/verify",
+        meta={"role": user.get("role") or "", "email": user.get("email") or ""},
+    )
     return jsonify({"ok": True, "redirect": home_redirect()})
 
 
@@ -2512,6 +2552,7 @@ def api_login():
 
     session["user_id"] = user["id"]
     session["role"] = user["role"]
+    track_event("login", path="/api/login", meta={"email": user.get("email") or ""})
     return jsonify({"ok": True, "redirect": home_redirect()})
 
 
@@ -3534,6 +3575,15 @@ def api_requests():
     items = load_requests()
     items.append(item)
     save_requests(items)
+    track_event(
+        "request_created",
+        path="/api/requests",
+        meta={
+            "request_id": item["id"],
+            "suppliers": len(item.get("supplier_ids") or []),
+            "direct": bool(direct),
+        },
+    )
 
     buyer_label = user.get("name") or "Покупатель"
     snippet = (final_text[:120] + "…") if len(final_text) > 120 else final_text
@@ -3625,6 +3675,11 @@ def api_request_offer(request_id):
         offers.append(offer)
 
     save_requests(items)
+    track_event(
+        "offer_sent",
+        path=f"/api/requests/{request_id}/offer",
+        meta={"request_id": request_id, "price": price},
+    )
 
     company = company_supplier_profile(user).get("company_name") or user.get("name") or "Поставщик"
     offer_title = "Новое предложение с ценой"
@@ -4184,11 +4239,17 @@ def api_request_rate(request_id):
 def admin_page():
     user = current_user()
     return render_template(
-        "admin.html",
+        "admin_panel.html",
         user=user,
         avatar_initials=avatar_initials(user.get("name") or "A"),
         avatar_tone=avatar_tone(user.get("name") or "A"),
     )
+
+
+@app.route("/admin-assets/<path:filename>")
+def admin_panel_static(filename):
+    """CSS/JS для новой админ-панели из папки admin_panel/static."""
+    return send_from_directory(admin_panel_pkg.STATIC, filename)
 
 
 @app.route("/api/admin/stats")
@@ -4310,6 +4371,179 @@ def api_admin_requests():
         )
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
     return jsonify({"ok": True, "items": items[:200]})
+
+
+@app.route("/api/analytics/pulse", methods=["GET", "POST"])
+def api_analytics_pulse():
+    """Heartbeat / page presence for live admin wave."""
+    data = request.get_json(silent=True) or {}
+    # sendBeacon often POSTs with query string and empty body
+    path = (data.get("path") or request.args.get("path") or "/")[:240]
+    visitor_id = (data.get("vid") or request.args.get("vid") or "")[:80]
+    kind = (data.get("kind") or request.args.get("kind") or "pulse")[:32]
+    if kind not in ("pulse", "page_view"):
+        kind = "pulse"
+    track_event(kind, path=path, visitor_id=visitor_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/analytics")
+@api_admin_required
+def api_admin_analytics():
+    """Rich live dashboard payload for admin_panel."""
+    now = time.time()
+    online_sec = 120
+    hour_ago = now - 3600
+    day_ago = now - 86400
+    days14 = now - 14 * 86400
+
+    users = load_users()
+    requests_items = load_requests()
+    buyers = [u for u in users if u.get("role") == "user"]
+    suppliers = [u for u in users if u.get("role") == "supplier"]
+    blocked = sum(1 for u in users if u.get("blocked"))
+
+    by_status = {}
+    offers_total = 0
+    deals = 0
+    for r in requests_items:
+        st = r.get("status") or "sent"
+        by_status[st] = by_status.get(st, 0) + 1
+        offers_total += len(r.get("offers") or [])
+        if st == "deal":
+            deals += 1
+
+    events_hour = db_store.fetch_analytics_events(hour_ago)
+    events_day = db_store.fetch_analytics_events(day_ago)
+    events_14 = db_store.fetch_analytics_events(days14)
+
+    def count_kind(rows, kind):
+        return sum(1 for e in rows if e.get("kind") == kind)
+
+    online_now = db_store.distinct_visitors(now - online_sec)
+
+    # Traffic wave: last 60 minutes, 1-min buckets
+    wave_labels = []
+    wave_views = []
+    wave_online = []
+    for i in range(59, -1, -1):
+        start = now - (i + 1) * 60
+        end = now - i * 60
+        label_dt = datetime.fromtimestamp(end, tz=timezone.utc)
+        wave_labels.append(label_dt.strftime("%H:%M"))
+        bucket = [e for e in events_hour if start <= e["ts"] < end]
+        wave_views.append(sum(1 for e in bucket if e["kind"] in ("page_view", "pulse")))
+        vids = {e["visitor_id"] for e in bucket if e.get("visitor_id")}
+        wave_online.append(len(vids))
+
+    # Daily series last 14 days
+    day_labels = []
+    day_logins = []
+    day_registers = []
+    day_requests = []
+    day_offers = []
+    day_views = []
+    for i in range(13, -1, -1):
+        start = now - (i + 1) * 86400
+        end = now - i * 86400
+        day_labels.append(
+            datetime.fromtimestamp(end, tz=timezone.utc).strftime("%d.%m")
+        )
+        bucket = [e for e in events_14 if start <= e["ts"] < end]
+        day_logins.append(count_kind(bucket, "login"))
+        day_registers.append(count_kind(bucket, "register"))
+        day_requests.append(count_kind(bucket, "request_created"))
+        day_offers.append(count_kind(bucket, "offer_sent"))
+        day_views.append(sum(1 for e in bucket if e["kind"] in ("page_view", "pulse")))
+
+    # Top pages (24h)
+    page_counts: dict[str, int] = {}
+    for e in events_day:
+        if e["kind"] not in ("page_view", "pulse"):
+            continue
+        p = e.get("path") or "/"
+        # normalize
+        if "?" in p:
+            p = p.split("?", 1)[0]
+        page_counts[p] = page_counts.get(p, 0) + 1
+    top_pages = sorted(page_counts.items(), key=lambda x: x[1], reverse=True)[:8]
+
+    # Role activity 24h
+    role_activity = {"user": 0, "supplier": 0, "admin": 0, "guest": 0}
+    for e in events_day:
+        role = e.get("role") or "guest"
+        if role not in role_activity:
+            role = "guest"
+        role_activity[role] += 1
+
+    # Live feed (last 25 meaningful events)
+    feed_kinds = {"login", "register", "request_created", "offer_sent", "page_view"}
+    feed = []
+    for e in reversed(events_hour):
+        if e["kind"] not in feed_kinds:
+            continue
+        if e["kind"] == "page_view" and len(feed) > 8:
+            continue
+        feed.append(
+            {
+                "ts": e["ts"],
+                "kind": e["kind"],
+                "path": e.get("path") or "",
+                "role": e.get("role") or "",
+                "user_id": e.get("user_id") or "",
+            }
+        )
+        if len(feed) >= 25:
+            break
+
+    created_today_users = 0
+    for u in users:
+        created = u.get("created_at") or ""
+        if created and created[:10] == datetime.now(timezone.utc).strftime("%Y-%m-%d"):
+            created_today_users += 1
+
+    return jsonify(
+        {
+            "ok": True,
+            "generated_at": now,
+            "live": True,
+            "ephemeral_note": bool(os.environ.get("VERCEL")),
+            "kpis": {
+                "online_now": online_now,
+                "views_1h": sum(
+                    1 for e in events_hour if e["kind"] in ("page_view", "pulse")
+                ),
+                "views_24h": sum(
+                    1 for e in events_day if e["kind"] in ("page_view", "pulse")
+                ),
+                "logins_24h": count_kind(events_day, "login"),
+                "registers_24h": count_kind(events_day, "register"),
+                "requests_24h": count_kind(events_day, "request_created"),
+                "offers_24h": count_kind(events_day, "offer_sent"),
+                "users_total": len(users),
+                "buyers": len(buyers),
+                "suppliers": len(suppliers),
+                "blocked": blocked,
+                "requests_total": len(requests_items),
+                "offers_total": offers_total,
+                "deals_active": deals,
+                "users_created_today": created_today_users,
+            },
+            "requests_by_status": by_status,
+            "role_activity_24h": role_activity,
+            "wave": {"labels": wave_labels, "activity": wave_views, "unique": wave_online},
+            "daily": {
+                "labels": day_labels,
+                "logins": day_logins,
+                "registers": day_registers,
+                "requests": day_requests,
+                "offers": day_offers,
+                "views": day_views,
+            },
+            "top_pages": [{"path": p, "count": c} for p, c in top_pages],
+            "feed": feed,
+        }
+    )
 
 
 # --- Старт приложения ---

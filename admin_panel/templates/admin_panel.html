@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ _("admin.title") }} — HupHup</title>
+  {% set page_title = _('admin.title') ~ ' — HupHup' %}
+  {% set page_desc = _('admin.meta_desc') %}
+  {% include "partials/head_seo.html" %}
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('admin_panel_static', filename='css/panel.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+</head>
+<body class="ap-body">
+  {% include "partials/page_loader.html" %}
+
+  <div class="ap">
+    <aside class="ap-rail" id="ap-rail">
+      <a href="{{ url_for('admin_page') }}" class="ap-brand" aria-label="HupHup Admin">
+        {% set brand_class = "brand-logo--sidebar" %}
+        {% include "partials/brand_logo.html" %}
+        <span class="ap-brand__tag">Admin</span>
+      </a>
+
+      <nav class="ap-nav" aria-label="Admin">
+        <button type="button" class="ap-nav__btn is-active" data-tab="overview">
+          <span class="ap-nav__ico" aria-hidden="true">◆</span>
+          {{ _("admin.nav_overview") }}
+        </button>
+        <button type="button" class="ap-nav__btn" data-tab="users">
+          <span class="ap-nav__ico" aria-hidden="true">◎</span>
+          {{ _("admin.nav_users") }}
+        </button>
+        <button type="button" class="ap-nav__btn" data-tab="requests">
+          <span class="ap-nav__ico" aria-hidden="true">▣</span>
+          {{ _("admin.nav_requests") }}
+        </button>
+      </nav>
+
+      <div class="ap-rail__foot">
+        <div class="ap-user">
+          <span class="ap-avatar" aria-hidden="true">{{ avatar_initials }}</span>
+          <div>
+            <p class="ap-user__name">{{ user.name }}</p>
+            <p class="ap-user__role">{{ _("admin.role") }}</p>
+          </div>
+        </div>
+        {% include "partials/lang_switch.html" %}
+        <a class="ap-logout" href="{{ url_for('logout') }}">{{ _("home.logout") }}</a>
+      </div>
+    </aside>
+
+    <div class="ap-main">
+      <header class="ap-top">
+        <div>
+          <p class="ap-eyebrow">HupHup · <span class="ap-live" id="ap-live"><span class="ap-live__dot" aria-hidden="true"></span>{{ _("admin.live") }}</span></p>
+          <h1 class="ap-title" id="ap-title">{{ _("admin.title") }}</h1>
+          <p class="ap-lead" id="ap-lead">{{ _("admin.lead") }}</p>
+        </div>
+        <div class="ap-top__actions">
+          <span class="ap-updated" id="ap-updated"></span>
+          <button type="button" class="ap-btn ap-btn--ghost" id="ap-refresh">{{ _("admin.refresh") }}</button>
+        </div>
+      </header>
+
+      <section class="ap-view is-active" id="tab-overview" data-title="{{ _('admin.nav_overview') }}" data-lead="{{ _('admin.overview_lead') }}">
+        <p class="ap-ephemeral" id="ap-ephemeral" hidden>{{ _("admin.ephemeral_note") }}</p>
+        <div class="ap-stats ap-stats--wide" id="ap-stats"></div>
+
+        <div class="ap-charts">
+          <article class="ap-block ap-block--chart">
+            <div class="ap-block__head">
+              <h2 class="ap-block__title">{{ _("admin.chart_wave") }}</h2>
+              <span class="ap-block__meta">{{ _("admin.chart_wave_meta") }}</span>
+            </div>
+            <div class="ap-chart-wrap ap-chart-wrap--tall">
+              <canvas id="chart-wave" aria-label="{{ _('admin.chart_wave') }}"></canvas>
+            </div>
+          </article>
+          <article class="ap-block ap-block--chart">
+            <div class="ap-block__head">
+              <h2 class="ap-block__title">{{ _("admin.chart_daily") }}</h2>
+              <span class="ap-block__meta">{{ _("admin.chart_daily_meta") }}</span>
+            </div>
+            <div class="ap-chart-wrap ap-chart-wrap--tall">
+              <canvas id="chart-daily" aria-label="{{ _('admin.chart_daily') }}"></canvas>
+            </div>
+          </article>
+        </div>
+
+        <div class="ap-grid ap-grid--3">
+          <article class="ap-block ap-block--chart">
+            <h2 class="ap-block__title">{{ _("admin.status_breakdown") }}</h2>
+            <div class="ap-chart-wrap">
+              <canvas id="chart-status"></canvas>
+            </div>
+          </article>
+          <article class="ap-block ap-block--chart">
+            <h2 class="ap-block__title">{{ _("admin.chart_roles") }}</h2>
+            <div class="ap-chart-wrap">
+              <canvas id="chart-roles"></canvas>
+            </div>
+          </article>
+          <article class="ap-block">
+            <h2 class="ap-block__title">{{ _("admin.top_pages") }}</h2>
+            <div class="ap-pages" id="ap-pages"></div>
+          </article>
+        </div>
+
+        <div class="ap-grid">
+          <article class="ap-block">
+            <h2 class="ap-block__title">{{ _("admin.live_feed") }}</h2>
+            <div class="ap-feed" id="ap-feed"></div>
+          </article>
+          <article class="ap-block">
+            <h2 class="ap-block__title">{{ _("admin.quick_actions") }}</h2>
+            <div class="ap-quick">
+              <button type="button" class="ap-quick__btn" data-goto="users">{{ _("admin.nav_users") }}</button>
+              <button type="button" class="ap-quick__btn" data-goto="requests">{{ _("admin.nav_requests") }}</button>
+            </div>
+            <p class="ap-hint">{{ _("admin.overview_hint") }}</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="ap-view" id="tab-users" hidden data-title="{{ _('admin.nav_users') }}" data-lead="{{ _('admin.users_lead') }}">
+        <div class="ap-toolbar">
+          <input type="search" id="users-q" class="ap-input" placeholder="{{ _('admin.search_users') }}" autocomplete="off" />
+          <select id="users-role" class="ap-select">
+            <option value="">{{ _("admin.filter_all_roles") }}</option>
+            <option value="user">{{ _("auth.role_user") }}</option>
+            <option value="supplier">{{ _("auth.role_supplier") }}</option>
+          </select>
+          <label class="ap-check">
+            <input type="checkbox" id="users-blocked" />
+            {{ _("admin.filter_blocked") }}
+          </label>
+        </div>
+        <div class="ap-table-wrap">
+          <table class="ap-table" id="users-table">
+            <thead>
+              <tr>
+                <th>{{ _("admin.col_name") }}</th>
+                <th>{{ _("admin.col_role") }}</th>
+                <th>{{ _("admin.col_company") }}</th>
+                <th>{{ _("auth.bin") }}</th>
+                <th>{{ _("admin.col_status") }}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="6" class="ap-empty">{{ _("js.loading") }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ap-view" id="tab-requests" hidden data-title="{{ _('admin.nav_requests') }}" data-lead="{{ _('admin.requests_lead') }}">
+        <div class="ap-toolbar">
+          <input type="search" id="requests-q" class="ap-input" placeholder="{{ _('admin.search_requests') }}" autocomplete="off" />
+          <select id="requests-status" class="ap-select">
+            <option value="">{{ _("admin.filter_all_status") }}</option>
+            <option value="sent">{{ _("home.filter_sent") }}</option>
+            <option value="deal">{{ _("home.filter_deal") }}</option>
+            <option value="completed">{{ _("home.filter_done") }}</option>
+            <option value="cancelled">{{ _("home.filter_cancelled") }}</option>
+          </select>
+        </div>
+        <div class="ap-table-wrap">
+          <table class="ap-table" id="requests-table">
+            <thead>
+              <tr>
+                <th>{{ _("admin.col_request") }}</th>
+                <th>{{ _("admin.col_buyer") }}</th>
+                <th>{{ _("admin.col_status") }}</th>
+                <th>{{ _("admin.col_offers") }}</th>
+                <th>{{ _("admin.col_created") }}</th>
+              </tr>
+            </thead>
+            <tbody id="requests-tbody">
+              <tr><td colspan="5" class="ap-empty">{{ _("js.loading") }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    window.I18N_BUNDLE = {{ i18n_bundle | tojson }};
+    window.I18N_LANG = {{ lang | tojson }};
+    window.I18N_MODE = {{ i18n_mode | tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+  <script src="{{ url_for('admin_panel_static', filename='js/panel.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+</body>
+</html>
