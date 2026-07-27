@@ -15,14 +15,21 @@
   const feedEl = document.getElementById("ap-feed");
   const usersBody = document.getElementById("users-tbody");
   const requestsBody = document.getElementById("requests-tbody");
+  const productsBody = document.getElementById("products-tbody");
+  const notificationsBody = document.getElementById("notifications-tbody");
+  const ratingsBody = document.getElementById("ratings-tbody");
   const titleEl = document.getElementById("ap-title");
   const leadEl = document.getElementById("ap-lead");
   const updatedEl = document.getElementById("ap-updated");
   const ephemeralEl = document.getElementById("ap-ephemeral");
+  const dbEl = document.getElementById("ap-db");
   const views = {
     overview: document.getElementById("tab-overview"),
     users: document.getElementById("tab-users"),
     requests: document.getElementById("tab-requests"),
+    products: document.getElementById("tab-products"),
+    notifications: document.getElementById("tab-notifications"),
+    ratings: document.getElementById("tab-ratings"),
   };
 
   const charts = { wave: null, daily: null, status: null, roles: null };
@@ -69,24 +76,21 @@
     if (active && titleEl) titleEl.textContent = active.dataset.title || t("admin.title");
     if (active && leadEl) leadEl.textContent = active.dataset.lead || t("admin.lead");
     if (name === "overview") loadAnalytics();
+    if (name === "users") loadUsers();
+    if (name === "requests") loadRequests();
+    if (name === "products") loadProducts();
+    if (name === "notifications") loadNotifications();
+    if (name === "ratings") loadRatings();
   }
 
   document.querySelectorAll(".ap-nav__btn[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const tab = btn.dataset.tab;
-      showTab(tab);
-      if (tab === "users") loadUsers();
-      else if (tab === "requests") loadRequests();
+      showTab(btn.dataset.tab);
     });
   });
 
   document.querySelectorAll("[data-goto]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tab = btn.dataset.goto;
-      showTab(tab);
-      if (tab === "users") loadUsers();
-      if (tab === "requests") loadRequests();
-    });
+    btn.addEventListener("click", () => showTab(btn.dataset.goto));
   });
 
   function upsertChart(key, canvasId, config) {
@@ -302,6 +306,15 @@
     renderFeed(data.feed || []);
     renderCharts(data);
     if (ephemeralEl) ephemeralEl.hidden = !data.ephemeral_note;
+    if (dbEl) {
+      const db = data.db || {};
+      const backend = db.backend || "?";
+      dbEl.hidden = false;
+      dbEl.classList.toggle("is-bad", !db.ok);
+      dbEl.textContent = db.ok
+        ? `${t("admin.db_ok")}: ${backend}${db.detail ? ` · ${db.detail}` : ""}`
+        : `${t("admin.db_bad")}: ${db.detail || backend}`;
+    }
     if (updatedEl) {
       const d = new Date((data.generated_at || Date.now() / 1000) * 1000);
       updatedEl.textContent = `${t("admin.updated")}: ${d.toLocaleTimeString()}`;
@@ -421,11 +434,93 @@
       .join("");
   }
 
+  async function loadProducts() {
+    const q = document.getElementById("products-q")?.value.trim() || "";
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    const res = await fetch(`/api/admin/products?${params}`);
+    const data = await res.json().catch(() => ({}));
+    if (!productsBody) return;
+    if (!res.ok || !data.ok) {
+      productsBody.innerHTML = `<tr><td colspan="4" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
+      return;
+    }
+    const items = data.items || [];
+    if (!items.length) {
+      productsBody.innerHTML = `<tr><td colspan="4" class="ap-empty">${escapeHtml(t("admin.empty_products"))}</td></tr>`;
+      return;
+    }
+    productsBody.innerHTML = items
+      .map(
+        (p) => `<tr>
+        <td><strong>${escapeHtml(p.name || "")}</strong></td>
+        <td>${escapeHtml(p.company_name || "—")}</td>
+        <td>${escapeHtml(p.category || "—")}</td>
+        <td>${escapeHtml(p.price || "—")}</td>
+      </tr>`
+      )
+      .join("");
+  }
+
+  async function loadNotifications() {
+    const q = document.getElementById("notifications-q")?.value.trim() || "";
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    const res = await fetch(`/api/admin/notifications?${params}`);
+    const data = await res.json().catch(() => ({}));
+    if (!notificationsBody) return;
+    if (!res.ok || !data.ok) {
+      notificationsBody.innerHTML = `<tr><td colspan="4" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
+      return;
+    }
+    const items = data.items || [];
+    if (!items.length) {
+      notificationsBody.innerHTML = `<tr><td colspan="4" class="ap-empty">${escapeHtml(t("admin.empty_notifications"))}</td></tr>`;
+      return;
+    }
+    notificationsBody.innerHTML = items
+      .map((n) => {
+        const created = (n.created_at || "").slice(0, 16).replace("T", " ");
+        return `<tr>
+          <td class="ap-muted">${escapeHtml(created)}</td>
+          <td><span class="ap-badge">${escapeHtml(n.type || "—")}</span></td>
+          <td><strong>${escapeHtml(n.title || "")}</strong><div class="ap-muted">${escapeHtml(n.body || "")}</div></td>
+          <td class="ap-muted">${escapeHtml(n.user_id || "—")}</td>
+        </tr>`;
+      })
+      .join("");
+  }
+
+  async function loadRatings() {
+    const res = await fetch("/api/admin/ratings");
+    const data = await res.json().catch(() => ({}));
+    if (!ratingsBody) return;
+    if (!res.ok || !data.ok) {
+      ratingsBody.innerHTML = `<tr><td colspan="5" class="ap-empty">${escapeHtml(data.error || t("js.err_send"))}</td></tr>`;
+      return;
+    }
+    const items = data.items || [];
+    if (!items.length) {
+      ratingsBody.innerHTML = `<tr><td colspan="5" class="ap-empty">${escapeHtml(t("admin.empty_ratings"))}</td></tr>`;
+      return;
+    }
+    ratingsBody.innerHTML = items
+      .map((r) => {
+        const created = (r.created_at || "").slice(0, 16).replace("T", " ");
+        return `<tr>
+          <td class="ap-muted">${escapeHtml(created)}</td>
+          <td><strong>${escapeHtml(r.score || "—")}</strong></td>
+          <td class="ap-muted">${escapeHtml(r.from_user_id || "—")}</td>
+          <td class="ap-muted">${escapeHtml(r.to_user_id || "—")}</td>
+          <td>${escapeHtml(r.comment || "—")}</td>
+        </tr>`;
+      })
+      .join("");
+  }
+
   document.getElementById("ap-refresh")?.addEventListener("click", () => {
     const active = Object.entries(views).find(([, el]) => el && !el.hidden)?.[0] || "overview";
-    if (active === "users") loadUsers();
-    else if (active === "requests") loadRequests();
-    loadAnalytics();
+    showTab(active);
   });
 
   document.getElementById("users-q")?.addEventListener("keydown", (e) => {
@@ -433,6 +528,12 @@
   });
   document.getElementById("requests-q")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") loadRequests();
+  });
+  document.getElementById("products-q")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loadProducts();
+  });
+  document.getElementById("notifications-q")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loadNotifications();
   });
   document.getElementById("users-role")?.addEventListener("change", loadUsers);
   document.getElementById("users-blocked")?.addEventListener("change", loadUsers);

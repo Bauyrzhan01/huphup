@@ -531,7 +531,7 @@ def save_json(path, data):
 
 def load_catalog():
     """Загрузить каталог из SQLite или catalog.json; дополнить список категорий."""
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         catalog = db_store.load_catalog()
     else:
@@ -584,7 +584,7 @@ def ensure_catalog_categories(catalog):
 
 
 def save_catalog(data):
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         db_store.save_catalog(data)
     else:
@@ -598,14 +598,14 @@ def save_catalog(data):
 
 
 def load_users():
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         return db_store.load_users()
     return load_json(USERS_FILE, [])
 
 
 def save_users(users):
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         db_store.save_users(users)
     else:
@@ -613,14 +613,14 @@ def save_users(users):
 
 
 def load_requests():
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         return db_store.load_requests()
     return load_json(REQUESTS_FILE, [])
 
 
 def save_requests(items):
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         db_store.save_requests(items)
     else:
@@ -628,14 +628,14 @@ def save_requests(items):
 
 
 def load_notifications():
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         return db_store.load_notifications()
     return load_json(NOTIFICATIONS_FILE, [])
 
 
 def save_notifications(items):
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         db_store.save_notifications(items)
     else:
@@ -743,14 +743,14 @@ def shareable_url(path: str = "/") -> str:
 
 
 def load_ratings():
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         return db_store.load_ratings()
     return load_json(RATINGS_FILE, [])
 
 
 def save_ratings(items):
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
         db_store.save_ratings(items)
     else:
@@ -4373,6 +4373,79 @@ def api_admin_requests():
     return jsonify({"ok": True, "items": items[:200]})
 
 
+@app.route("/api/admin/products")
+@api_admin_required
+def api_admin_products():
+    q = (request.args.get("q") or "").strip().lower()
+    catalog = load_catalog() or {}
+    users_by_id = {u.get("id"): u for u in load_users()}
+    items = []
+    for p in catalog.get("products") or []:
+        name = p.get("name") or ""
+        if q and q not in name.lower() and q not in (p.get("category") or "").lower():
+            continue
+        sid = p.get("supplier_id") or ""
+        supplier = users_by_id.get(sid) or {}
+        company = (supplier.get("supplier") or {}).get("company_name") or supplier.get("name") or ""
+        items.append(
+            {
+                "id": p.get("id"),
+                "name": name,
+                "category": p.get("category") or "",
+                "price": p.get("price") or "",
+                "supplier_id": sid,
+                "company_name": company,
+                "image_url": p.get("image_url") or "",
+            }
+        )
+    return jsonify({"ok": True, "items": items[:300], "total": len(catalog.get("products") or [])})
+
+
+@app.route("/api/admin/notifications")
+@api_admin_required
+def api_admin_notifications():
+    q = (request.args.get("q") or "").strip().lower()
+    items = []
+    for n in load_notifications():
+        title = n.get("title") or ""
+        body = n.get("body") or n.get("message") or ""
+        if q and q not in title.lower() and q not in body.lower():
+            continue
+        items.append(
+            {
+                "id": n.get("id"),
+                "user_id": n.get("user_id") or "",
+                "type": n.get("type") or "",
+                "title": title,
+                "body": (body or "")[:160],
+                "created_at": n.get("created_at") or "",
+                "read": bool(n.get("read")),
+            }
+        )
+    items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+    return jsonify({"ok": True, "items": items[:200]})
+
+
+@app.route("/api/admin/ratings")
+@api_admin_required
+def api_admin_ratings():
+    items = []
+    for r in load_ratings():
+        items.append(
+            {
+                "id": r.get("id"),
+                "request_id": r.get("request_id") or "",
+                "from_user_id": r.get("from_user_id") or r.get("user_id") or "",
+                "to_user_id": r.get("to_user_id") or r.get("supplier_id") or "",
+                "score": r.get("score") or r.get("rating") or "",
+                "comment": (r.get("comment") or "")[:160],
+                "created_at": r.get("created_at") or "",
+            }
+        )
+    items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+    return jsonify({"ok": True, "items": items[:200]})
+
+
 @app.route("/api/analytics/pulse", methods=["GET", "POST"])
 def api_analytics_pulse():
     """Heartbeat / page presence for live admin wave."""
@@ -4507,7 +4580,8 @@ def api_admin_analytics():
             "ok": True,
             "generated_at": now,
             "live": True,
-            "ephemeral_note": bool(os.environ.get("VERCEL")),
+            "ephemeral_note": bool(os.environ.get("VERCEL")) and not db_store.use_postgres(),
+            "db": db_store.health(),
             "kpis": {
                 "online_now": online_now,
                 "views_1h": sum(
@@ -4548,13 +4622,13 @@ def api_admin_analytics():
 
 # --- Старт приложения ---
 
-if db_store.use_sqlite():
+if db_store.use_db():
     db_store.ensure_migrated()
 ensure_admin_user()
 
 
 if __name__ == "__main__":
-    if db_store.use_sqlite():
+    if db_store.use_db():
         db_store.ensure_migrated()
     else:
         # Создать пустые JSON-файлы, чтобы на пустой установке было куда писать

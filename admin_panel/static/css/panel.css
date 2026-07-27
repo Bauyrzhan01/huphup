@@ -467,6 +467,23 @@ a {
   border: 1px solid #fedf89;
 }
 
+.ap-db {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eefcf3;
+  color: #087443;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #abe5c5;
+}
+
+.ap-db.is-bad {
+  background: #fef3f2;
+  color: #b42318;
+  border-color: #fecdca;
+}
+
 .ap-charts {
   display: grid;
   grid-template-columns: 1.2fr 1fr;

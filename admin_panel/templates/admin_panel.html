@@ -38,6 +38,18 @@
           <span class="ap-nav__ico" aria-hidden="true">▣</span>
           {{ _("admin.nav_requests") }}
         </button>
+        <button type="button" class="ap-nav__btn" data-tab="products">
+          <span class="ap-nav__ico" aria-hidden="true">◇</span>
+          {{ _("admin.nav_products") }}
+        </button>
+        <button type="button" class="ap-nav__btn" data-tab="notifications">
+          <span class="ap-nav__ico" aria-hidden="true">◌</span>
+          {{ _("admin.nav_notifications") }}
+        </button>
+        <button type="button" class="ap-nav__btn" data-tab="ratings">
+          <span class="ap-nav__ico" aria-hidden="true">★</span>
+          {{ _("admin.nav_ratings") }}
+        </button>
       </nav>
 
       <div class="ap-rail__foot">
@@ -68,6 +80,7 @@
 
       <section class="ap-view is-active" id="tab-overview" data-title="{{ _('admin.nav_overview') }}" data-lead="{{ _('admin.overview_lead') }}">
         <p class="ap-ephemeral" id="ap-ephemeral" hidden>{{ _("admin.ephemeral_note") }}</p>
+        <p class="ap-db" id="ap-db"></p>
         <div class="ap-stats ap-stats--wide" id="ap-stats"></div>
 
         <div class="ap-charts">
@@ -181,6 +194,67 @@
               </tr>
             </thead>
             <tbody id="requests-tbody">
+              <tr><td colspan="5" class="ap-empty">{{ _("js.loading") }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ap-view" id="tab-products" hidden data-title="{{ _('admin.nav_products') }}" data-lead="{{ _('admin.products_lead') }}">
+        <div class="ap-toolbar">
+          <input type="search" id="products-q" class="ap-input" placeholder="{{ _('admin.search_products') }}" autocomplete="off" />
+        </div>
+        <div class="ap-table-wrap">
+          <table class="ap-table">
+            <thead>
+              <tr>
+                <th>{{ _("admin.col_product") }}</th>
+                <th>{{ _("admin.col_company") }}</th>
+                <th>{{ _("admin.col_category") }}</th>
+                <th>{{ _("admin.col_price") }}</th>
+              </tr>
+            </thead>
+            <tbody id="products-tbody">
+              <tr><td colspan="4" class="ap-empty">{{ _("js.loading") }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ap-view" id="tab-notifications" hidden data-title="{{ _('admin.nav_notifications') }}" data-lead="{{ _('admin.notifications_lead') }}">
+        <div class="ap-toolbar">
+          <input type="search" id="notifications-q" class="ap-input" placeholder="{{ _('admin.search_notifications') }}" autocomplete="off" />
+        </div>
+        <div class="ap-table-wrap">
+          <table class="ap-table">
+            <thead>
+              <tr>
+                <th>{{ _("admin.col_created") }}</th>
+                <th>{{ _("admin.col_type") }}</th>
+                <th>{{ _("admin.col_title") }}</th>
+                <th>{{ _("admin.col_user_id") }}</th>
+              </tr>
+            </thead>
+            <tbody id="notifications-tbody">
+              <tr><td colspan="4" class="ap-empty">{{ _("js.loading") }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ap-view" id="tab-ratings" hidden data-title="{{ _('admin.nav_ratings') }}" data-lead="{{ _('admin.ratings_lead') }}">
+        <div class="ap-table-wrap">
+          <table class="ap-table">
+            <thead>
+              <tr>
+                <th>{{ _("admin.col_created") }}</th>
+                <th>{{ _("admin.col_score") }}</th>
+                <th>{{ _("admin.col_from") }}</th>
+                <th>{{ _("admin.col_to") }}</th>
+                <th>{{ _("admin.col_comment") }}</th>
+              </tr>
+            </thead>
+            <tbody id="ratings-tbody">
               <tr><td colspan="5" class="ap-empty">{{ _("js.loading") }}</td></tr>
             </tbody>
           </table>
