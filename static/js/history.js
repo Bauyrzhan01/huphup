@@ -108,6 +108,7 @@ function renderHistoryView() {
   historyFullList.innerHTML = items
     .map((item) => {
       const status = item.status || "sent";
+      const canCancel = status === "sent";
       return `
       <article class="history-card" data-id="${histEscape(item.id)}">
         <div class="history-card__top">
@@ -118,6 +119,11 @@ function renderHistoryView() {
         <p class="history-card__meta">${histEscape(histCardMeta(item))}</p>
         <div class="history-card__actions">
           <button type="button" class="btn btn--solid btn--sm btn-open-history" data-id="${histEscape(item.id)}">${t("js.open")}</button>
+          ${
+            canCancel
+              ? `<button type="button" class="btn btn--ghost btn--sm btn-cancel-history" data-id="${histEscape(item.id)}">${t("js.cancel_request")}</button>`
+              : ""
+          }
         </div>
       </article>`;
     })
@@ -131,6 +137,25 @@ function renderHistoryView() {
       if (!item) return;
       if (typeof showView === "function") showView("home");
       if (typeof showRequest === "function") showRequest(item);
+    });
+  });
+
+  historyFullList.querySelectorAll(".btn-cancel-history").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (!id) return;
+      if (!confirm(t("js.confirm_cancel"))) return;
+      const res = await fetch(`/api/requests/${id}/cancel`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        if (typeof showError === "function") showError(data.error || t("js.err_cancel"));
+        return;
+      }
+      if (typeof showError === "function") showError("");
+      await loadHistoryView(true);
+      if (typeof refreshLists === "function") await refreshLists();
     });
   });
 }
