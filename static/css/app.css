@@ -2324,6 +2324,8 @@ ol {
   align-items: center;
   text-align: center;
   padding-bottom: 48px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .chat-empty__greet {
@@ -2465,6 +2467,7 @@ ol {
   padding: 10px 12px;
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
+  max-height: min(45vh, 280px);
 }
 
 .composer textarea {
@@ -2473,10 +2476,12 @@ ol {
   outline: none;
   resize: none;
   min-height: 24px;
-  max-height: 120px;
+  max-height: min(40vh, 240px);
   padding: 8px 4px;
   line-height: 1.4;
   background: transparent;
+  overflow-y: auto;
+  field-sizing: content;
 }
 
 .composer__send {

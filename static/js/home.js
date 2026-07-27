@@ -52,6 +52,10 @@ function showError(message) {
   searchError.textContent = message || "";
 }
 
+function resizeChatInput(el) {
+  if (typeof window.tbAutoGrowTextarea === "function") window.tbAutoGrowTextarea(el);
+}
+
 function stopDealPoll() {
   if (dealPollTimer) {
     clearInterval(dealPollTimer);
@@ -257,6 +261,7 @@ dealRepeat?.addEventListener("click", () => {
   else if (searchInput) {
     showView("home");
     searchInput.value = text;
+    resizeChatInput(searchInput);
     searchInput.focus();
   }
 });
@@ -783,6 +788,7 @@ async function startDirectRequest(text, supplierId) {
   pendingSupplierId = null;
   showRequest(data.request, data.message);
   searchInput.value = "";
+  resizeChatInput(searchInput);
   pendingText = "";
   loadHistory();
 }
@@ -804,6 +810,7 @@ async function finishClarification(confirm = true) {
   pendingSupplierId = null;
   showRequest(data.request, data.message);
   searchInput.value = "";
+  resizeChatInput(searchInput);
   pendingText = "";
   pendingAnswers = {};
   questionQueue = [];
@@ -854,6 +861,7 @@ dealFile?.addEventListener("change", async () => {
   if (!file || !activeDealId) return;
   const text = dealInput.value.trim();
   dealInput.value = "";
+  resizeChatInput(dealInput);
   const attachmentId = await uploadDealFile(file);
   if (!attachmentId) return;
   await sendDealMessage(text, attachmentId);
@@ -865,6 +873,7 @@ dealForm?.addEventListener("submit", async (e) => {
   const text = dealInput.value.trim();
   if (!text) return;
   dealInput.value = "";
+  resizeChatInput(dealInput);
   await sendDealMessage(text);
 });
 
@@ -937,6 +946,7 @@ searchForm.addEventListener("submit", async (e) => {
 
   showRequest(data.request, data.message);
   searchInput.value = "";
+  resizeChatInput(searchInput);
   pendingText = "";
   loadHistory();
 });

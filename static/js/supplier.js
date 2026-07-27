@@ -828,6 +828,9 @@ dealFile?.addEventListener("change", async () => {
   if (!file || !activeDealId) return;
   const text = dealInput.value.trim();
   dealInput.value = "";
+  if (typeof window.tbAutoGrowTextarea === "function") {
+    window.tbAutoGrowTextarea(dealInput);
+  }
   const attachmentId = await uploadSupplierDealFile(file);
   if (!attachmentId) return;
   await sendSupplierDealMessage(text, attachmentId);
@@ -839,6 +842,9 @@ dealForm?.addEventListener("submit", async (e) => {
   const text = dealInput.value.trim();
   if (!text) return;
   dealInput.value = "";
+  if (typeof window.tbAutoGrowTextarea === "function") {
+    window.tbAutoGrowTextarea(dealInput);
+  }
   await sendSupplierDealMessage(text);
 });
 

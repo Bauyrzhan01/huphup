@@ -133,9 +133,49 @@
   window.tbSetSidebarOpen = setSidebarOpen;
   window.tbCsrfToken = csrfToken;
 
+  function autoGrowTextarea(el) {
+    if (!el || el.tagName !== "TEXTAREA") return;
+    el.style.height = "auto";
+    const max = parseFloat(getComputedStyle(el).maxHeight) || 240;
+    const next = Math.min(el.scrollHeight, max);
+    el.style.height = `${Math.max(next, 24)}px`;
+    el.style.overflowY = el.scrollHeight > max + 1 ? "auto" : "hidden";
+  }
+
+  function bindAutoGrow(root = document) {
+    root
+      .querySelectorAll(
+        "textarea#search-input, textarea#deal-input, textarea#supplier-deal-input, .composer textarea, .deal-compose textarea"
+      )
+      .forEach((el) => {
+        if (el.dataset.autogrow === "1") return;
+        el.dataset.autogrow = "1";
+        const grow = () => autoGrowTextarea(el);
+        el.addEventListener("input", grow);
+        el.addEventListener("focus", grow);
+        // Enter sends in deal composers; Shift+Enter = new line
+        if (el.closest(".deal-compose")) {
+          el.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              el.form?.requestSubmit();
+            }
+          });
+        }
+        grow();
+      });
+  }
+
+  window.tbAutoGrowTextarea = autoGrowTextarea;
+  window.tbBindAutoGrow = bindAutoGrow;
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initMobileSidebar);
+    document.addEventListener("DOMContentLoaded", () => {
+      initMobileSidebar();
+      bindAutoGrow();
+    });
   } else {
     initMobileSidebar();
+    bindAutoGrow();
   }
 })();

@@ -636,7 +636,7 @@
 }
 
 .deal-thread {
-  max-height: 320px;
+  max-height: min(48vh, 420px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -644,6 +644,7 @@
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
+  min-height: 120px;
 }
 
 .deal-msg {
@@ -678,6 +679,9 @@
   background: var(--bg-soft);
   border: 1px solid var(--line);
   font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .deal-msg.mine .deal-msg-bubble {
@@ -697,7 +701,7 @@
 .deal-compose {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-end;
 }
 
 .deal-attach-btn {
@@ -706,15 +710,24 @@
   padding-inline: 10px;
 }
 
-.deal-compose input[type="text"] {
+.deal-compose input[type="text"],
+.deal-compose textarea {
   flex: 1;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 12px 14px;
   outline: none;
+  resize: none;
+  min-height: 44px;
+  max-height: min(36vh, 200px);
+  line-height: 1.4;
+  overflow-y: auto;
+  field-sizing: content;
+  font: inherit;
 }
 
-.deal-compose input[type="text"]:focus {
+.deal-compose input[type="text"]:focus,
+.deal-compose textarea:focus {
   border-color: var(--line-strong);
 }
 
@@ -2094,7 +2107,19 @@
 }
 
 .chat-view:has(#results:not([hidden])) .composer {
-  margin-top: auto;
+  margin-top: 0;
+  order: 3;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: var(--bg);
+}
+
+.chat-view:has(#results:not([hidden])) #results {
+  order: 2;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .hist-text {

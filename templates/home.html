@@ -110,7 +110,7 @@
             <form class="deal-compose" id="deal-form">
               <input type="file" id="deal-file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/*" hidden />
               <button type="button" class="btn btn--ghost btn--sm deal-attach-btn" id="deal-attach" title="{{ _('js.attach_file') }}" aria-label="{{ _('js.attach_file') }}">📎</button>
-              <input type="text" id="deal-input" placeholder="{{ _('js.message_ph') }}" autocomplete="off" maxlength="2000" />
+              <textarea id="deal-input" rows="1" placeholder="{{ _('js.message_ph') }}" autocomplete="off" maxlength="2000"></textarea>
               <button class="btn btn--solid" type="submit">{{ _("js.send") }}</button>
             </form>
             <div class="deal-actions" id="deal-actions">
