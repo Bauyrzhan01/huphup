@@ -72,7 +72,7 @@ export function EditRequestPage() {
 
   return (
     <BuyerLayout crumb={t('requests.editCrumb')}>
-      <div className="page narrow">
+      <div className="page">
         <div className="page-head">
           <div>
             <h1>{t('requests.editTitle')}</h1>

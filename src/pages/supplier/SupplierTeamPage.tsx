@@ -78,7 +78,7 @@ export function SupplierTeamPage() {
 
   return (
     <SupplierLayout crumb={t('team.crumb')}>
-      <div className="page narrow">
+      <div className="page">
         <div className="page-head">
           <div>
             <h1>{t('team.title')}</h1>
