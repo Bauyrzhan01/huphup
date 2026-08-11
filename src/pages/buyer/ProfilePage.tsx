@@ -1,7 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { Link, useNavigate } from 'react-router-dom';
-
 import { useTranslation } from 'react-i18next';
 
 import { notificationsApi, usersApi } from '../../api';
@@ -26,9 +24,7 @@ export function ProfilePage() {
 
   const roleLabel = useRoleLabel();
 
-  const { user, logout, refresh } = useAuth();
-
-  const navigate = useNavigate();
+  const { user, refresh } = useAuth();
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
@@ -147,16 +143,6 @@ export function ProfilePage() {
       setPwdSaving(false);
 
     }
-
-  }
-
-
-
-  function handleLogout() {
-
-    logout();
-
-    navigate('/login', { replace: true });
 
   }
 
@@ -401,7 +387,6 @@ export function ProfilePage() {
 
 
 
-        <div className="profile-bottom-grid">
         <div>
         <h3 className="section-title" style={{ marginTop: 0 }}>
 
@@ -474,35 +459,6 @@ export function ProfilePage() {
         </div>
 
 
-
-        <div className="panel profile-account">
-
-          <div className="section-title">{t('profile.account')}</div>
-
-          <p className="meta" style={{ margin: '0 0 14px' }}>
-
-            {t('profile.logoutHint')}
-
-          </p>
-
-          <div className="actions" style={{ marginTop: 0 }}>
-
-            <Link className="ghost" to="/app">
-
-              {t('common.home')}
-
-            </Link>
-
-            <button type="button" className="ghost" onClick={handleLogout}>
-
-              {t('common.logout')}
-
-            </button>
-
-          </div>
-
-        </div>
-        </div>
 
         </div>
         </div>
