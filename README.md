@@ -4,6 +4,17 @@ B2B маркетплейс API (NestJS + PostgreSQL + Prisma).
 
 Фронт пен база **бөлек** орналасады. Бұл репо — тек backend.
 
+## Документация
+
+| Файл | Мазмұны |
+|------|---------|
+| **[DOCS.md](./DOCS.md)** | Толық API, flow, модельдер, Gemini, env |
+| **[DEPLOY.md](./DEPLOY.md)** | Neon + Railway + Vercel deploy |
+| **Swagger** | `/docs` (интерактивті API) |
+
+**Live API:** https://api-production-8ac1f.up.railway.app/api/v1  
+**Live Swagger:** https://api-production-8ac1f.up.railway.app/docs
+
 ## Архитектура
 
 - Modular monolith
@@ -19,7 +30,8 @@ B2B маркетплейс API (NestJS + PostgreSQL + Prisma).
 | `users` | профиль |
 | `companies` | профиль поставщика |
 | `requests` | заявка + AI analyze + publish |
-| `matching` | lead мэтчинг поставщиктерге |
+| `matching` | Gemini lead мэтчинг (тауар каталогы) |
+| `gemini` | Google Gemini API клиент |
 | `offers` | ұсыныстар + accept |
 | `conversations` | чат (HTTP; WebSocket кейін) |
 | `notifications` | хабарламалар |
@@ -94,4 +106,6 @@ npm run prisma:studio
 2. Backend-ті осы құрылғыда іске қосу
 3. Frontend-ті бөлек папка/құрылғыда дизайн бойынша жасау
 4. Тесттер өткен соң серверге шығару
-5. Кейін: Redis, WebSocket chat, S3 файлдар, LLM analyze
+5. Кейін: Redis, WebSocket chat, S3 файлдар
+
+Толық API: [DOCS.md](./DOCS.md)

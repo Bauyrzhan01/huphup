@@ -8,6 +8,7 @@ import { OfferStatus, RequestStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ConversationsService } from '../conversations/conversations.service';
+import { CompaniesService } from '../companies/companies.service';
 import { CreateOfferDto } from './dto/offer.dto';
 
 @Injectable()
@@ -16,15 +17,15 @@ export class OffersService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly conversations: ConversationsService,
+    private readonly companies: CompaniesService,
   ) {}
 
   async create(userId: string, dto: CreateOfferDto) {
-    const company = await this.prisma.company.findUnique({
-      where: { ownerId: userId },
-    });
-    if (!company) {
+    const resolved = await this.companies.resolveCompanyForUser(userId);
+    if (!resolved) {
       throw new ForbiddenException('Create a company profile first');
     }
+    const company = resolved.company;
 
     const request = await this.prisma.request.findUnique({
       where: { id: dto.requestId },
@@ -44,7 +45,15 @@ export class OffersService {
         comment: dto.comment,
       },
       include: {
-        company: { select: { id: true, name: true, verified: true, rating: true } },
+        company: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            verified: true,
+            rating: true,
+          },
+        },
       },
     });
 
@@ -61,6 +70,33 @@ export class OffersService {
     });
 
     return offer;
+  }
+
+  async listMineForBuyer(buyerId: string) {
+    return this.prisma.offer.findMany({
+      where: { request: { buyerId } },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            verified: true,
+            rating: true,
+          },
+        },
+        request: {
+          select: {
+            id: true,
+            code: true,
+            title: true,
+            city: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+    });
   }
 
   async listForRequest(requestId: string, userId: string, role: string) {
@@ -125,13 +161,19 @@ export class OffersService {
       }),
     ]);
 
+    const memberUserIds = await this.companies.listMemberUserIds(
+      offer.companyId,
+    );
+    const supplierUserIds =
+      memberUserIds.length > 0 ? memberUserIds : [offer.company.ownerId];
+
     const chat = await this.conversations.ensureForAcceptedOffer({
       requestId: offer.requestId,
       buyerId,
-      supplierUserId: offer.company.ownerId,
+      supplierUserIds,
     });
 
-    await this.notifications.notifyUsers([offer.company.ownerId], {
+    await this.notifications.notifyUsers(supplierUserIds, {
       type: 'OFFER_ACCEPTED',
       title: 'Ваше предложение принято',
       body: offer.request.title,
@@ -139,5 +181,102 @@ export class OffersService {
     });
 
     return { offerId, conversationId: chat.id };
+  }
+
+  async reject(buyerId: string, offerId: string) {
+    const offer = await this.prisma.offer.findUnique({
+      where: { id: offerId },
+      include: { request: true },
+    });
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+    if (offer.request.buyerId !== buyerId) {
+      throw new ForbiddenException('Not request owner');
+    }
+    if (offer.status !== OfferStatus.PENDING) {
+      throw new BadRequestException('Offer is not pending');
+    }
+    return this.prisma.offer.update({
+      where: { id: offerId },
+      data: { status: OfferStatus.REJECTED },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            verified: true,
+            rating: true,
+          },
+        },
+      },
+    });
+  }
+
+  async withdraw(userId: string, offerId: string) {
+    const resolved = await this.companies.resolveCompanyForUser(userId);
+    if (!resolved) {
+      throw new ForbiddenException('Create a company profile first');
+    }
+    const offer = await this.prisma.offer.findUnique({
+      where: { id: offerId },
+      include: { request: true },
+    });
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+    if (offer.companyId !== resolved.company.id) {
+      throw new ForbiddenException('Not your offer');
+    }
+    if (offer.status !== OfferStatus.PENDING) {
+      throw new BadRequestException('Offer is not pending');
+    }
+    return this.prisma.offer.update({
+      where: { id: offerId },
+      data: { status: OfferStatus.WITHDRAWN },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            verified: true,
+            rating: true,
+          },
+        },
+        request: {
+          select: {
+            id: true,
+            code: true,
+            title: true,
+            city: true,
+            status: true,
+          },
+        },
+      },
+    });
+  }
+
+  async listForCompany(userId: string) {
+    const resolved = await this.companies.resolveCompanyForUser(userId);
+    if (!resolved) {
+      return [];
+    }
+    return this.prisma.offer.findMany({
+      where: { companyId: resolved.company.id },
+      include: {
+        request: {
+          select: {
+            id: true,
+            code: true,
+            title: true,
+            city: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+    });
   }
 }

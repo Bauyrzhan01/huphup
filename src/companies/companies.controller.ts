@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -10,6 +11,10 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company.dto';
+import { CreateInviteDto } from './dto/invite.dto';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
+import { UserRole } from '@prisma/client';
+import { Roles } from '../common/decorators/roles.decorator';
 import {
   AuthUser,
   CurrentUser,
@@ -23,19 +28,61 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Post()
+  @Roles(UserRole.SUPPLIER, UserRole.ADMIN)
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateCompanyDto) {
     return this.companiesService.create(user.id, user.role, dto);
   }
 
   @Public()
   @Get()
-  list(@Query('city') city?: string, @Query('q') q?: string) {
-    return this.companiesService.list({ city, q });
+  list(
+    @Query('city') city?: string,
+    @Query('q') q?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.companiesService.list({
+      city,
+      q,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @Get('me')
   myCompany(@CurrentUser() user: AuthUser) {
     return this.companiesService.getMyCompany(user.id);
+  }
+
+  @Get('me/members')
+  listMembers(@CurrentUser() user: AuthUser) {
+    return this.companiesService.listMembers(user.id);
+  }
+
+  @Delete('me/members/:userId')
+  removeMember(
+    @CurrentUser() user: AuthUser,
+    @Param('userId') memberUserId: string,
+  ) {
+    return this.companiesService.removeMember(user.id, memberUserId);
+  }
+
+  @Post('me/invites')
+  createInvite(@CurrentUser() user: AuthUser, @Body() dto: CreateInviteDto) {
+    return this.companiesService.createInvite(user.id, dto);
+  }
+
+  @Public()
+  @Get(':id/products')
+  listProducts(
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.companiesService.listPublicProducts(id, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @Public()

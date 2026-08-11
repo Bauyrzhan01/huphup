@@ -16,6 +16,8 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+.env.deploy
+.env.neon
 
 # tests / coverage
 /coverage
@@ -32,3 +34,4 @@ lerna-debug.log*
 
 # misc
 *.tsbuildinfo
+/uploads
