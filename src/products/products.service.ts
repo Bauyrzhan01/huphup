@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
@@ -22,6 +24,7 @@ type ReviewStats = {
 export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => CompaniesService))
     private readonly companies: CompaniesService,
     private readonly storage: StorageService,
   ) {}
