@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { WorkspaceModeProvider } from './hooks/useWorkspaceMode';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
@@ -27,7 +28,8 @@ import { LandingPage } from './pages/LandingPage';
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
+      <WorkspaceModeProvider>
+        <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -166,7 +168,8 @@ export default function App() {
         />
 
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </WorkspaceModeProvider>
     </AuthProvider>
   );
 }

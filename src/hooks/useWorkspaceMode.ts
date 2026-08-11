@@ -1,4 +1,10 @@
-import { useEffect, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useLocation } from 'react-router-dom';
 
 const WORKSPACE_KEY = 'huphup_workspace';
@@ -11,32 +17,67 @@ function readStored(): WorkspaceMode {
   return v === 'supplier' ? 'supplier' : 'buyer';
 }
 
-export function useWorkspaceMode() {
+function persist(mode: WorkspaceMode) {
+  localStorage.setItem(WORKSPACE_KEY, mode);
+}
+
+type WorkspaceModeContextValue = {
+  isSupplier: boolean;
+  mode: WorkspaceMode;
+};
+
+const WorkspaceModeContext = createContext<WorkspaceModeContextValue>({
+  isSupplier: false,
+  mode: 'buyer',
+});
+
+function syncModeFromPath(pathname: string, search: string): WorkspaceMode | null {
+  const ws = new URLSearchParams(search).get('workspace');
+  if (ws === 'supplier' || ws === 'buyer') {
+    return ws;
+  }
+  if (pathname.startsWith('/supplier')) {
+    return 'supplier';
+  }
+  if (
+    pathname.startsWith('/app') ||
+    pathname.startsWith('/requests') ||
+    pathname.startsWith('/offers') ||
+    pathname.startsWith('/suppliers') ||
+    pathname.startsWith('/profile')
+  ) {
+    return 'buyer';
+  }
+  // Shared routes (e.g. /conversations) keep the last chosen workspace.
+  return null;
+}
+
+export function WorkspaceModeProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const [mode, setMode] = useState<WorkspaceMode>(readStored);
+  const [mode, setMode] = useState<WorkspaceMode>(() => {
+    const fromPath = syncModeFromPath(location.pathname, location.search);
+    const initial = fromPath ?? readStored();
+    if (fromPath) persist(fromPath);
+    return initial;
+  });
 
   useEffect(() => {
-    const path = location.pathname;
-    const ws = new URLSearchParams(location.search).get('workspace');
-    if (ws === 'supplier' || ws === 'buyer') {
-      localStorage.setItem(WORKSPACE_KEY, ws);
-      setMode(ws);
-      return;
-    }
-    if (path.startsWith('/supplier')) {
-      localStorage.setItem(WORKSPACE_KEY, 'supplier');
-      setMode('supplier');
-    } else if (
-      path.startsWith('/app') ||
-      path.startsWith('/requests') ||
-      path.startsWith('/offers') ||
-      path.startsWith('/suppliers') ||
-      path.startsWith('/profile')
-    ) {
-      localStorage.setItem(WORKSPACE_KEY, 'buyer');
-      setMode('buyer');
+    const next = syncModeFromPath(location.pathname, location.search);
+    if (next) {
+      persist(next);
+      setMode(next);
     }
   }, [location.pathname, location.search]);
 
-  return { isSupplier: mode === 'supplier', mode };
+  return (
+    <WorkspaceModeContext.Provider
+      value={{ isSupplier: mode === 'supplier', mode }}
+    >
+      {children}
+    </WorkspaceModeContext.Provider>
+  );
+}
+
+export function useWorkspaceMode() {
+  return useContext(WorkspaceModeContext);
 }
