@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { requestsApi } from '../../api';
+import { RequestAttachments } from '../../components/RequestAttachments';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import type { RequestItem } from '../../types';
 
@@ -154,6 +155,9 @@ export function EditRequestPage() {
           </form>
         ) : !error ? (
           <p className="assist-note">{t('common.loading')}</p>
+        ) : null}
+        {request ? (
+          <RequestAttachments requestId={request.id} editable />
         ) : null}
       </div>
     </BuyerLayout>

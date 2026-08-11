@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 
 import { offersApi, requestsApi } from '../../api';
 
+import { RequestAttachments } from '../../components/RequestAttachments';
+
 import { BuyerLayout } from '../../layouts/AppLayouts';
 
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
@@ -546,6 +548,12 @@ export function RequestDetailPage() {
           </>
 
         )}
+
+        {request && canEdit ? (
+          <RequestAttachments requestId={request.id} editable />
+        ) : request ? (
+          <RequestAttachments requestId={request.id} />
+        ) : null}
 
       </div>
 

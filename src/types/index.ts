@@ -1,3 +1,36 @@
+export type PaginatedResponse<T> = {
+  items: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type CompanyProductsResponse = PaginatedResponse<
+  Pick<
+    Product,
+    'id' | 'name' | 'description' | 'unit' | 'priceFrom' | 'currency' | 'city'
+  >
+> & {
+  company: Pick<Company, 'id' | 'name'>;
+};
+
+export type MessagesPageResponse = {
+  items: MessageItem[];
+  hasMore: boolean;
+  nextCursor: string | null;
+};
+
+export type Attachment = {
+  id: string;
+  requestId: string;
+  fileName: string;
+  fileUrl: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+};
+
 export type UserRole = 'BUYER' | 'SUPPLIER' | 'ADMIN';
 
 export type User = {
@@ -154,6 +187,12 @@ export type ConversationItem = {
   updatedAt: string;
   request?: { id: string; code: string; title: string } | null;
   messages: { id: string; body: string; createdAt: string }[];
+  participants?: Array<{
+    id: string;
+    fullName: string;
+    role: string;
+    companyName: string | null;
+  }>;
 };
 
 export type MessageItem = {

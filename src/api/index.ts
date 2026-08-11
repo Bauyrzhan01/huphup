@@ -1,15 +1,19 @@
-import { api } from './client';
+import { api, API_URL, getToken, uploadApi } from './client';
 import type {
   AnalyzeResult,
+  Attachment,
   Company,
   CompanyMember,
+  CompanyProductsResponse,
   ConversationItem,
   InviteCreated,
   InvitePreview,
   Lead,
   MessageItem,
+  MessagesPageResponse,
   NotificationItem,
   Offer,
+  PaginatedResponse,
   Product,
   PublishResult,
   RequestItem,
@@ -33,21 +37,38 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  forgotPassword: (email: string) =>
+    api<{ ok: boolean; message: string; resetToken?: string; expiresAt?: string }>(
+      '/auth/forgot-password',
+      { method: 'POST', body: JSON.stringify({ email }) },
+    ),
+  resetPassword: (body: { token: string; newPassword: string }) =>
+    api<{ ok: boolean }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };
 
 export const usersApi = {
   me: () => api<User>('/users/me'),
   updateMe: (body: { fullName?: string; phone?: string }) =>
     api<User>('/users/me', { method: 'PATCH', body: JSON.stringify(body) }),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    api<{ ok: boolean }>('/users/me/password', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };
 
 export const companiesApi = {
-  list: (params?: { city?: string; q?: string }) => {
+  list: (params?: { city?: string; q?: string; page?: number; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.city) q.set('city', params.city);
     if (params?.q) q.set('q', params.q);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
     const suffix = q.toString() ? `?${q}` : '';
-    return api<Company[]>(`/companies${suffix}`);
+    return api<PaginatedResponse<Company>>(`/companies${suffix}`);
   },
   me: () => api<Company>('/companies/me'),
   members: () => api<CompanyMember[]>('/companies/me/members'),
@@ -74,15 +95,13 @@ export const companiesApi = {
       body: JSON.stringify(body),
     }),
   get: (id: string) => api<Company>(`/companies/${id}`),
-  products: (id: string) =>
-    api<
-      Array<
-        Pick<
-          Product,
-          'id' | 'name' | 'description' | 'unit' | 'priceFrom' | 'currency' | 'city'
-        >
-      >
-    >(`/companies/${id}/products`),
+  products: (id: string, params?: { page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    const suffix = q.toString() ? `?${q}` : '';
+    return api<CompanyProductsResponse>(`/companies/${id}/products${suffix}`);
+  },
 };
 
 export const productsApi = {
@@ -151,6 +170,21 @@ export const requestsApi = {
     api<RequestItem>(`/requests/${id}/close`, { method: 'POST' }),
 };
 
+export const attachmentsApi = {
+  list: (requestId: string) =>
+    api<Attachment[]>(`/requests/${requestId}/attachments`),
+  upload: (requestId: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return uploadApi<Attachment>(`/requests/${requestId}/attachments`, form);
+  },
+  remove: (requestId: string, attachmentId: string) =>
+    api<{ ok: boolean }>(
+      `/requests/${requestId}/attachments/${attachmentId}`,
+      { method: 'DELETE' },
+    ),
+};
+
 export const offersApi = {
   mine: () => api<Offer[]>('/offers/mine'),
   forCompany: () => api<Offer[]>('/offers/for-company'),
@@ -188,10 +222,37 @@ export const notificationsApi = {
 
 export const conversationsApi = {
   list: () => api<ConversationItem[]>('/conversations'),
-  messages: (id: string) => api<MessageItem[]>(`/conversations/${id}/messages`),
+  messages: (
+    id: string,
+    params?: { after?: string; before?: string; limit?: number },
+  ) => {
+    const q = new URLSearchParams();
+    if (params?.after) q.set('after', params.after);
+    if (params?.before) q.set('before', params.before);
+    if (params?.limit) q.set('limit', String(params.limit));
+    const suffix = q.toString() ? `?${q}` : '';
+    return api<MessagesPageResponse>(`/conversations/${id}/messages${suffix}`);
+  },
   send: (id: string, body: string) =>
     api<MessageItem>(`/conversations/${id}/messages`, {
       method: 'POST',
       body: JSON.stringify({ body }),
     }),
+  subscribeStream: (
+    conversationId: string,
+    onMessage: (msg: MessageItem) => void,
+  ): (() => void) => {
+    const token = getToken();
+    if (!token) return () => {};
+    const url = `${API_URL}/conversations/${conversationId}/stream?access_token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url);
+    es.onmessage = (e) => {
+      try {
+        onMessage(JSON.parse(e.data) as MessageItem);
+      } catch {
+        /* ignore malformed events */
+      }
+    };
+    return () => es.close();
+  },
 };

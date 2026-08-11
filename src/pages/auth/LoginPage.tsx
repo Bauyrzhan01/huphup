@@ -72,6 +72,9 @@ export function LoginPage() {
             </p>
           ) : null}
           <div className="actions">
+            <Link className="ghost" to="/forgot-password">
+              {t('auth.forgotLink')}
+            </Link>
             <Link className="ghost" to={`/register${next !== '/app' ? `?next=${encodeURIComponent(next)}` : ''}`}>
               {t('auth.noAccount')}
             </Link>

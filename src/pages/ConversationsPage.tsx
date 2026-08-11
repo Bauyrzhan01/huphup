@@ -18,11 +18,14 @@ export function ConversationsPage() {
   const [items, setItems] = useState<ConversationItem[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [body, setBody] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
 
   const conversationFromUrl = searchParams.get('conversationId');
 
@@ -54,7 +57,7 @@ export function ConversationsPage() {
       }
     }
     void loadList(true);
-    const timer = window.setInterval(() => void loadList(false), 4000);
+    const timer = window.setInterval(() => void loadList(false), 8000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -64,30 +67,74 @@ export function ConversationsPage() {
   useEffect(() => {
     if (!selectedId) {
       setMessages([]);
+      setHasMore(false);
       return;
     }
+
     let cancelled = false;
+    stickToBottomRef.current = true;
+
     async function loadMessages() {
       try {
-        const list = await conversationsApi.messages(selectedId);
-        if (!cancelled) setMessages(list);
+        const res = await conversationsApi.messages(selectedId, { limit: 50 });
+        if (!cancelled) {
+          setMessages(res.items);
+          setHasMore(res.hasMore);
+        }
       } catch {
-        if (!cancelled) setMessages([]);
+        if (!cancelled) {
+          setMessages([]);
+          setHasMore(false);
+        }
       }
     }
+
     void loadMessages();
-    const timer = window.setInterval(() => void loadMessages(), 2500);
+
+    const unsubscribe = conversationsApi.subscribeStream(selectedId, (msg) => {
+      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+      stickToBottomRef.current = true;
+      void conversationsApi.list().then(setItems).catch(() => {});
+    });
+
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      unsubscribe();
     };
   }, [selectedId]);
 
   useEffect(() => {
     const el = threadRef.current;
-    if (!el) return;
+    if (!el || !stickToBottomRef.current) return;
     el.scrollTop = el.scrollHeight;
   }, [messages, selectedId]);
+
+  async function loadOlder() {
+    if (!selectedId || !messages.length || loadingOlder || !hasMore) return;
+    const oldestId = messages[0]?.id;
+    if (!oldestId) return;
+    setLoadingOlder(true);
+    stickToBottomRef.current = false;
+    const el = threadRef.current;
+    const prevHeight = el?.scrollHeight ?? 0;
+    try {
+      const res = await conversationsApi.messages(selectedId, {
+        before: oldestId,
+        limit: 30,
+      });
+      setMessages((prev) => {
+        const ids = new Set(prev.map((m) => m.id));
+        const older = res.items.filter((m) => !ids.has(m.id));
+        return [...older, ...prev];
+      });
+      setHasMore(res.hasMore);
+      requestAnimationFrame(() => {
+        if (el) el.scrollTop = el.scrollHeight - prevHeight;
+      });
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
 
   async function send(e: FormEvent) {
     e.preventDefault();
@@ -98,6 +145,7 @@ export function ConversationsPage() {
       setMessages((prev) =>
         prev.some((m) => m.id === msg.id) ? prev : [...prev, msg],
       );
+      stickToBottomRef.current = true;
       setBody('');
       const list = await conversationsApi.list();
       setItems(list);
@@ -217,7 +265,30 @@ export function ConversationsPage() {
                     ) : null}
                   </header>
 
-                  <div className="chat-thread" ref={threadRef}>
+                  <div
+                    className="chat-thread"
+                    ref={threadRef}
+                    onScroll={() => {
+                      const el = threadRef.current;
+                      if (!el) return;
+                      stickToBottomRef.current =
+                        el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+                    }}
+                  >
+                    {hasMore ? (
+                      <div className="chat-load-older">
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={loadingOlder}
+                          onClick={() => void loadOlder()}
+                        >
+                          {loadingOlder
+                            ? t('common.loading')
+                            : t('conversations.loadOlder')}
+                        </button>
+                      </div>
+                    ) : null}
                     {messages.length === 0 ? (
                       <div className="chat-thread-empty">
                         <b>{t('conversations.noMessagesYet')}</b>
@@ -284,4 +355,3 @@ export function ConversationsPage() {
     </Layout>
   );
 }
-
