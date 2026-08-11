@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { resolveMediaUrl } from '../api/client';
-import { useAppLocale } from '../i18n/useAppLocale';
 import type { Product } from '../types';
 
 type Props = {
@@ -11,7 +10,6 @@ type Props = {
 
 export function SupplierProductCard({ product, selected, onSelect }: Props) {
   const { t } = useTranslation();
-  const { formatMoney } = useAppLocale();
   const cover = product.images?.[0];
   const imageCount = product.images?.length ?? 0;
 
@@ -41,12 +39,11 @@ export function SupplierProductCard({ product, selected, onSelect }: Props) {
       </div>
       <div className="supplier-product-card-body">
         <h3>{product.name}</h3>
-        <p className="supplier-product-card-price">
-          {product.priceFrom != null
-            ? `${formatMoney(product.priceFrom)}${product.unit ? ` / ${product.unit}` : ''}`
-            : t('products.priceOnRequest')}
-        </p>
-        {product.city ? <p className="meta">{product.city}</p> : null}
+        {product.unit || product.city ? (
+          <p className="meta">
+            {[product.unit, product.city].filter(Boolean).join(' · ')}
+          </p>
+        ) : null}
         {product.reviewCount && product.avgRating != null ? (
           <p className="supplier-product-card-rating">
             <span className="supplier-product-card-stars">★ {product.avgRating.toFixed(1)}</span>

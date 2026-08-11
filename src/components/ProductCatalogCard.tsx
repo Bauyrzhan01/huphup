@@ -44,7 +44,7 @@ function StarPicker({
 
 export function ProductCatalogCard({ product }: { product: PublicProduct }) {
   const { t } = useTranslation();
-  const { formatMoney, formatDateTime } = useAppLocale();
+  const { formatDateTime } = useAppLocale();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
@@ -103,12 +103,9 @@ export function ProductCatalogCard({ product }: { product: PublicProduct }) {
         <h3>{product.name}</h3>
         <p>{product.description || t('common.empty')}</p>
         <div className="meta">
-          {product.priceFrom != null
-            ? `${t('suppliers.from')} ${formatMoney(product.priceFrom)}`
-            : t('products.priceOnRequest')}
-          {product.unit ? ` / ${product.unit}` : ''}
-          {product.city ? ` · ${product.city}` : ''}
+          {[product.unit, product.city].filter(Boolean).join(' · ')}
         </div>
+        <p className="meta product-price-contact">{t('products.priceOnContact')}</p>
         <div className="product-card-rating">
           {product.reviewCount && product.avgRating != null ? (
             <>

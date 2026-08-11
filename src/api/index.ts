@@ -113,8 +113,6 @@ export const productsApi = {
     name: string;
     description?: string;
     unit?: string;
-    priceFrom?: number;
-    currency?: string;
     city?: string;
   }) =>
     api<Product>('/products', { method: 'POST', body: JSON.stringify(body) }),
@@ -124,8 +122,6 @@ export const productsApi = {
       name?: string;
       description?: string;
       unit?: string;
-      priceFrom?: number;
-      currency?: string;
       city?: string;
       isActive?: boolean;
     },

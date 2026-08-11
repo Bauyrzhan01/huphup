@@ -12,8 +12,6 @@ export type PublicProduct = Pick<
   | 'name'
   | 'description'
   | 'unit'
-  | 'priceFrom'
-  | 'currency'
   | 'city'
   | 'images'
   | 'avgRating'

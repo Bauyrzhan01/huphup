@@ -6,20 +6,17 @@ import { resolveMediaUrl } from '../../api/client';
 import { ProductImagesEditor } from '../../components/ProductImagesEditor';
 import { SupplierProductCard } from '../../components/SupplierProductCard';
 import { SupplierLayout } from '../../layouts/AppLayouts';
-import { useAppLocale } from '../../i18n/useAppLocale';
 import type { Product } from '../../types';
 
 const emptyForm = {
   name: '',
   description: '',
   unit: '',
-  priceFrom: '',
   city: '',
 };
 
 export function SupplierProductsPage() {
   const { t } = useTranslation();
-  const { formatMoney } = useAppLocale();
   const [products, setProducts] = useState<Product[]>([]);
   const [hasCompany, setHasCompany] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -67,7 +64,6 @@ export function SupplierProductsPage() {
       name: product.name,
       description: product.description ?? '',
       unit: product.unit ?? '',
-      priceFrom: product.priceFrom != null ? String(product.priceFrom) : '',
       city: product.city ?? '',
     });
     setMsg('');
@@ -83,7 +79,6 @@ export function SupplierProductsPage() {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
       unit: form.unit.trim() || undefined,
-      priceFrom: form.priceFrom ? Number(form.priceFrom) : undefined,
       city: form.city.trim() || undefined,
     };
     try {
@@ -98,7 +93,6 @@ export function SupplierProductsPage() {
           name: created.name,
           description: created.description ?? '',
           unit: created.unit ?? '',
-          priceFrom: created.priceFrom != null ? String(created.priceFrom) : '',
           city: created.city ?? '',
         });
         setMsg(t('products.created'));
@@ -205,10 +199,8 @@ export function SupplierProductsPage() {
                 </h3>
                 {selectedProduct ? (
                   <p className="meta supplier-product-form-meta">
-                    {selectedProduct.priceFrom != null
-                      ? formatMoney(selectedProduct.priceFrom)
-                      : t('products.priceOnRequest')}
-                    {selectedProduct.unit ? ` / ${selectedProduct.unit}` : ''}
+                    {[selectedProduct.unit, selectedProduct.city].filter(Boolean).join(' · ') ||
+                      t('products.priceOnContact')}
                   </p>
                 ) : null}
                 <form onSubmit={onSubmit}>
@@ -252,27 +244,15 @@ export function SupplierProductsPage() {
                         </datalist>
                       </div>
                       <div className="field">
-                        <label>{t('products.priceFrom')}</label>
+                        <label>{t('products.city')}</label>
                         <input
-                          value={form.priceFrom}
-                          onChange={(e) =>
-                            setForm((f) => ({ ...f, priceFrom: e.target.value }))
-                          }
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          placeholder="850"
+                          value={form.city}
+                          onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                          placeholder="Алматы"
                         />
                       </div>
                     </div>
-                    <div className="field">
-                      <label>{t('products.city')}</label>
-                      <input
-                        value={form.city}
-                        onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                        placeholder="Алматы"
-                      />
-                    </div>
+                    <p className="meta supplier-product-price-note">{t('products.priceOnContact')}</p>
                     {selectedId ? (
                       <ProductImagesEditor
                         productId={selectedId}
