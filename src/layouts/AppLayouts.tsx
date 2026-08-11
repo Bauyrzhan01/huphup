@@ -65,10 +65,16 @@ function MobileNavClose({ onClose }: { onClose: () => void }) {
 
 export function BuyerLayout({
   crumb,
+  title,
+  subtitle,
+  fullWidth,
   actions,
   children,
 }: {
   crumb: string;
+  title?: ReactNode;
+  subtitle?: ReactNode;
+  fullWidth?: boolean;
   actions?: ReactNode;
   children: ReactNode;
 }) {
@@ -167,9 +173,16 @@ export function BuyerLayout({
             <LogoutButton />
           </div>
         </aside>
-        <main className="main">
-          <div className="topbar">
-            <div className="crumb">{crumb}</div>
+        <main className={`main${fullWidth ? ' main-full' : ''}`}>
+          <div className={`topbar${title ? ' topbar-page' : ''}`}>
+            {title ? (
+              <div className="topbar-head">
+                <h1>{title}</h1>
+                {subtitle ? <p>{subtitle}</p> : null}
+              </div>
+            ) : (
+              <div className="crumb">{crumb}</div>
+            )}
             <div className="top-actions">
               {actions}
               <LanguageSwitcher />
@@ -188,10 +201,16 @@ export function BuyerLayout({
 
 export function SupplierLayout({
   crumb,
+  title,
+  subtitle,
+  fullWidth,
   actions,
   children,
 }: {
   crumb: string;
+  title?: ReactNode;
+  subtitle?: ReactNode;
+  fullWidth?: boolean;
   actions?: ReactNode;
   children: ReactNode;
 }) {
@@ -309,9 +328,16 @@ export function SupplierLayout({
             <LogoutButton />
           </div>
         </aside>
-        <main className="main">
-          <div className="topbar">
-            <div className="crumb">{crumb}</div>
+        <main className={`main${fullWidth ? ' main-full' : ''}`}>
+          <div className={`topbar${title ? ' topbar-page' : ''}`}>
+            {title ? (
+              <div className="topbar-head">
+                <h1>{title}</h1>
+                {subtitle ? <p>{subtitle}</p> : null}
+              </div>
+            ) : (
+              <div className="crumb">{crumb}</div>
+            )}
             <div className="top-actions">
               {actions}
               <LanguageSwitcher />

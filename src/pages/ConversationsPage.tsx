@@ -101,21 +101,19 @@ export function ConversationsPage() {
   }
 
   return (
-    <Layout crumb={t('conversations.title')}>
-      <div className="page chat-page">
-        <div className="page-head">
-          <div>
-            <h1>{t('conversations.title')}</h1>
-            <p>
-              {loading
-                ? t('conversations.subtitleLoading')
-                : t('conversations.subtitleCount', { count: items.length })}
-            </p>
-          </div>
-        </div>
-
+    <Layout
+      fullWidth
+      crumb=""
+      title={t('conversations.title')}
+      subtitle={
+        loading
+          ? t('conversations.subtitleLoading')
+          : t('conversations.subtitleCount', { count: items.length })
+      }
+    >
+      <div className="chat-shell">
         {error ? (
-          <p className="notice" style={{ color: '#b45309' }}>
+          <p className="notice chat-shell-notice" style={{ color: '#b45309' }}>
             {error}
           </p>
         ) : null}
