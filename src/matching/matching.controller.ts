@@ -1,8 +1,7 @@
 import { Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
 import { MatchingService } from './matching.service';
-import { Roles } from '../common/decorators/roles.decorator';
+import { SupplierMember } from '../common/decorators/supplier-member.decorator';
 import {
   AuthUser,
   CurrentUser,
@@ -10,7 +9,7 @@ import {
 
 @ApiTags('leads')
 @ApiBearerAuth()
-@Roles(UserRole.SUPPLIER, UserRole.ADMIN)
+@SupplierMember()
 @Controller('leads')
 export class MatchingController {
   constructor(private readonly matchingService: MatchingService) {}

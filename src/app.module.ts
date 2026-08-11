@@ -7,6 +7,7 @@ import { StorageModule } from './storage/storage.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { SupplierMemberGuard } from './common/guards/supplier-member.guard';
 import { UsersModule } from './users/users.module';
 import { CompaniesModule } from './companies/companies.module';
 import { ProductsModule } from './products/products.module';
@@ -39,6 +40,7 @@ import { HealthModule } from './health/health.module';
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: SupplierMemberGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

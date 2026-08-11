@@ -9,11 +9,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
-import { Roles } from '../common/decorators/roles.decorator';
+import { SupplierMember } from '../common/decorators/supplier-member.decorator';
 import {
   AuthUser,
   CurrentUser,
@@ -41,21 +40,21 @@ export class ProductsController {
   }
 
   @Get('mine')
-  @Roles(UserRole.SUPPLIER, UserRole.ADMIN)
+  @SupplierMember()
   @ApiBearerAuth()
   listMine(@CurrentUser() user: AuthUser) {
     return this.productsService.listMine(user.id);
   }
 
   @Post()
-  @Roles(UserRole.SUPPLIER, UserRole.ADMIN)
+  @SupplierMember()
   @ApiBearerAuth()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateProductDto) {
     return this.productsService.create(user.id, dto);
   }
 
   @Patch(':id')
-  @Roles(UserRole.SUPPLIER, UserRole.ADMIN)
+  @SupplierMember()
   @ApiBearerAuth()
   update(
     @CurrentUser() user: AuthUser,
@@ -66,7 +65,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SUPPLIER, UserRole.ADMIN)
+  @SupplierMember()
   @ApiBearerAuth()
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.productsService.remove(user.id, id);

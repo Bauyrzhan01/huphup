@@ -3,7 +3,9 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { OffersService } from './offers.service';
 import { CreateOfferDto } from './dto/offer.dto';
-import { Roles } from '../common/decorators/roles.decorator';import {
+import { Roles } from '../common/decorators/roles.decorator';
+import { SupplierMember } from '../common/decorators/supplier-member.decorator';
+import {
   AuthUser,
   CurrentUser,
 } from '../common/decorators/current-user.decorator';
@@ -15,7 +17,7 @@ export class OffersController {
   constructor(private readonly offersService: OffersService) {}
 
   @Post()
-  @Roles(UserRole.SUPPLIER, UserRole.ADMIN)
+  @SupplierMember()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateOfferDto) {
     return this.offersService.create(user.id, dto);
   }
@@ -27,7 +29,7 @@ export class OffersController {
   }
 
   @Get('for-company')
-  @Roles(UserRole.SUPPLIER, UserRole.ADMIN)
+  @SupplierMember()
   listForCompany(@CurrentUser() user: AuthUser) {
     return this.offersService.listForCompany(user.id);
   }
@@ -53,7 +55,7 @@ export class OffersController {
   }
 
   @Post(':id/withdraw')
-  @Roles(UserRole.SUPPLIER, UserRole.ADMIN)
+  @SupplierMember()
   withdraw(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.offersService.withdraw(user.id, id);
   }

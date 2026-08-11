@@ -13,8 +13,7 @@ import { CompaniesService } from './companies.service';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company.dto';
 import { CreateInviteDto } from './dto/invite.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
-import { UserRole } from '@prisma/client';
-import { Roles } from '../common/decorators/roles.decorator';
+import { SupplierMember } from '../common/decorators/supplier-member.decorator';
 import {
   AuthUser,
   CurrentUser,
@@ -28,7 +27,7 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Post()
-  @Roles(UserRole.SUPPLIER, UserRole.ADMIN)
+  @SupplierMember()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateCompanyDto) {
     return this.companiesService.create(user.id, user.role, dto);
   }
