@@ -630,6 +630,20 @@ body.mobile-nav-open{overflow:hidden}
 .chat-load-older{display:flex;justify-content:center;padding:4px 0 8px}
 .home-empty-hint{margin-top:20px;padding:16px 18px;text-align:center;color:var(--muted)}
 .home-empty-hint p{margin:0;line-height:1.5}
+.notification-list{
+  border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden;
+}
+.notification-item{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);
+  background:#fff;padding:16px 18px;cursor:pointer;font:inherit;color:inherit;
+}
+.notification-item:last-child{border-bottom:0}
+.notification-item:hover{background:#fafafa}
+.notification-item-static{cursor:default}
+.notification-item-static:hover{background:#fff}
+.notification-item .badge{flex-shrink:0}
+.profile-account{margin-top:0}
 .attachment-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .attachment-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid #eee;border-radius:10px;background:#fafafa}
 .attachment-item a{font-weight:600;color:inherit;text-decoration:none}

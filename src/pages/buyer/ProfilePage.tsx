@@ -409,11 +409,11 @@ export function ProfilePage() {
 
         </h3>
 
-        <div className="card request-list">
+        <div className="notification-list">
 
           {notifications.length === 0 ? (
 
-            <div className="request-item">
+            <div className="notification-item notification-item-static">
 
               <div className="request-title">{t('profile.noNotifications')}</div>
 
@@ -429,9 +429,7 @@ export function ProfilePage() {
 
                 type="button"
 
-                className="request-item"
-
-                style={{ width: '100%', textAlign: 'left' }}
+                className="notification-item"
 
                 onClick={() =>
 
@@ -477,7 +475,7 @@ export function ProfilePage() {
 
 
 
-        <div className="panel profile-account" style={{ marginTop: 18 }}>
+        <div className="panel profile-account">
 
           <div className="section-title">{t('profile.account')}</div>
 
