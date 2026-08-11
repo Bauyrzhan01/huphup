@@ -117,13 +117,36 @@ export type AnalyzeResult = {
   rawText: string;
 };
 
+export type NotificationPayload = {
+  requestId?: string;
+  offerId?: string;
+  conversationId?: string;
+  code?: string;
+  requestCode?: string;
+  requestTitle?: string;
+};
+
 export type NotificationItem = {
   id: string;
   type: string;
   title: string;
   body?: string | null;
+  payload?: NotificationPayload | null;
   isRead: boolean;
   createdAt: string;
+};
+
+export type PublishResult = {
+  request: RequestItem;
+  leadsCreated: number;
+  matchedSuppliers: Array<{
+    companyId: string;
+    companyName: string;
+    city: string | null;
+    score: number;
+    reason?: string;
+    productId?: string;
+  }>;
 };
 
 export type ConversationItem = {

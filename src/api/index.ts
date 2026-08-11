@@ -11,6 +11,7 @@ import type {
   NotificationItem,
   Offer,
   Product,
+  PublishResult,
   RequestItem,
   User,
 } from '../types';
@@ -133,18 +134,7 @@ export const requestsApi = {
       body: JSON.stringify(body),
     }),
   publish: (id: string) =>
-    api<{
-      request: RequestItem;
-      leadsCreated: number;
-      matchedSuppliers: Array<{
-        companyId: string;
-        companyName: string;
-        city: string | null;
-        score: number;
-        reason?: string;
-        productId?: string;
-      }>;
-    }>(`/requests/${id}/publish`, { method: 'POST' }),
+    api<PublishResult>(`/requests/${id}/publish`, { method: 'POST' }),
 };
 
 export const offersApi = {

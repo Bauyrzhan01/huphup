@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { companiesApi, notificationsApi, requestsApi } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { NotificationsBell } from '../components/NotificationsBell';
 import { useMobileNav } from '../hooks/useMobileNav';
 import type { CompanyMember, NotificationItem, RequestItem } from '../types';
 
@@ -185,6 +186,7 @@ export function BuyerLayout({
             )}
             <div className="top-actions">
               {actions}
+              <NotificationsBell />
               <LanguageSwitcher />
               <Link className="ghost mode-switch" to="/supplier">
                 <span className="mode-long">{t('nav.supplierMode')}</span>
@@ -340,6 +342,7 @@ export function SupplierLayout({
             )}
             <div className="top-actions">
               {actions}
+              <NotificationsBell />
               <LanguageSwitcher />
               <Link className="ghost mode-switch" to="/app">
                 <span className="mode-long">{t('nav.buyerMode')}</span>

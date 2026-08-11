@@ -15,6 +15,7 @@ export function RequestDetailPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+  const [chatId, setChatId] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -29,7 +30,8 @@ export function RequestDetailPage() {
   async function accept(offerId: string) {
     try {
       const res = await offersApi.accept(offerId);
-      setMsg(t('requests.offerAccepted', { id: res.conversationId }));
+      setChatId(res.conversationId);
+      setMsg(t('requests.acceptSuccess'));
       const [req, offs] = await Promise.all([
         requestsApi.get(id),
         offersApi.byRequest(id),
@@ -47,7 +49,16 @@ export function RequestDetailPage() {
     >
       <div className="page">
         {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
-        {msg ? <p className="notice">{msg}</p> : null}
+        {msg ? (
+          <div className="notice notice-success">
+            <span>{msg}</span>
+            {chatId ? (
+              <Link className="primary" to={`/conversations?conversationId=${chatId}`}>
+                {t('offers.openChat')}
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
         {!request ? (
           <p className="assist-note">{t('common.loading')}</p>
         ) : (

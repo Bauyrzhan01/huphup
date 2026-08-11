@@ -16,6 +16,7 @@ export function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [allOffers, setAllOffers] = useState<Offer[]>([]);
   const [msg, setMsg] = useState('');
+  const [chatId, setChatId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +54,8 @@ export function OffersPage() {
 
   async function accept(offerId: string) {
     const res = await offersApi.accept(offerId);
-    setMsg(t('offers.accepted', { id: res.conversationId }));
+    setChatId(res.conversationId);
+    setMsg(t('offers.acceptSuccess'));
     const [offs, mine] = await Promise.all([
       offersApi.byRequest(selectedId),
       offersApi.mine(),
@@ -87,7 +89,16 @@ export function OffersPage() {
         </div>
 
         {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
-        {msg ? <p className="notice">{msg}</p> : null}
+        {msg ? (
+          <div className="notice notice-success">
+            <span>{msg}</span>
+            {chatId ? (
+              <Link className="primary" to={`/conversations?conversationId=${chatId}`}>
+                {t('offers.openChat')}
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
 
         {requests.length === 0 ? (
           <div className="panel chat-empty-state">

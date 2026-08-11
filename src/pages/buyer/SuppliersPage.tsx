@@ -4,21 +4,24 @@ import { companiesApi } from '../../api';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import type { Company } from '../../types';
 
+const CITIES = ['', 'Алматы', 'Астана', 'Шымкент'];
+
 export function SuppliersPage() {
   const { t } = useTranslation();
   const [items, setItems] = useState<Company[]>([]);
   const [q, setQ] = useState('');
+  const [city, setCity] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     setLoading(true);
     void companiesApi
-      .list({ q: q || undefined })
+      .list({ q: q || undefined, city: city || undefined })
       .then(setItems)
       .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
       .finally(() => setLoading(false));
-  }, [q, t]);
+  }, [q, city, t]);
 
   return (
     <BuyerLayout crumb={t('suppliers.title')}>
@@ -36,9 +39,21 @@ export function SuppliersPage() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
+          <select
+            className="filter"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            aria-label={t('suppliers.cityFilter')}
+          >
+            {CITIES.map((c) => (
+              <option key={c || 'all'} value={c}>
+                {c || t('suppliers.allCities')}
+              </option>
+            ))}
+          </select>
         </div>
         {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
-        {loading ? <p className="assist-note">{t('common.loadingFromDb')}</p> : null}
+        {loading ? <p className="assist-note">{t('common.loading')}</p> : null}
         <div className="supplier-grid">
           {items.map((c) => (
             <div key={c.id} className="supplier-card">
