@@ -1,17 +1,29 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
+import { StorageService } from '../storage/storage.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import { CreateProductReviewDto } from './dto/review.dto';
+
+const MAX_IMAGES_PER_PRODUCT = 10;
+const IMAGE_MIME_PREFIX = 'image/';
+
+type ReviewStats = {
+  avgRating: number | null;
+  reviewCount: number;
+};
 
 @Injectable()
 export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly companies: CompaniesService,
+    private readonly storage: StorageService,
   ) {}
 
   private async getMemberCompany(userId: string) {
@@ -30,17 +42,59 @@ export class ProductsService {
     return { company, product };
   }
 
+  private async reviewStatsForProducts(
+    productIds: string[],
+  ): Promise<Map<string, ReviewStats>> {
+    if (!productIds.length) return new Map();
+    const rows = await this.prisma.productReview.groupBy({
+      by: ['productId'],
+      where: { productId: { in: productIds } },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+    return new Map(
+      rows.map((r) => [
+        r.productId,
+        {
+          avgRating: r._avg.rating != null ? Math.round(r._avg.rating * 10) / 10 : null,
+          reviewCount: r._count.rating,
+        },
+      ]),
+    );
+  }
+
+  private mapProduct<T extends { id: string }>(
+    product: T,
+    stats: Map<string, ReviewStats>,
+    images?: { id: string; url: string; sortOrder: number }[],
+  ) {
+    const s = stats.get(product.id) ?? { avgRating: null, reviewCount: 0 };
+    return {
+      ...product,
+      images: images ?? [],
+      avgRating: s.avgRating,
+      reviewCount: s.reviewCount,
+    };
+  }
+
   async listMine(userId: string) {
     const company = await this.getMemberCompany(userId);
-    return this.prisma.product.findMany({
+    const products = await this.prisma.product.findMany({
       where: { companyId: company.id },
       orderBy: [{ isActive: 'desc' }, { updatedAt: 'desc' }],
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+      },
     });
+    const stats = await this.reviewStatsForProducts(products.map((p) => p.id));
+    return products.map((p) =>
+      this.mapProduct(p, stats, p.images.map(({ id, url, sortOrder }) => ({ id, url, sortOrder }))),
+    );
   }
 
   async create(userId: string, dto: CreateProductDto) {
     const company = await this.getMemberCompany(userId);
-    return this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: {
         companyId: company.id,
         name: dto.name,
@@ -50,7 +104,9 @@ export class ProductsService {
         currency: dto.currency ?? 'KZT',
         city: dto.city ?? company.city,
       },
+      include: { images: true },
     });
+    return this.mapProduct(product, new Map(), []);
   }
 
   async update(userId: string, productId: string, dto: UpdateProductDto) {
@@ -58,7 +114,7 @@ export class ProductsService {
     if (!Object.keys(dto).length) {
       throw new BadRequestException('Nothing to update');
     }
-    return this.prisma.product.update({
+    const product = await this.prisma.product.update({
       where: { id: productId },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
@@ -69,17 +125,181 @@ export class ProductsService {
         ...(dto.city !== undefined ? { city: dto.city } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },
+      include: { images: { orderBy: { sortOrder: 'asc' } } },
     });
+    const stats = await this.reviewStatsForProducts([product.id]);
+    return this.mapProduct(
+      product,
+      stats,
+      product.images.map(({ id, url, sortOrder }) => ({ id, url, sortOrder })),
+    );
   }
 
   async remove(userId: string, productId: string) {
-    await this.getOwnedProduct(userId, productId);
+    const { product } = await this.getOwnedProduct(userId, productId);
+    const images = await this.prisma.productImage.findMany({
+      where: { productId: product.id },
+    });
     await this.prisma.product.delete({ where: { id: productId } });
+    await Promise.all(images.map((img) => this.storage.delete(img.storageKey).catch(() => undefined)));
     return { ok: true };
   }
 
+  async getPublicById(productId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, isActive: true },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+        company: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            verified: true,
+            rating: true,
+          },
+        },
+      },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    const stats = await this.reviewStatsForProducts([product.id]);
+    return this.mapProduct(
+      product,
+      stats,
+      product.images.map(({ id, url, sortOrder }) => ({ id, url, sortOrder })),
+    );
+  }
+
+  async uploadImage(
+    userId: string,
+    productId: string,
+    file: Express.Multer.File | undefined,
+  ) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Image file is required');
+    }
+    if (!file.mimetype?.startsWith(IMAGE_MIME_PREFIX)) {
+      throw new BadRequestException('Only image files are allowed');
+    }
+    await this.getOwnedProduct(userId, productId);
+    const count = await this.prisma.productImage.count({ where: { productId } });
+    if (count >= MAX_IMAGES_PER_PRODUCT) {
+      throw new BadRequestException(`Maximum ${MAX_IMAGES_PER_PRODUCT} images per product`);
+    }
+
+    const uploaded = await this.storage.upload({
+      buffer: file.buffer,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      folder: `products/${productId}`,
+    });
+
+    return this.prisma.productImage.create({
+      data: {
+        productId,
+        url: uploaded.url,
+        storageKey: uploaded.key,
+        sortOrder: count,
+      },
+    });
+  }
+
+  async removeImage(userId: string, productId: string, imageId: string) {
+    await this.getOwnedProduct(userId, productId);
+    const image = await this.prisma.productImage.findFirst({
+      where: { id: imageId, productId },
+    });
+    if (!image) {
+      throw new NotFoundException('Image not found');
+    }
+    await this.prisma.productImage.delete({ where: { id: imageId } });
+    await this.storage.delete(image.storageKey).catch(() => undefined);
+    return { ok: true };
+  }
+
+  async listReviews(productId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, isActive: true },
+      select: { id: true },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    return this.prisma.productReview.findMany({
+      where: { productId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, fullName: true } },
+      },
+    });
+  }
+
+  async upsertReview(userId: string, productId: string, dto: CreateProductReviewDto) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, isActive: true },
+      select: { id: true, companyId: true },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    const membership = await this.companies.resolveCompanyForUser(userId);
+    if (membership?.company.id === product.companyId) {
+      throw new ForbiddenException('Cannot review your own product');
+    }
+
+    return this.prisma.productReview.upsert({
+      where: { productId_userId: { productId, userId } },
+      create: {
+        productId,
+        userId,
+        rating: dto.rating,
+        comment: dto.comment?.trim() || null,
+      },
+      update: {
+        rating: dto.rating,
+        comment: dto.comment?.trim() || null,
+      },
+      include: {
+        user: { select: { id: true, fullName: true } },
+      },
+    });
+  }
+
+  async enrichPublicProducts<
+    T extends {
+      id: string;
+      name: string;
+      description: string | null;
+      unit: string | null;
+      priceFrom: unknown;
+      currency: string;
+      city: string | null;
+    },
+  >(items: T[]) {
+    if (!items.length) return [];
+    const ids = items.map((p) => p.id);
+    const [images, stats] = await Promise.all([
+      this.prisma.productImage.findMany({
+        where: { productId: { in: ids } },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      }),
+      this.reviewStatsForProducts(ids),
+    ]);
+    const imagesByProduct = new Map<string, { id: string; url: string; sortOrder: number }[]>();
+    for (const img of images) {
+      const list = imagesByProduct.get(img.productId) ?? [];
+      list.push({ id: img.id, url: img.url, sortOrder: img.sortOrder });
+      imagesByProduct.set(img.productId, list);
+    }
+    return items.map((p) =>
+      this.mapProduct(p, stats, imagesByProduct.get(p.id) ?? []),
+    );
+  }
+
   async listActiveCatalog(limit = 500) {
-    return this.prisma.product.findMany({
+    const products = await this.prisma.product.findMany({
       where: { isActive: true },
       take: limit,
       orderBy: { updatedAt: 'desc' },
@@ -95,6 +315,8 @@ export class ProductsService {
         },
       },
     });
+    const enriched = await this.enrichPublicProducts(products);
+    return enriched.map((p, i) => ({ ...p, company: products[i].company }));
   }
 
   async listPublicCatalog(params: {
@@ -147,8 +369,11 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
+    const enriched = await this.enrichPublicProducts(items);
+    const merged = enriched.map((p, i) => ({ ...p, company: items[i].company }));
+
     return {
-      items,
+      items: merged,
       page,
       limit,
       total,

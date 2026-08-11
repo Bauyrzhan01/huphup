@@ -75,6 +75,7 @@ model User {
   createdInvites   CompanyInvite[]     @relation("InviteCreator")
   usedInvites      CompanyInvite[]     @relation("InviteUser")
   passwordResets   PasswordResetToken[]
+  productReviews   ProductReview[]
 
   @@index([role])
   @@map("users")
@@ -118,11 +119,44 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  images  ProductImage[]
+  reviews ProductReview[]
 
   @@index([companyId, isActive])
   @@index([name])
   @@map("products")
+}
+
+model ProductImage {
+  id         String   @id @default(cuid())
+  productId  String
+  url        String
+  storageKey String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+  @@map("product_images")
+}
+
+model ProductReview {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+  @@index([productId, createdAt])
+  @@map("product_reviews")
 }
 
 model CompanyMember {

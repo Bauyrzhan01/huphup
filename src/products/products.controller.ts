@@ -7,12 +7,24 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiTags,
+} from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import { CreateProductReviewDto } from './dto/review.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { SupplierMember } from '../common/decorators/supplier-member.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 import {
   AuthUser,
   CurrentUser,
@@ -51,6 +63,64 @@ export class ProductsController {
   @ApiBearerAuth()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateProductDto) {
     return this.productsService.create(user.id, dto);
+  }
+
+  @Public()
+  @Get(':id/reviews')
+  listReviews(@Param('id') id: string) {
+    return this.productsService.listReviews(id);
+  }
+
+  @Post(':id/reviews')
+  @Roles(UserRole.BUYER, UserRole.ADMIN)
+  @ApiBearerAuth()
+  addReview(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: CreateProductReviewDto,
+  ) {
+    return this.productsService.upsertReview(user.id, id, dto);
+  }
+
+  @Post(':id/images')
+  @SupplierMember()
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  uploadImage(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.productsService.uploadImage(user.id, id, file);
+  }
+
+  @Delete(':id/images/:imageId')
+  @SupplierMember()
+  @ApiBearerAuth()
+  removeImage(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+  ) {
+    return this.productsService.removeImage(user.id, id, imageId);
+  }
+
+  @Public()
+  @Get(':id')
+  getById(@Param('id') id: string) {
+    return this.productsService.getPublicById(id);
   }
 
   @Patch(':id')

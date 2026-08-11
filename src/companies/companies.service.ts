@@ -2,18 +2,25 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { CompanyMemberRole } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProductsService } from '../products/products.service';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company.dto';
 import { CreateInviteDto } from './dto/invite.dto';
 
 @Injectable()
 export class CompaniesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => ProductsService))
+    private readonly products: ProductsService,
+  ) {}
 
   /** Resolve company via membership first, then owned company (legacy). */
   async resolveCompanyForUser(userId: string) {
@@ -202,9 +209,11 @@ export class CompaniesService {
       this.prisma.product.count({ where }),
     ]);
 
+    const enriched = await this.products.enrichPublicProducts(items);
+
     return {
       company,
-      items,
+      items: enriched,
       page,
       limit,
       total,
