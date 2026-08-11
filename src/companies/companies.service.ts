@@ -201,8 +201,6 @@ export class CompaniesService {
           name: true,
           description: true,
           unit: true,
-          priceFrom: true,
-          currency: true,
           city: true,
         },
       }),

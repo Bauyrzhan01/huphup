@@ -63,14 +63,15 @@ export class ProductsService {
     );
   }
 
-  private mapProduct<T extends { id: string }>(
+  private mapProduct<T extends { id: string; priceFrom?: unknown; currency?: unknown }>(
     product: T,
     stats: Map<string, ReviewStats>,
     images?: { id: string; url: string; sortOrder: number }[],
   ) {
     const s = stats.get(product.id) ?? { avgRating: null, reviewCount: 0 };
+    const { priceFrom: _p, currency: _c, ...rest } = product;
     return {
-      ...product,
+      ...rest,
       images: images ?? [],
       avgRating: s.avgRating,
       reviewCount: s.reviewCount,
@@ -100,8 +101,6 @@ export class ProductsService {
         name: dto.name,
         description: dto.description,
         unit: dto.unit,
-        priceFrom: dto.priceFrom,
-        currency: dto.currency ?? 'KZT',
         city: dto.city ?? company.city,
       },
       include: { images: true },
@@ -120,8 +119,6 @@ export class ProductsService {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.description !== undefined ? { description: dto.description } : {}),
         ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
-        ...(dto.priceFrom !== undefined ? { priceFrom: dto.priceFrom } : {}),
-        ...(dto.currency !== undefined ? { currency: dto.currency } : {}),
         ...(dto.city !== undefined ? { city: dto.city } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },
@@ -273,8 +270,6 @@ export class ProductsService {
       name: string;
       description: string | null;
       unit: string | null;
-      priceFrom: unknown;
-      currency: string;
       city: string | null;
     },
   >(items: T[]) {

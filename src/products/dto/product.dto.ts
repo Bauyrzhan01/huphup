@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
-  IsNumber,
   IsOptional,
   IsString,
   MinLength,
@@ -22,16 +21,6 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   unit?: string;
-
-  @ApiPropertyOptional({ example: 850 })
-  @IsOptional()
-  @IsNumber()
-  priceFrom?: number;
-
-  @ApiPropertyOptional({ example: 'KZT' })
-  @IsOptional()
-  @IsString()
-  currency?: string;
 
   @ApiPropertyOptional({ example: 'Алматы' })
   @IsOptional()
@@ -55,16 +44,6 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   unit?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsNumber()
-  priceFrom?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  currency?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
