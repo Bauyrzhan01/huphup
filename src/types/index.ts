@@ -142,6 +142,7 @@ export type RequestItem = {
     id: string;
     score: number;
     status: string;
+    productId?: string | null;
     company: Pick<Company, 'id' | 'name' | 'city' | 'verified'>;
   }>;
 };

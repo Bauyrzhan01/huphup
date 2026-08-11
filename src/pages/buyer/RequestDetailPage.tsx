@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 
 import { offersApi, requestsApi } from '../../api';
 
+import { MatchedSupplierCard } from '../../components/MatchedSupplierCard';
+
 import { RequestAttachments } from '../../components/RequestAttachments';
 
 import { BuyerLayout } from '../../layouts/AppLayouts';
@@ -510,32 +512,21 @@ export function RequestDetailPage() {
                     </h3>
 
                     <p className="meta" style={{ marginTop: 0 }}>
-
                       {t('requests.matchedHint')}
-
                     </p>
-
-                    {(request.leads ?? []).map((lead) => (
-
-                      <div key={lead.id} className="kv">
-
-                        <span>
-
-                          <Link to={`/suppliers/${lead.company.id}`}>
-
-                            {lead.company.name}
-
-                          </Link>
-
-                          {lead.company.city ? ` · ${lead.company.city}` : ''}
-
-                        </span>
-
-                        <b>{Math.round(lead.score)}</b>
-
-                      </div>
-
-                    ))}
+                    <p className="meta">{t('requests.viewProductsHint')}</p>
+                    <div className="matched-list">
+                      {(request.leads ?? []).map((lead) => (
+                        <MatchedSupplierCard
+                          key={lead.id}
+                          companyId={lead.company.id}
+                          companyName={lead.company.name}
+                          city={lead.company.city}
+                          score={lead.score}
+                          highlightProductId={lead.productId}
+                        />
+                      ))}
+                    </div>
 
                   </div>
 

@@ -771,6 +771,53 @@ body.mobile-nav-open{overflow:hidden}
   flex-shrink:0;background:#111;color:#fff;border-radius:999px;padding:6px 10px;
   font-size:12px;font-weight:800;
 }
+.matched-list{display:flex;flex-direction:column;gap:12px}
+.matched-supplier-card{
+  border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;
+}
+.matched-supplier-card.is-open{border-color:#ccc;box-shadow:0 4px 16px rgba(0,0,0,.04)}
+.matched-supplier-head{
+  display:flex;justify-content:space-between;gap:14px;align-items:flex-start;
+  padding:14px;flex-wrap:wrap;
+}
+.matched-supplier-info{display:flex;gap:12px;align-items:flex-start;min-width:0;flex:1}
+.matched-supplier-logo{
+  width:42px;height:42px;border-radius:12px;background:#111;color:#fff;
+  display:grid;place-items:center;font-size:12px;font-weight:800;flex-shrink:0;
+}
+.matched-supplier-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.matched-products-btn{font-size:12px;padding:7px 11px}
+.matched-products-panel{
+  border-top:1px solid var(--line);padding:14px;background:#fafafa;
+}
+.matched-products-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;
+}
+.matched-product-tile{
+  background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.matched-product-tile.is-match{border-color:#087a5e;box-shadow:0 0 0 1px rgba(8,122,94,.2)}
+.matched-product-media{
+  position:relative;aspect-ratio:4/3;background:#eee;overflow:hidden;
+}
+.matched-product-media img{width:100%;height:100%;object-fit:cover;display:block}
+.matched-product-placeholder{
+  width:100%;height:100%;display:grid;place-items:center;font-size:28px;font-weight:800;color:#bbb;
+}
+.matched-product-badge{
+  position:absolute;top:8px;left:8px;background:#eaf8f3;color:#087a5e;
+  border:1px solid #c6eadf;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:800;
+}
+.matched-product-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px}
+.matched-product-body b{font-size:13px;line-height:1.35}
+.matched-product-body p{
+  margin:0;font-size:12px;color:#555;line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.matched-more-link{
+  display:inline-block;margin-top:12px;font-size:12px;font-weight:700;color:#111;
+}
 .category-picks{display:flex;flex-wrap:wrap;gap:8px}
 .chip.pick{
   border:1px solid var(--line);background:#fff;cursor:pointer;padding:8px 11px;font-size:11px;
