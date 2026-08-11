@@ -59,7 +59,7 @@ export function SupplierCrmPage() {
           </div>
         </div>
         {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
-        <div className="stat-grid">
+        <div className="stat-grid crm-stats">
           <div className="stat">
             <small>{t('supplier.statNew')}</small>
             <b>{columns.NEW.length}</b>
@@ -77,7 +77,7 @@ export function SupplierCrmPage() {
             <b>{leads.length}</b>
           </div>
         </div>
-        <div className="kanban">
+        <div className="kanban kanban-crm">
           {(['NEW', 'VIEWED', 'OFFERED', 'SKIPPED'] as const).map((key) => (
             <div key={key} className="column">
               <div className="column-head">
@@ -85,21 +85,23 @@ export function SupplierCrmPage() {
                 <span className="count">{columns[key].length}</span>
               </div>
               {columns[key].map((lead) => (
-                <Link key={lead.id} className="deal" to="/supplier/leads">
+                <Link key={lead.id} className="deal deal-link" to="/supplier/leads">
+                  <div className="deal-top">
+                    <span className="lead-code">{lead.request.code}</span>
+                    <span className="deal-score">{Math.round(lead.score)}</span>
+                  </div>
                   <div className="deal-title">{lead.request.title}</div>
-                  <p>
-                    {lead.request.city ?? t('common.empty')} · score {lead.score.toFixed(0)}
+                  <p className="deal-meta">
+                    {lead.request.city ?? t('common.empty')}
+                    {lead.request.quantity ? ` · ${lead.request.quantity}` : ''}
                   </p>
                   <div className="deal-foot">
-                    <b>{lead.request.code}</b>
                     <span>{formatDate(lead.createdAt)}</span>
                   </div>
                 </Link>
               ))}
               {!loading && columns[key].length === 0 ? (
-                <p className="meta" style={{ padding: 8 }}>
-                  {t('common.emptyInDb')}
-                </p>
+                <p className="kanban-empty">{t('supplier.kanbanEmpty')}</p>
               ) : null}
             </div>
           ))}
