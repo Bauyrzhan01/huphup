@@ -674,6 +674,8 @@ body.mobile-nav-open{overflow:hidden}
   .chat-panel-head{flex-direction:column}
 }
 
+.supplier-card-link{display:block;color:inherit;transition:box-shadow .15s,border-color .15s}
+.supplier-card-link:hover{box-shadow:0 4px 16px rgba(0,0,0,.06);border-color:#ccc}
 .notif-bell{position:relative}
 .notif-bell-btn{
   position:relative;border:1px solid var(--line);background:#fff;border-radius:10px;

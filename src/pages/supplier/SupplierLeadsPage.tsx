@@ -62,6 +62,18 @@ export function SupplierLeadsPage() {
     }
   }
 
+  async function skipLead() {
+    if (!selected || !window.confirm(t('supplier.skipConfirm'))) return;
+    try {
+      await leadsApi.skip(selected.id);
+      setMsg(t('supplier.leadSkipped'));
+      setSelected(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    }
+  }
+
   async function sendOffer(e: FormEvent) {
     e.preventDefault();
     if (!selected || sending) return;
@@ -279,7 +291,12 @@ export function SupplierLeadsPage() {
                       </div>
                     </div>
                     <div className="actions">
-                      <button className="primary" disabled={sending || selected.status === 'OFFERED'}>
+                      {selected.status !== 'OFFERED' && selected.status !== 'SKIPPED' ? (
+                        <button type="button" className="ghost" onClick={() => void skipLead()}>
+                          {t('supplier.skipLead')}
+                        </button>
+                      ) : null}
+                      <button className="primary" disabled={sending || selected.status === 'OFFERED' || selected.status === 'SKIPPED'}>
                         {selected.status === 'OFFERED'
                           ? t('supplier.alreadyOffered')
                           : sending

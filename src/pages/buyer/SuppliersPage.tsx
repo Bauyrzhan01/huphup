@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../../api';
 import { BuyerLayout } from '../../layouts/AppLayouts';
@@ -56,7 +57,7 @@ export function SuppliersPage() {
         {loading ? <p className="assist-note">{t('common.loading')}</p> : null}
         <div className="supplier-grid">
           {items.map((c) => (
-            <div key={c.id} className="supplier-card">
+            <Link key={c.id} to={`/suppliers/${c.id}`} className="supplier-card supplier-card-link">
               <div className="supplier-logo">{c.name.slice(0, 2).toUpperCase()}</div>
               <h3>
                 {c.name}
@@ -75,7 +76,7 @@ export function SuppliersPage() {
                   ))}
                 </div>
               ) : null}
-            </div>
+            </Link>
           ))}
         </div>
         {!loading && items.length === 0 ? (

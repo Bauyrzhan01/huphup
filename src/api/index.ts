@@ -73,6 +73,16 @@ export const companiesApi = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+  get: (id: string) => api<Company>(`/companies/${id}`),
+  products: (id: string) =>
+    api<
+      Array<
+        Pick<
+          Product,
+          'id' | 'name' | 'description' | 'unit' | 'priceFrom' | 'currency' | 'city'
+        >
+      >
+    >(`/companies/${id}/products`),
 };
 
 export const productsApi = {
@@ -135,10 +145,15 @@ export const requestsApi = {
     }),
   publish: (id: string) =>
     api<PublishResult>(`/requests/${id}/publish`, { method: 'POST' }),
+  cancel: (id: string) =>
+    api<RequestItem>(`/requests/${id}/cancel`, { method: 'POST' }),
+  close: (id: string) =>
+    api<RequestItem>(`/requests/${id}/close`, { method: 'POST' }),
 };
 
 export const offersApi = {
   mine: () => api<Offer[]>('/offers/mine'),
+  forCompany: () => api<Offer[]>('/offers/for-company'),
   byRequest: (requestId: string) =>
     api<Offer[]>(`/offers/by-request/${requestId}`),
   create: (body: {
@@ -153,11 +168,16 @@ export const offersApi = {
     api<{ offerId: string; conversationId: string }>(`/offers/${id}/accept`, {
       method: 'POST',
     }),
+  reject: (id: string) =>
+    api<Offer>(`/offers/${id}/reject`, { method: 'POST' }),
+  withdraw: (id: string) =>
+    api<Offer>(`/offers/${id}/withdraw`, { method: 'POST' }),
 };
 
 export const leadsApi = {
   list: () => api<Lead[]>('/leads'),
   view: (id: string) => api(`/leads/${id}/view`, { method: 'POST' }),
+  skip: (id: string) => api<Lead>(`/leads/${id}/skip`, { method: 'POST' }),
 };
 
 export const notificationsApi = {

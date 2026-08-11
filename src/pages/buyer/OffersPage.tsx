@@ -64,6 +64,13 @@ export function OffersPage() {
     setAllOffers(mine);
   }
 
+  async function reject(offerId: string) {
+    await offersApi.reject(offerId);
+    setMsg(t('offers.rejected'));
+    const offs = await offersApi.byRequest(selectedId);
+    setOffers(offs);
+  }
+
   return (
     <BuyerLayout crumb={t('offers.title')}>
       <div className="page">
@@ -205,9 +212,14 @@ export function OffersPage() {
                     ) : null}
                     <div className="actions" style={{ marginTop: 12 }}>
                       {o.status === 'PENDING' ? (
-                        <button className="primary" onClick={() => void accept(o.id)}>
-                          {t('common.choose')}
-                        </button>
+                        <>
+                          <button className="primary" onClick={() => void accept(o.id)}>
+                            {t('common.choose')}
+                          </button>
+                          <button className="ghost" onClick={() => void reject(o.id)}>
+                            {t('offers.reject')}
+                          </button>
+                        </>
                       ) : (
                         <span className="ghost">{statusLabel.offer(o.status)}</span>
                       )}

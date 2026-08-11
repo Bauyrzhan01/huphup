@@ -279,6 +279,9 @@ export function SupplierLayout({
             <NavLink to="/supplier/products" onClick={closeNav}>
               ◈ {t('nav.products')}
             </NavLink>
+            <NavLink to="/supplier/offers" onClick={closeNav}>
+              ◫ {t('supplier.myOffers')}
+            </NavLink>
             <NavLink to="/supplier/leads" onClick={closeNav}>
               ◫ {t('nav.newLeads')}
             </NavLink>

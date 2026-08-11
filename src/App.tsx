@@ -5,6 +5,8 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { HomePage } from './pages/buyer/HomePage';
 import { NewRequestPage } from './pages/buyer/NewRequestPage';
+import { EditRequestPage } from './pages/buyer/EditRequestPage';
+import { SupplierDetailPage } from './pages/buyer/SupplierDetailPage';
 import { OffersPage } from './pages/buyer/OffersPage';
 import { ProfilePage } from './pages/buyer/ProfilePage';
 import { RequestDetailPage } from './pages/buyer/RequestDetailPage';
@@ -13,6 +15,7 @@ import { SuppliersPage } from './pages/buyer/SuppliersPage';
 import { ConversationsPage } from './pages/ConversationsPage';
 import { SupplierCompanyPage } from './pages/supplier/SupplierCompanyPage';
 import { SupplierCrmPage } from './pages/supplier/SupplierCrmPage';
+import { SupplierOffersPage } from './pages/supplier/SupplierOffersPage';
 import { SupplierLeadsPage } from './pages/supplier/SupplierLeadsPage';
 import { SupplierProductsPage } from './pages/supplier/SupplierProductsPage';
 import { SupplierTeamPage } from './pages/supplier/SupplierTeamPage';
@@ -53,6 +56,14 @@ export default function App() {
           }
         />
         <Route
+          path="/requests/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditRequestPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/requests/:id"
           element={
             <ProtectedRoute>
@@ -73,6 +84,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <SuppliersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/suppliers/:id"
+          element={
+            <ProtectedRoute>
+              <SupplierDetailPage />
             </ProtectedRoute>
           }
         />
@@ -98,6 +117,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <SupplierCrmPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supplier/offers"
+          element={
+            <ProtectedRoute>
+              <SupplierOffersPage />
             </ProtectedRoute>
           }
         />
