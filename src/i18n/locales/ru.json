@@ -350,7 +350,21 @@
     "delete": "Удалить",
     "deleteConfirm": "Удалить товар?",
     "created": "Товар добавлен",
-    "updated": "Товар сохранён"
+    "updated": "Товар сохранён",
+    "images": "Фото товара",
+    "imagesHint": "До 10 изображений, JPG/PNG/WebP до 5 МБ",
+    "imagesAfterSave": "Сначала сохраните товар, затем добавьте фото",
+    "uploading": "Загрузка…",
+    "removeImage": "Удалить фото",
+    "ratingSummary": "{{rating}} · {{count}} отзывов",
+    "noReviews": "Пока нет отзывов",
+    "noReviewsYet": "Отзывов пока нет — будьте первым",
+    "showReviews": "Отзывы и оценка",
+    "hideReviews": "Скрыть отзывы",
+    "yourRating": "Ваша оценка",
+    "reviewPlaceholder": "Комментарий к товару (необязательно)",
+    "submitReview": "Оставить отзыв",
+    "reviewBuyerOnly": "Отзывы могут оставлять только заказчики"
   },
   "team": {
     "crumb": "Команда",

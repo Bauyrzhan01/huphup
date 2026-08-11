@@ -350,7 +350,21 @@
     "delete": "Жою",
     "deleteConfirm": "Тауарды жою керек пе?",
     "created": "Тауар қосылды",
-    "updated": "Тауар сақталды"
+    "updated": "Тауар сақталды",
+    "images": "Тауар фото",
+    "imagesHint": "10 фотоға дейін, JPG/PNG/WebP 5 МБ дейін",
+    "imagesAfterSave": "Алдымен тауарды сақтаңыз, содан кейін фото қосыңыз",
+    "uploading": "Жүктелуде…",
+    "removeImage": "Фотоны жою",
+    "ratingSummary": "{{rating}} · {{count}} пікір",
+    "noReviews": "Пікір жоқ",
+    "noReviewsYet": "Пікір әлі жоқ — бірінші болыңыз",
+    "showReviews": "Пікірлер мен баға",
+    "hideReviews": "Пікірлерді жасыру",
+    "yourRating": "Сіздің бағаңыз",
+    "reviewPlaceholder": "Тауарға пікір (міндетті емес)",
+    "submitReview": "Пікір қалдыру",
+    "reviewBuyerOnly": "Пікір тек тапсырыс берушілер қалдыра алады"
   },
   "team": {
     "crumb": "Команда",

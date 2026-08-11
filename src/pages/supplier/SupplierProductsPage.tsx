@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi, productsApi } from '../../api';
+import { resolveMediaUrl } from '../../api/client';
+import { ProductImagesEditor } from '../../components/ProductImagesEditor';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import type { Product } from '../../types';
@@ -82,12 +84,20 @@ export function SupplierProductsPage() {
       if (selectedId) {
         await productsApi.update(selectedId, payload);
         setMsg(t('products.updated'));
+        await load();
       } else {
-        await productsApi.create(payload);
+        const created = await productsApi.create(payload);
+        setSelectedId(created.id);
+        setForm({
+          name: created.name,
+          description: created.description ?? '',
+          unit: created.unit ?? '',
+          priceFrom: created.priceFrom != null ? String(created.priceFrom) : '',
+          city: created.city ?? '',
+        });
         setMsg(t('products.created'));
+        await load();
       }
-      resetForm();
-      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
@@ -170,7 +180,7 @@ export function SupplierProductsPage() {
                     <button
                       key={product.id}
                       type="button"
-                      className="request-item"
+                      className="request-item product-list-item"
                       style={{
                         width: '100%',
                         textAlign: 'left',
@@ -179,6 +189,17 @@ export function SupplierProductsPage() {
                       }}
                       onClick={() => startEdit(product)}
                     >
+                      {product.images?.[0] ? (
+                        <img
+                          className="product-list-thumb"
+                          src={resolveMediaUrl(product.images[0].url)}
+                          alt=""
+                        />
+                      ) : (
+                        <div className="product-list-thumb product-list-thumb-empty">
+                          {product.name.slice(0, 1)}
+                        </div>
+                      )}
                       <div>
                         <div className="request-title">{product.name}</div>
                         <div className="meta">
@@ -260,6 +281,15 @@ export function SupplierProductsPage() {
                         placeholder="Алматы"
                       />
                     </div>
+                    {selectedId ? (
+                      <ProductImagesEditor
+                        productId={selectedId}
+                        images={products.find((p) => p.id === selectedId)?.images ?? []}
+                        onChange={() => void load()}
+                      />
+                    ) : (
+                      <p className="meta">{t('products.imagesAfterSave')}</p>
+                    )}
                   </div>
                   <div className="actions">
                     {selectedId ? (

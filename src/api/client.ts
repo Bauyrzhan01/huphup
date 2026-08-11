@@ -2,6 +2,12 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:3000/api/v1';
 
 export { API_URL };
 
+export function resolveMediaUrl(url: string) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const base = API_URL.replace(/\/api\/v1\/?$/, '');
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {

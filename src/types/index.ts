@@ -6,12 +6,21 @@ export type PaginatedResponse<T> = {
   totalPages: number;
 };
 
-export type CompanyProductsResponse = PaginatedResponse<
-  Pick<
-    Product,
-    'id' | 'name' | 'description' | 'unit' | 'priceFrom' | 'currency' | 'city'
-  >
-> & {
+export type PublicProduct = Pick<
+  Product,
+  | 'id'
+  | 'name'
+  | 'description'
+  | 'unit'
+  | 'priceFrom'
+  | 'currency'
+  | 'city'
+  | 'images'
+  | 'avgRating'
+  | 'reviewCount'
+>;
+
+export type CompanyProductsResponse = PaginatedResponse<PublicProduct> & {
   company: Pick<Company, 'id' | 'name'>;
 };
 
@@ -82,6 +91,23 @@ export type InviteCreated = {
   urlPath: string;
 };
 
+export type ProductImage = {
+  id: string;
+  url: string;
+  sortOrder: number;
+};
+
+export type ProductReview = {
+  id: string;
+  productId: string;
+  userId: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: { id: string; fullName: string };
+};
+
 export type Product = {
   id: string;
   companyId: string;
@@ -94,6 +120,9 @@ export type Product = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  images?: ProductImage[];
+  avgRating?: number | null;
+  reviewCount?: number;
 };
 
 export type RequestItem = {

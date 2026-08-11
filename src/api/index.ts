@@ -15,6 +15,8 @@ import type {
   Offer,
   PaginatedResponse,
   Product,
+  ProductImage,
+  ProductReview,
   PublishResult,
   RequestItem,
   User,
@@ -106,6 +108,7 @@ export const companiesApi = {
 
 export const productsApi = {
   mine: () => api<Product[]>('/products/mine'),
+  get: (id: string) => api<Product>(`/products/${id}`),
   create: (body: {
     name: string;
     description?: string;
@@ -133,6 +136,22 @@ export const productsApi = {
     }),
   remove: (id: string) =>
     api<{ ok: boolean }>(`/products/${id}`, { method: 'DELETE' }),
+  uploadImage: (productId: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return uploadApi<ProductImage>(`/products/${productId}/images`, form);
+  },
+  removeImage: (productId: string, imageId: string) =>
+    api<{ ok: boolean }>(`/products/${productId}/images/${imageId}`, {
+      method: 'DELETE',
+    }),
+  reviews: (productId: string) =>
+    api<ProductReview[]>(`/products/${productId}/reviews`),
+  addReview: (productId: string, body: { rating: number; comment?: string }) =>
+    api<ProductReview>(`/products/${productId}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };
 
 export const invitesApi = {
