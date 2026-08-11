@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi, productsApi } from '../../api';
 import { resolveMediaUrl } from '../../api/client';
 import { ProductImagesEditor } from '../../components/ProductImagesEditor';
+import { SupplierProductCard } from '../../components/SupplierProductCard';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import type { Product } from '../../types';
@@ -27,6 +28,11 @@ export function SupplierProductsPage() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const selectedProduct = useMemo(
+    () => products.find((p) => p.id === selectedId) ?? null,
+    [products, selectedId],
+  );
 
   async function load() {
     setLoading(true);
@@ -127,15 +133,15 @@ export function SupplierProductsPage() {
     }
   }
 
+  const cover = selectedProduct?.images?.[0];
+
   return (
     <SupplierLayout
       crumb={t('products.crumb')}
       actions={
-        selectedId ? (
-          <button type="button" className="ghost" onClick={resetForm}>
-            {t('products.addNew')}
-          </button>
-        ) : null
+        <button type="button" className="primary" onClick={resetForm}>
+          {t('products.addNew')}
+        </button>
       }
     >
       <div className="page">
@@ -158,71 +164,55 @@ export function SupplierProductsPage() {
         ) : (
           <>
             {error ? (
-              <p className="notice" style={{ color: '#b45309', marginBottom: 14 }}>
-                {error}
-              </p>
+              <p className="notice supplier-products-notice is-error">{error}</p>
             ) : null}
-            {msg ? (
-              <p className="notice" style={{ marginBottom: 14 }}>
-                {msg}
-              </p>
-            ) : null}
+            {msg ? <p className="notice supplier-products-notice">{msg}</p> : null}
 
-            <div className="detail-grid">
-              <div className="card request-list">
-                {products.length === 0 && !loading ? (
-                  <div className="request-item">
-                    <div className="request-title">{t('products.empty')}</div>
-                    <div className="meta">{t('products.emptyHint')}</div>
+            <div className="supplier-products-layout">
+              <section className="supplier-products-main">
+                {loading ? (
+                  <p className="assist-note">{t('common.loading')}</p>
+                ) : products.length === 0 ? (
+                  <div className="supplier-products-empty card">
+                    <div className="supplier-products-empty-icon" aria-hidden>
+                      📦
+                    </div>
+                    <b>{t('products.empty')}</b>
+                    <p>{t('products.emptyHint')}</p>
                   </div>
                 ) : (
-                  products.map((product) => (
-                    <button
-                      key={product.id}
-                      type="button"
-                      className="request-item product-list-item"
-                      style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        background: selectedId === product.id ? '#fafafa' : '#fff',
-                        opacity: product.isActive ? 1 : 0.65,
-                      }}
-                      onClick={() => startEdit(product)}
-                    >
-                      {product.images?.[0] ? (
-                        <img
-                          className="product-list-thumb"
-                          src={resolveMediaUrl(product.images[0].url)}
-                          alt=""
-                        />
-                      ) : (
-                        <div className="product-list-thumb product-list-thumb-empty">
-                          {product.name.slice(0, 1)}
-                        </div>
-                      )}
-                      <div>
-                        <div className="request-title">{product.name}</div>
-                        <div className="meta">
-                          {product.priceFrom != null
-                            ? `${formatMoney(product.priceFrom)}${product.unit ? ` / ${product.unit}` : ''}`
-                            : t('products.priceOnRequest')}
-                          {product.city ? ` · ${product.city}` : ''}
-                        </div>
-                      </div>
-                      <span className={`badge ${product.isActive ? 'green' : 'blue'}`}>
-                        {product.isActive ? t('products.active') : t('products.hidden')}
-                      </span>
-                    </button>
-                  ))
+                  <div className="supplier-products-grid">
+                    {products.map((product) => (
+                      <SupplierProductCard
+                        key={product.id}
+                        product={product}
+                        selected={selectedId === product.id}
+                        onSelect={() => startEdit(product)}
+                      />
+                    ))}
+                  </div>
                 )}
-              </div>
+              </section>
 
-              <div className="panel">
+              <aside className="panel supplier-products-form">
+                {selectedProduct && cover ? (
+                  <div className="supplier-product-form-cover">
+                    <img src={resolveMediaUrl(cover.url)} alt={selectedProduct.name} />
+                  </div>
+                ) : null}
                 <h3 className="section-title">
                   {selectedId ? t('products.editTitle') : t('products.addTitle')}
                 </h3>
+                {selectedProduct ? (
+                  <p className="meta supplier-product-form-meta">
+                    {selectedProduct.priceFrom != null
+                      ? formatMoney(selectedProduct.priceFrom)
+                      : t('products.priceOnRequest')}
+                    {selectedProduct.unit ? ` / ${selectedProduct.unit}` : ''}
+                  </p>
+                ) : null}
                 <form onSubmit={onSubmit}>
-                  <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                  <div className="form-grid supplier-product-fields">
                     <div className="field">
                       <label>{t('products.name')}</label>
                       <input
@@ -243,35 +233,37 @@ export function SupplierProductsPage() {
                         placeholder={t('products.descriptionPlaceholder')}
                       />
                     </div>
-                    <div className="field">
-                      <label>{t('products.unit')}</label>
-                      <input
-                        value={form.unit}
-                        onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-                        placeholder={t('products.unitPlaceholder')}
-                        list="product-units"
-                      />
-                      <datalist id="product-units">
-                        <option value="шт" />
-                        <option value="м²" />
-                        <option value="м" />
-                        <option value="кг" />
-                        <option value="т" />
-                        <option value="компл." />
-                      </datalist>
-                    </div>
-                    <div className="field">
-                      <label>{t('products.priceFrom')}</label>
-                      <input
-                        value={form.priceFrom}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, priceFrom: e.target.value }))
-                        }
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        placeholder="850"
-                      />
+                    <div className="field-row">
+                      <div className="field">
+                        <label>{t('products.unit')}</label>
+                        <input
+                          value={form.unit}
+                          onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+                          placeholder={t('products.unitPlaceholder')}
+                          list="product-units"
+                        />
+                        <datalist id="product-units">
+                          <option value="шт" />
+                          <option value="м²" />
+                          <option value="м" />
+                          <option value="кг" />
+                          <option value="т" />
+                          <option value="компл." />
+                        </datalist>
+                      </div>
+                      <div className="field">
+                        <label>{t('products.priceFrom')}</label>
+                        <input
+                          value={form.priceFrom}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, priceFrom: e.target.value }))
+                          }
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          placeholder="850"
+                        />
+                      </div>
                     </div>
                     <div className="field">
                       <label>{t('products.city')}</label>
@@ -284,27 +276,27 @@ export function SupplierProductsPage() {
                     {selectedId ? (
                       <ProductImagesEditor
                         productId={selectedId}
-                        images={products.find((p) => p.id === selectedId)?.images ?? []}
+                        images={selectedProduct?.images ?? []}
                         onChange={() => void load()}
                       />
                     ) : (
-                      <p className="meta">{t('products.imagesAfterSave')}</p>
+                      <div className="supplier-product-photo-hint">
+                        <span aria-hidden>🖼</span>
+                        <p>{t('products.imagesAfterSave')}</p>
+                      </div>
                     )}
                   </div>
-                  <div className="actions">
+                  <div className="actions supplier-product-actions">
                     {selectedId ? (
                       <>
                         <button
                           type="button"
                           className="ghost"
                           onClick={() => {
-                            const p = products.find((x) => x.id === selectedId);
-                            if (p) void toggleActive(p);
+                            if (selectedProduct) void toggleActive(selectedProduct);
                           }}
                         >
-                          {products.find((x) => x.id === selectedId)?.isActive
-                            ? t('products.hide')
-                            : t('products.show')}
+                          {selectedProduct?.isActive ? t('products.hide') : t('products.show')}
                         </button>
                         <button
                           type="button"
@@ -324,7 +316,7 @@ export function SupplierProductsPage() {
                     </button>
                   </div>
                 </form>
-              </div>
+              </aside>
             </div>
           </>
         )}
