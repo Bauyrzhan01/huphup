@@ -63,11 +63,11 @@ export function HomePage() {
           </div>
 
           {loading ? (
-            <div className="assist-note">{t('home.loadingFromDb')}</div>
+            <div className="assist-note">{t('common.loading')}</div>
           ) : recent.length > 0 ? (
             <>
               <div className="assist-note" style={{ marginBottom: 8 }}>
-                {t('home.recentFromDb')}
+                {t('home.recentTitle')}
               </div>
               <div className="suggestions">
                 {recent.map((r) => (
@@ -83,7 +83,11 @@ export function HomePage() {
                 ))}
               </div>
             </>
-          ) : null}
+          ) : (
+            <div className="panel home-empty-hint">
+              <p>{t('home.emptyHint')}</p>
+            </div>
+          )}
         </div>
       </section>
     </BuyerLayout>

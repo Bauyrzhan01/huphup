@@ -231,7 +231,18 @@ export const conversationsApi = {
     if (params?.before) q.set('before', params.before);
     if (params?.limit) q.set('limit', String(params.limit));
     const suffix = q.toString() ? `?${q}` : '';
-    return api<MessagesPageResponse>(`/conversations/${id}/messages${suffix}`);
+    return api<MessageItem[] | MessagesPageResponse>(
+      `/conversations/${id}/messages${suffix}`,
+    ).then((data) => {
+      if (Array.isArray(data)) {
+        return { items: data, hasMore: false, nextCursor: null };
+      }
+      return {
+        items: data.items ?? [],
+        hasMore: Boolean(data.hasMore),
+        nextCursor: data.nextCursor ?? null,
+      };
+    });
   },
   send: (id: string, body: string) =>
     api<MessageItem>(`/conversations/${id}/messages`, {
