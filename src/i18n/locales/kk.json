@@ -257,7 +257,21 @@
     "bin": "БСН",
     "productsTitle": "Каталог ({{count}})",
     "from": "бастап",
-    "noProducts": "Каталогта тауар жоқ"
+    "noProducts": "Каталогта тауар жоқ",
+    "noProductsHint": "Жеткізуші әлі тауар қоспаған",
+    "noDescription": "Компания сипаттамасы толтырылмаған",
+    "openProfile": "Профиль →",
+    "verified": "Тексерілген",
+    "about": "Компания туралы",
+    "details": "Реквизиттер",
+    "owner": "Иесі",
+    "onPlatform": "Платформада бастап",
+    "catalogHint": "Тауарларда баға жоқ — шарттар байланыс кезінде келісіледі",
+    "createRequest": "Өтінім жасау",
+    "statProducts": "Тауарлар",
+    "statRating": "Рейтинг",
+    "statCity": "Қала",
+    "statCategories": "Санаттар"
   },
   "notifications": {
     "title": "Хабарламалар",

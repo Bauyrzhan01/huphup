@@ -69,6 +69,8 @@ export type Company = {
   verified: boolean;
   rating: number;
   ownerId?: string;
+  createdAt?: string;
+  owner?: { id: string; fullName: string; email?: string };
   members?: CompanyMember[];
   myRole?: CompanyMemberRole;
   isOwner?: boolean;

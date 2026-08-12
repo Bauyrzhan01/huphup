@@ -257,7 +257,21 @@
     "bin": "БИН",
     "productsTitle": "Каталог ({{count}})",
     "from": "от",
-    "noProducts": "Пока нет товаров в каталоге"
+    "noProducts": "Пока нет товаров в каталоге",
+    "noProductsHint": "Поставщик ещё не добавил товары",
+    "noDescription": "Описание компании пока не заполнено",
+    "openProfile": "Профиль →",
+    "verified": "Проверен",
+    "about": "О компании",
+    "details": "Реквизиты",
+    "owner": "Владелец",
+    "onPlatform": "На платформе с",
+    "catalogHint": "Товары без цены — условия обсуждаются при контакте",
+    "createRequest": "Создать заявку",
+    "statProducts": "Товары",
+    "statRating": "Рейтинг",
+    "statCity": "Город",
+    "statCategories": "Категории"
   },
   "notifications": {
     "title": "Уведомления",
