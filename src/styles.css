@@ -1040,6 +1040,45 @@ body.mobile-nav-open{overflow:hidden}
 }
 .supplier-profile-empty b{display:block;margin-bottom:6px}
 .supplier-profile-empty p{margin:0;color:#777;font-size:13px}
+
+.account-profile-page{padding-bottom:28px}
+.account-profile-role{
+  font-size:11px;font-weight:800;color:#111;background:#f3f3f4;
+  border:1px solid #e5e5e7;border-radius:999px;padding:5px 10px;
+}
+.account-profile-layout{
+  display:grid;grid-template-columns:1.2fr .9fr;gap:16px;margin-bottom:16px;align-items:start;
+}
+.account-profile-card .section-title{margin-top:0}
+.account-profile-hint{margin:-4px 0 14px;line-height:1.45}
+.account-profile-notifications{padding:18px}
+.account-profile-notif-head{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;
+}
+.account-profile-notif-head .section-title{margin:0}
+.account-profile-unread{
+  font-size:11px;font-weight:800;color:#087a5e;background:#eaf8f3;
+  border-radius:999px;padding:5px 10px;
+}
+.account-notif-list{display:grid;gap:8px}
+.account-notif-empty{
+  border:1px dashed #ddd;border-radius:14px;padding:22px;text-align:center;background:#fafafa;
+}
+.account-notif-empty b{display:block;margin-bottom:4px}
+.account-notif-empty p{margin:0;color:#777;font-size:13px}
+.account-notif-item{
+  width:100%;text-align:left;display:flex;justify-content:space-between;gap:14px;align-items:flex-start;
+  padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fafafa;cursor:pointer;
+  transition:border-color .15s,background .15s,box-shadow .15s;
+}
+.account-notif-item:hover{border-color:#ccc;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.04)}
+.account-notif-item.is-unread{background:#fff;border-color:#d8e9e3}
+.account-notif-body{min-width:0;display:grid;gap:4px}
+.account-notif-body b{font-size:14px;line-height:1.3}
+.account-notif-body span{font-size:12px;color:#777;line-height:1.4}
+@media(max-width:960px){
+  .account-profile-layout{grid-template-columns:1fr}
+}
 @media(max-width:960px){
   .supplier-profile-layout{grid-template-columns:1fr}
   .supplier-profile-stats{grid-template-columns:1fr 1fr}

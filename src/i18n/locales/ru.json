@@ -301,7 +301,14 @@
     "currentPassword": "Текущий пароль",
     "newPassword": "Новый пароль",
     "updatePassword": "Обновить пароль",
-    "passwordSaved": "Пароль обновлён"
+    "passwordSaved": "Пароль обновлён",
+    "passwordHint": "Минимум 8 символов. После смены войдите с новым паролем при необходимости.",
+    "goCompany": "Моя компания",
+    "statRole": "Роль",
+    "statCompany": "Компания",
+    "statNotifications": "Уведомления",
+    "statUnread": "Непрочитанные",
+    "noNotificationsHint": "Когда появятся события по заявкам и чатам — они будут здесь"
   },
   "attachments": {
     "title": "Файлы к заявке",

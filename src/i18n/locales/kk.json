@@ -301,7 +301,14 @@
     "currentPassword": "Ағымдағы құпия сөз",
     "newPassword": "Жаңа құпия сөз",
     "updatePassword": "Құпия сөзді жаңарту",
-    "passwordSaved": "Құпия сөз сақталды"
+    "passwordSaved": "Құпия сөз сақталды",
+    "passwordHint": "Кемінде 8 таңба. Қажет болса жаңа құпия сөзбен қайта кіріңіз.",
+    "goCompany": "Менің компаниям",
+    "statRole": "Рөл",
+    "statCompany": "Компания",
+    "statNotifications": "Хабарламалар",
+    "statUnread": "Оқылмаған",
+    "noNotificationsHint": "Өтінім мен чат оқиғалары осында пайда болады"
   },
   "attachments": {
     "title": "Өтінім файлы",
