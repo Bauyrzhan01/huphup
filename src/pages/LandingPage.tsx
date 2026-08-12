@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { RequestFlowDemo } from '../components/RequestFlowDemo';
 
 function Reveal({
   children,
@@ -45,39 +46,6 @@ function Reveal({
     >
       {children}
     </div>
-  );
-}
-
-function TypeLine({ text }: { text: string }) {
-  const [value, setValue] = useState('');
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    setValue('');
-    setDone(false);
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) {
-      setValue(text);
-      setDone(true);
-      return;
-    }
-    let i = 0;
-    const id = window.setInterval(() => {
-      i += 1;
-      setValue(text.slice(0, i));
-      if (i >= text.length) {
-        window.clearInterval(id);
-        setDone(true);
-      }
-    }, 28);
-    return () => window.clearInterval(id);
-  }, [text]);
-
-  return (
-    <p className={`landing-mock-q${done ? ' is-done' : ''}`}>
-      {value}
-      <span className="landing-caret" aria-hidden="true" />
-    </p>
   );
 }
 
@@ -140,26 +108,70 @@ export function LandingPage() {
             </a>
           </div>
         </div>
-        <div className="landing-hero-visual landing-hero-anim" style={{ animationDelay: '280ms' }}>
-          <div className="landing-mock landing-float">
-            <div className="landing-mock-bar">
-              <span />
-              <span />
-              <span />
-            </div>
-            <TypeLine text={t('landing.mockQuestion')} />
-            <div className="landing-mock-chips">
-              <span className="landing-chip" style={{ animationDelay: '1.1s' }}>
-                {t('landing.mockChip1')}
-              </span>
-              <span className="landing-chip" style={{ animationDelay: '1.35s' }}>
-                {t('landing.mockChip2')}
-              </span>
-              <span className="landing-chip" style={{ animationDelay: '1.6s' }}>
-                {t('landing.mockChip3')}
-              </span>
-            </div>
-          </div>
+        <div className="landing-hero-visual landing-hero-anim" style={{ animationDelay: '200ms' }}>
+          <RequestFlowDemo />
+        </div>
+      </section>
+
+      <section className="landing-section landing-section-alt" id="how">
+        <div className="landing-section-inner">
+          <Reveal>
+            <h2>{t('landing.howTitle')}</h2>
+            <p className="landing-section-lead">{t('landing.howLead')}</p>
+          </Reveal>
+          <ol className="landing-flow">
+            <Reveal delay={60}>
+              <li className="landing-flow-step">
+                <span className="landing-flow-num">1</span>
+                <div className="landing-flow-copy">
+                  <strong>{t('landing.step1Title')}</strong>
+                  <span>{t('landing.step1Text')}</span>
+                </div>
+                <div className="landing-flow-visual" aria-hidden="true">
+                  <div className="landing-flow-typewriter">
+                    <span className="landing-flow-line" />
+                    <span className="landing-flow-line is-short" />
+                    <span className="landing-flow-cursor" />
+                  </div>
+                </div>
+              </li>
+            </Reveal>
+            <Reveal delay={140}>
+              <li className="landing-flow-step">
+                <span className="landing-flow-num">2</span>
+                <div className="landing-flow-copy">
+                  <strong>{t('landing.step2Title')}</strong>
+                  <span>{t('landing.step2Text')}</span>
+                </div>
+                <div className="landing-flow-visual" aria-hidden="true">
+                  <div className="landing-flow-radar">
+                    <span />
+                    <span />
+                    <span />
+                    <i className="landing-flow-ping" />
+                    <i className="landing-flow-ping is-b" />
+                    <i className="landing-flow-ping is-c" />
+                  </div>
+                </div>
+              </li>
+            </Reveal>
+            <Reveal delay={220}>
+              <li className="landing-flow-step">
+                <span className="landing-flow-num">3</span>
+                <div className="landing-flow-copy">
+                  <strong>{t('landing.step3Title')}</strong>
+                  <span>{t('landing.step3Text')}</span>
+                </div>
+                <div className="landing-flow-visual" aria-hidden="true">
+                  <div className="landing-flow-offers">
+                    <span className="landing-flow-offer-bar" style={{ width: '88%' }} />
+                    <span className="landing-flow-offer-bar" style={{ width: '72%' }} />
+                    <span className="landing-flow-offer-bar" style={{ width: '64%' }} />
+                  </div>
+                </div>
+              </li>
+            </Reveal>
+          </ol>
         </div>
       </section>
 
@@ -172,45 +184,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="landing-section landing-section-alt" id="how">
-        <div className="landing-section-inner">
-          <Reveal>
-            <h2>{t('landing.howTitle')}</h2>
-            <p className="landing-section-lead">{t('landing.howLead')}</p>
-          </Reveal>
-          <ol className="landing-steps">
-            <Reveal delay={60}>
-              <li>
-                <span className="landing-step-num">1</span>
-                <div>
-                  <strong>{t('landing.step1Title')}</strong>
-                  <span>{t('landing.step1Text')}</span>
-                </div>
-              </li>
-            </Reveal>
-            <Reveal delay={140}>
-              <li>
-                <span className="landing-step-num">2</span>
-                <div>
-                  <strong>{t('landing.step2Title')}</strong>
-                  <span>{t('landing.step2Text')}</span>
-                </div>
-              </li>
-            </Reveal>
-            <Reveal delay={220}>
-              <li>
-                <span className="landing-step-num">3</span>
-                <div>
-                  <strong>{t('landing.step3Title')}</strong>
-                  <span>{t('landing.step3Text')}</span>
-                </div>
-              </li>
-            </Reveal>
-          </ol>
-        </div>
-      </section>
-
-      <section className="landing-section" id="roles">
+      <section className="landing-section landing-section-alt" id="roles">
         <div className="landing-section-inner">
           <Reveal>
             <h2>{t('landing.rolesTitle')}</h2>
@@ -232,7 +206,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="landing-section landing-section-alt">
+      <section className="landing-section">
         <div className="landing-section-inner landing-final">
           <Reveal>
             <h2>{t('landing.finalTitle')}</h2>
