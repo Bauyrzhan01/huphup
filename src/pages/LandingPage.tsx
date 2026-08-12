@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { RequestFlowContinue } from '../components/RequestFlowContinue';
 import { RequestFlowDemo } from '../components/RequestFlowDemo';
 
 function Reveal({
@@ -119,59 +120,7 @@ export function LandingPage() {
             <h2>{t('landing.howTitle')}</h2>
             <p className="landing-section-lead">{t('landing.howLead')}</p>
           </Reveal>
-          <ol className="landing-flow">
-            <Reveal delay={60}>
-              <li className="landing-flow-step">
-                <span className="landing-flow-num">1</span>
-                <div className="landing-flow-copy">
-                  <strong>{t('landing.step1Title')}</strong>
-                  <span>{t('landing.step1Text')}</span>
-                </div>
-                <div className="landing-flow-visual" aria-hidden="true">
-                  <div className="landing-flow-typewriter">
-                    <span className="landing-flow-line" />
-                    <span className="landing-flow-line is-short" />
-                    <span className="landing-flow-cursor" />
-                  </div>
-                </div>
-              </li>
-            </Reveal>
-            <Reveal delay={140}>
-              <li className="landing-flow-step">
-                <span className="landing-flow-num">2</span>
-                <div className="landing-flow-copy">
-                  <strong>{t('landing.step2Title')}</strong>
-                  <span>{t('landing.step2Text')}</span>
-                </div>
-                <div className="landing-flow-visual" aria-hidden="true">
-                  <div className="landing-flow-radar">
-                    <span />
-                    <span />
-                    <span />
-                    <i className="landing-flow-ping" />
-                    <i className="landing-flow-ping is-b" />
-                    <i className="landing-flow-ping is-c" />
-                  </div>
-                </div>
-              </li>
-            </Reveal>
-            <Reveal delay={220}>
-              <li className="landing-flow-step">
-                <span className="landing-flow-num">3</span>
-                <div className="landing-flow-copy">
-                  <strong>{t('landing.step3Title')}</strong>
-                  <span>{t('landing.step3Text')}</span>
-                </div>
-                <div className="landing-flow-visual" aria-hidden="true">
-                  <div className="landing-flow-offers">
-                    <span className="landing-flow-offer-bar" style={{ width: '88%' }} />
-                    <span className="landing-flow-offer-bar" style={{ width: '72%' }} />
-                    <span className="landing-flow-offer-bar" style={{ width: '64%' }} />
-                  </div>
-                </div>
-              </li>
-            </Reveal>
-          </ol>
+          <RequestFlowContinue />
         </div>
       </section>
 
