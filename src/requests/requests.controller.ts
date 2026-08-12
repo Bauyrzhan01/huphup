@@ -13,8 +13,6 @@ import {
   CreateRequestDto,
   UpdateRequestDto,
 } from './dto/request.dto';
-import { UserRole } from '@prisma/client';
-import { Roles } from '../common/decorators/roles.decorator';
 import {
   AuthUser,
   CurrentUser,
@@ -34,13 +32,11 @@ export class RequestsController {
   }
 
   @Post()
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateRequestDto) {
     return this.requestsService.create(user.id, dto);
   }
 
   @Get()
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
   listMine(@CurrentUser() user: AuthUser) {
     return this.requestsService.listMine(user.id);
   }

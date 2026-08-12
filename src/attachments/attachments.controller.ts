@@ -10,8 +10,6 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
-import { Roles } from '../common/decorators/roles.decorator';
 import {
   AuthUser,
   CurrentUser,
@@ -25,13 +23,11 @@ export class AttachmentsController {
   constructor(private readonly attachments: AttachmentsService) {}
 
   @Get(':requestId/attachments')
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
   list(@CurrentUser() user: AuthUser, @Param('requestId') requestId: string) {
     return this.attachments.listForRequest(user.id, requestId);
   }
 
   @Post(':requestId/attachments')
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -54,7 +50,6 @@ export class AttachmentsController {
   }
 
   @Delete(':requestId/attachments/:attachmentId')
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
   remove(
     @CurrentUser() user: AuthUser,
     @Param('requestId') requestId: string,

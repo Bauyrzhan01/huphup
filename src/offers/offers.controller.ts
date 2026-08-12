@@ -1,9 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
 import { OffersService } from './offers.service';
 import { CreateOfferDto } from './dto/offer.dto';
-import { Roles } from '../common/decorators/roles.decorator';
 import { SupplierMember } from '../common/decorators/supplier-member.decorator';
 import {
   AuthUser,
@@ -23,7 +21,6 @@ export class OffersController {
   }
 
   @Get('mine')
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
   listMine(@CurrentUser() user: AuthUser) {
     return this.offersService.listMineForBuyer(user.id);
   }
@@ -43,13 +40,11 @@ export class OffersController {
   }
 
   @Post(':id/accept')
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
   accept(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.offersService.accept(user.id, id);
   }
 
   @Post(':id/reject')
-  @Roles(UserRole.BUYER, UserRole.ADMIN)
   reject(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.offersService.reject(user.id, id);
   }
