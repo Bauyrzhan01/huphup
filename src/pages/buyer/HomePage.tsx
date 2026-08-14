@@ -184,16 +184,21 @@ export function HomePage() {
       setDescription(res.description || originalText);
       const ask = res.questions?.[0];
       const done = res.ready === true || !ask;
+      const assistantText =
+        res.assistantMessage ||
+        ask?.question ||
+        t('requests.chatReady');
+      const last = nextChat[nextChat.length - 1];
+      const nextAssistant: ChatTurn = {
+        role: 'assistant',
+        text: assistantText,
+        options: done ? undefined : ask?.options,
+      };
       setChat([
         ...nextChat,
-        {
-          role: 'assistant',
-          text:
-            res.assistantMessage ||
-            ask?.question ||
-            t('requests.chatReady'),
-          options: done ? undefined : ask?.options,
-        },
+        ...(last?.role === 'assistant' && last.text === assistantText
+          ? []
+          : [nextAssistant]),
       ]);
     } catch (err) {
       setError(errorText(err));
@@ -310,6 +315,7 @@ export function HomePage() {
   }
 
   const chatting = chat.length > 0;
+  const compactReady = chatting && ready && !q.trim();
 
   return (
     <BuyerLayout crumb={t('nav.businessCrumb')}>
@@ -357,7 +363,10 @@ export function HomePage() {
             </div>
           ) : null}
 
-          <div className="composer">
+          <div className={`composer${chatting ? ' is-chat' : ''}${compactReady ? ' is-ready' : ''}`}>
+            {compactReady ? (
+              <p className="composer-ready-note">{t('requests.chatReady')}</p>
+            ) : null}
             <textarea
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -365,6 +374,7 @@ export function HomePage() {
                 chatting ? t('requests.chatPlaceholder') : t('home.placeholder')
               }
               disabled={busy}
+              rows={compactReady ? 1 : chatting ? 2 : 3}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
