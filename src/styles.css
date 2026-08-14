@@ -1452,7 +1452,7 @@ body.mobile-nav-open{overflow:hidden}
 .product-detail-kv b{text-align:right;font-size:12px;line-height:1.35}
 .product-detail-aside .product-review-list{margin:0;padding:0;display:grid;gap:8px}
 .product-detail-footer{
-  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  display:flex;justify-content:flex-end;align-items:center;gap:8px;
   padding:12px 24px 16px;border-top:1px solid var(--line);
 }
 .product-detail-card .product-review-list{

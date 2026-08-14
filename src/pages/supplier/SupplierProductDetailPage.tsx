@@ -311,9 +311,6 @@ export function SupplierProductDetailPage() {
               </div>
 
               <div className="product-detail-footer">
-                <Link className="ghost" to="/supplier/products">
-                  ← {t('products.backToCatalog')}
-                </Link>
                 <button type="submit" className="primary" disabled={saving}>
                   {saving
                     ? t('common.loading')
