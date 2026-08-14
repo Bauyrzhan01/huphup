@@ -7,9 +7,20 @@ import { UserAvatar } from '../../components/UserAvatar';
 import { PresenceDot } from '../../components/PresenceDot';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
+import { isUserOnline } from '../../utils/presence';
 import type { CompanyMember, Lead } from '../../types';
 
-type AssigneeFilter = 'all' | 'mine' | 'unassigned' | string;
+type AssigneeFilter = 'all' | 'inbox' | 'mine' | string;
+
+const STAGES = ['NEW', 'VIEWED', 'OFFERED', 'SKIPPED'] as const;
+
+function nextActionKey(lead: Lead) {
+  if (lead.status === 'NEW' && !lead.assigneeId) return 'crmNextTake';
+  if (lead.status === 'VIEWED') return 'crmNextOffer';
+  if (lead.status === 'OFFERED') return 'crmNextWait';
+  if (lead.status === 'SKIPPED') return 'crmNextSkipped';
+  return 'crmNextTake';
+}
 
 export function SupplierCrmPage() {
   const { t } = useTranslation();
@@ -44,12 +55,25 @@ export function SupplierCrmPage() {
     return () => window.clearInterval(timer);
   }, [t]);
 
+  const inboxLeads = useMemo(
+    () => leads.filter((l) => l.status === 'NEW' && !l.assigneeId),
+    [leads],
+  );
+  const inWork = useMemo(
+    () => leads.filter((l) => l.status === 'VIEWED'),
+    [leads],
+  );
+  const offered = useMemo(
+    () => leads.filter((l) => l.status === 'OFFERED'),
+    [leads],
+  );
+
   const filtered = useMemo(() => {
     if (filter === 'all') return leads;
+    if (filter === 'inbox') return inboxLeads;
     if (filter === 'mine') return leads.filter((l) => l.assigneeId === user?.id);
-    if (filter === 'unassigned') return leads.filter((l) => !l.assigneeId);
     return leads.filter((l) => l.assigneeId === filter);
-  }, [leads, filter, user?.id]);
+  }, [leads, filter, user?.id, inboxLeads]);
 
   const columns = useMemo(
     () => ({
@@ -61,14 +85,13 @@ export function SupplierCrmPage() {
     [filtered],
   );
 
-  const columnTitles = {
-    NEW: t('supplier.colNew'),
-    VIEWED: t('supplier.colViewed'),
-    OFFERED: t('supplier.colOffered'),
-    SKIPPED: t('supplier.colSkipped'),
+  const columnMeta = {
+    NEW: { title: t('supplier.colNew'), hint: t('supplier.colNewHint') },
+    VIEWED: { title: t('supplier.colViewed'), hint: t('supplier.colViewedHint') },
+    OFFERED: { title: t('supplier.colOffered'), hint: t('supplier.colOfferedHint') },
+    SKIPPED: { title: t('supplier.colSkipped'), hint: t('supplier.colSkippedHint') },
   } as const;
 
-  const unassignedCount = leads.filter((l) => !l.assigneeId).length;
   const mineCount = leads.filter((l) => l.assigneeId === user?.id).length;
 
   return (
@@ -80,15 +103,11 @@ export function SupplierCrmPage() {
         </Link>
       }
     >
-      <div className="page">
+      <div className="page crm-page">
         <div className="page-head">
           <div>
             <h1>{t('supplier.dealsTitle')}</h1>
-            <p>
-              {loading
-                ? t('supplier.leadsLoading')
-                : t('supplier.leadsTotal', { count: leads.length })}
-            </p>
+            <p>{t('supplier.crmSubtitle')}</p>
           </div>
         </div>
 
@@ -96,53 +115,70 @@ export function SupplierCrmPage() {
 
         <div className="stat-grid crm-stats">
           <div className="stat">
-            <small>{t('supplier.statNew')}</small>
-            <b>{leads.filter((l) => l.status === 'NEW').length}</b>
+            <small>{t('supplier.statInbox')}</small>
+            <b>{inboxLeads.length}</b>
           </div>
           <div className="stat">
-            <small>{t('supplier.statViewed')}</small>
-            <b>{leads.filter((l) => l.status === 'VIEWED').length}</b>
+            <small>{t('supplier.statInWork')}</small>
+            <b>{inWork.length}</b>
           </div>
           <div className="stat">
             <small>{t('supplier.statOffered')}</small>
-            <b>{leads.filter((l) => l.status === 'OFFERED').length}</b>
+            <b>{offered.length}</b>
           </div>
           <div className="stat">
-            <small>{t('supplier.statUnassigned')}</small>
-            <b>{unassignedCount}</b>
+            <small>{t('supplier.statTotal')}</small>
+            <b>{loading ? '—' : leads.length}</b>
           </div>
         </div>
 
-        <div className="crm-filters">
-          <label className="meta" htmlFor="crm-assignee-filter">
-            {t('supplier.filterByManager')}
-          </label>
-          <select
-            id="crm-assignee-filter"
-            className="filter"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as AssigneeFilter)}
+        <div className="crm-filter-chips" role="tablist" aria-label={t('supplier.filterByManager')}>
+          <button
+            type="button"
+            className={`chip pick${filter === 'all' ? ' is-on' : ''}`}
+            onClick={() => setFilter('all')}
           >
-            <option value="all">{t('supplier.filterAll')}</option>
-            <option value="mine">{t('supplier.filterMine', { count: mineCount })}</option>
-            <option value="unassigned">
-              {t('supplier.filterUnassigned', { count: unassignedCount })}
-            </option>
-            {isOwner
-              ? members.map((m) => (
-                  <option key={m.user.id} value={m.user.id}>
-                    {m.user.fullName}
-                  </option>
-                ))
-              : null}
-          </select>
+            {t('supplier.filterAll')}
+          </button>
+          <button
+            type="button"
+            className={`chip pick${filter === 'inbox' ? ' is-on' : ''}`}
+            onClick={() => setFilter('inbox')}
+          >
+            {t('supplier.filterInbox', { count: inboxLeads.length })}
+          </button>
+          <button
+            type="button"
+            className={`chip pick${filter === 'mine' ? ' is-on' : ''}`}
+            onClick={() => setFilter('mine')}
+          >
+            {t('supplier.filterMine', { count: mineCount })}
+          </button>
+          {isOwner
+            ? members.map((m) => (
+                <button
+                  key={m.user.id}
+                  type="button"
+                  className={`chip pick crm-member-chip${filter === m.user.id ? ' is-on' : ''}`}
+                  onClick={() => setFilter(m.user.id)}
+                >
+                  <span
+                    className={`crm-member-online${isUserOnline(m.user.lastSeenAt) ? ' is-on' : ''}`}
+                  />
+                  {m.user.fullName}
+                </button>
+              ))
+            : null}
         </div>
 
         <div className="kanban kanban-crm">
-          {(['NEW', 'VIEWED', 'OFFERED', 'SKIPPED'] as const).map((key) => (
-            <div key={key} className="column">
+          {STAGES.map((key) => (
+            <div key={key} className={`column crm-col crm-col-${key.toLowerCase()}`}>
               <div className="column-head">
-                <b>{columnTitles[key]}</b>
+                <div>
+                  <b>{columnMeta[key].title}</b>
+                  <p className="crm-col-hint">{columnMeta[key].hint}</p>
+                </div>
                 <span className="count">{columns[key].length}</span>
               </div>
               {columns[key].map((lead) => (
@@ -171,12 +207,20 @@ export function SupplierCrmPage() {
                           />
                           <PresenceDot lastSeenAt={lead.assignee.lastSeenAt} />
                         </span>
-                        <span>{lead.assignee.fullName}</span>
+                        <span className="deal-assignee-copy">
+                          <b>{lead.assignee.fullName}</b>
+                          <PresenceDot
+                            lastSeenAt={lead.assignee.lastSeenAt}
+                            showLabel
+                            className="deal-presence-label"
+                          />
+                        </span>
                       </>
                     ) : (
-                      <span className="deal-unassigned">{t('supplier.unassigned')}</span>
+                      <span className="deal-unassigned">{t('supplier.needsManager')}</span>
                     )}
                   </div>
+                  <div className="deal-next">{t(`supplier.${nextActionKey(lead)}`)}</div>
                   <div className="deal-foot">
                     <span>{formatDate(lead.createdAt)}</span>
                   </div>

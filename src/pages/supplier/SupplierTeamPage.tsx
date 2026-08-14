@@ -38,24 +38,26 @@ export function SupplierTeamPage() {
     };
   }, [members, company, isOwner]);
 
-  async function load() {
-    setLoading(true);
+  async function load(silent = false) {
+    if (!silent) setLoading(true);
     setError('');
     try {
       const c = await companiesApi.me();
       setCompany(c);
       setMembers(c.members ?? (await companiesApi.members()));
     } catch {
-      setCompany(null);
-      setMembers([]);
+      if (!silent) {
+        setCompany(null);
+        setMembers([]);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => {
     void load();
-    const timer = window.setInterval(() => void load(), 40_000);
+    const timer = window.setInterval(() => void load(true), 40_000);
     return () => window.clearInterval(timer);
   }, []);
 
