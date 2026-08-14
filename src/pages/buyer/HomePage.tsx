@@ -4,13 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { Send } from 'lucide-react';
 import { requestsApi } from '../../api';
 import { ApiError } from '../../api/client';
+import { useAuth } from '../../auth/AuthContext';
 import { AppIcon } from '../../components/AppIcon';
 import { MatchedSupplierCard } from '../../components/MatchedSupplierCard';
 import { BuyerLayout } from '../../layouts/AppLayouts';
+import {
+  homeChatKey,
+  LEGACY_HOME_CHAT_KEY,
+} from '../../utils/homeChatStorage';
 import { shouldSkipAssistantReply } from '../../utils/requestChat';
 import type { AnalyzeResult, PublishResult, RequestItem } from '../../types';
-
-const HOME_CHAT_KEY = 'huphup_home_chat';
 
 type ChatTurn = {
   role: 'user' | 'assistant';
@@ -20,6 +23,7 @@ type ChatTurn = {
 
 export function HomePage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [recent, setRecent] = useState<RequestItem[]>([]);
@@ -53,9 +57,23 @@ export function HomePage() {
   }
 
   useEffect(() => {
+    sessionStorage.removeItem(LEGACY_HOME_CHAT_KEY);
+    if (!user?.id) return;
+
     try {
-      const raw = sessionStorage.getItem(HOME_CHAT_KEY);
-      if (!raw) return;
+      const raw = sessionStorage.getItem(homeChatKey(user.id));
+      if (!raw) {
+        startedRef.current = false;
+        setChat([]);
+        setOriginalText('');
+        setAnalyzed(null);
+        setCollectedAnswers([]);
+        setTitle('');
+        setDescription('');
+        setCity('Алматы');
+        setPublishResult(null);
+        return;
+      }
       const saved = JSON.parse(raw) as {
         chat?: ChatTurn[];
         originalText?: string;
@@ -76,14 +94,14 @@ export function HomePage() {
         setCity(saved.city || 'Алматы');
       }
     } catch {
-      sessionStorage.removeItem(HOME_CHAT_KEY);
+      sessionStorage.removeItem(homeChatKey(user.id));
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
-    if (!chat.length) return;
+    if (!user?.id || !chat.length) return;
     sessionStorage.setItem(
-      HOME_CHAT_KEY,
+      homeChatKey(user.id),
       JSON.stringify({
         chat,
         originalText,
@@ -94,7 +112,7 @@ export function HomePage() {
         city,
       }),
     );
-  }, [chat, originalText, analyzed, collectedAnswers, title, description, city]);
+  }, [user?.id, chat, originalText, analyzed, collectedAnswers, title, description, city]);
 
   useEffect(() => {
     void requestsApi
@@ -242,7 +260,8 @@ export function HomePage() {
 
   function resetChat() {
     startedRef.current = false;
-    sessionStorage.removeItem(HOME_CHAT_KEY);
+    if (user?.id) sessionStorage.removeItem(homeChatKey(user.id));
+    sessionStorage.removeItem(LEGACY_HOME_CHAT_KEY);
     setChat([]);
     setAnalyzed(null);
     setCollectedAnswers([]);

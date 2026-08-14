@@ -10,6 +10,7 @@ import {
 import { authApi, usersApi } from '../api';
 import type { User } from '../types';
 import { readCachedUser, writeCachedUser } from './userCache';
+import { clearHomeChatStorage } from '../utils/homeChatStorage';
 
 type AuthContextValue = {
   user: User | null;
@@ -124,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem('huphup_token');
     writeCachedUser(null);
+    clearHomeChatStorage();
     setUser(null);
     setLoading(false);
   }, []);
