@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../api';
 import { ProductImageGallery } from './ProductImageGallery';
+import { RatingStar } from './RatingIcons';
 import { UserAvatar } from './UserAvatar';
 import type { PublicProduct } from '../types';
 
@@ -139,8 +140,8 @@ export function MatchedSupplierCard({
                           {[p.unit, p.city].filter(Boolean).join(' · ')}
                         </span>
                         {p.avgRating != null && p.reviewCount ? (
-                          <span className="meta">
-                            ★ {p.avgRating.toFixed(1)} ({p.reviewCount})
+                          <span className="meta inline-rating">
+                            <RatingStar size={13} /> {p.avgRating.toFixed(1)} ({p.reviewCount})
                           </span>
                         ) : null}
                       </div>

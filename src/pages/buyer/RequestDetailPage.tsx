@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { offersApi, requestsApi } from '../../api';
 
 import { MatchedSupplierCard } from '../../components/MatchedSupplierCard';
+import { RatingStar, VerifiedMark } from '../../components/RatingIcons';
 
 import { RequestAttachments } from '../../components/RequestAttachments';
 
@@ -358,13 +359,13 @@ export function RequestDetailPage() {
 
                               <div className="meta">
 
-                                ★ {o.company.rating.toFixed(1)} ·{' '}
+                                <span className="inline-rating"><RatingStar size={13} /> {o.company.rating.toFixed(1)}</span> ·{' '}
 
                                 {o.company.city ?? t('common.empty')}
 
                                 {o.company.verified ? (
 
-                                  <span className="verified"> ✓</span>
+                                  <span className="verified"><VerifiedMark size={14} /></span>
 
                                 ) : null}
 

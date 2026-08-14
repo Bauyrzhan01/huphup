@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Bell } from 'lucide-react';
 import { notificationsApi } from '../api';
+import { AppIcon } from './AppIcon';
 import { useAppLocale } from '../i18n/useAppLocale';
 import { useWorkspaceMode } from '../hooks/useWorkspaceMode';
 import { getNotificationHref } from '../utils/notificationNavigation';
@@ -74,7 +76,7 @@ export function NotificationsBell() {
           if (!open) void refresh();
         }}
       >
-        <span aria-hidden>🔔</span>
+        <AppIcon icon={Bell} size={18} />
         {unread > 0 ? (
           <span className="notif-badge">{unread > 9 ? '9+' : unread}</span>
         ) : null}

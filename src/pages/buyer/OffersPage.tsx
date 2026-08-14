@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { offersApi, requestsApi } from '../../api';
 import { BuyerLayout } from '../../layouts/AppLayouts';
+import { RatingStar, VerifiedMark } from '../../components/RatingIcons';
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
 import type { Offer, RequestItem } from '../../types';
 
@@ -180,10 +181,10 @@ export function OffersPage() {
                         <div>
                           <b>{o.company.name}</b>
                           <div className="meta">
-                            ★ {o.company.rating.toFixed(1)} ·{' '}
+                            <span className="inline-rating"><RatingStar size={13} /> {o.company.rating.toFixed(1)}</span> ·{' '}
                             {o.company.city ?? t('common.empty')}
                             {o.company.verified ? (
-                              <span className="verified"> ✓</span>
+                              <span className="verified"><VerifiedMark size={14} /></span>
                             ) : null}
                           </div>
                         </div>

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Package } from 'lucide-react';
 import { companiesApi, productsApi } from '../../api';
+import { AppIcon } from '../../components/AppIcon';
 import { SupplierProductCard } from '../../components/SupplierProductCard';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import type { Product } from '../../types';
@@ -73,7 +75,7 @@ export function SupplierProductsPage() {
             ) : products.length === 0 ? (
               <div className="supplier-products-empty card">
                 <div className="supplier-products-empty-icon" aria-hidden>
-                  📦
+                  <AppIcon icon={Package} size={40} strokeWidth={1.5} />
                 </div>
                 <b>{t('products.empty')}</b>
                 <p>{t('products.emptyHint')}</p>

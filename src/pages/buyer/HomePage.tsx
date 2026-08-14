@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Send } from 'lucide-react';
 import { requestsApi } from '../../api';
 import { ApiError } from '../../api/client';
+import { AppIcon } from '../../components/AppIcon';
 import { MatchedSupplierCard } from '../../components/MatchedSupplierCard';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { shouldSkipAssistantReply } from '../../utils/requestChat';
@@ -418,7 +420,7 @@ export function HomePage() {
                   disabled={busy}
                   aria-label={t('common.send')}
                 >
-                  <img src="/send-icon.png" alt="" className="send-icon" width={18} height={18} />
+                  <AppIcon icon={Send} className="send-icon" size={18} />
                 </button>
               ) : ready && chatting ? (
                 <button
@@ -437,7 +439,7 @@ export function HomePage() {
                   disabled={busy || !q.trim()}
                   aria-label={t('common.send')}
                 >
-                  <img src="/send-icon.png" alt="" className="send-icon" width={18} height={18} />
+                  <AppIcon icon={Send} className="send-icon" size={18} />
                 </button>
               )}
             </div>

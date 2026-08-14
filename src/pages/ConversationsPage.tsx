@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ImageIcon, MessageSquare, Paperclip } from 'lucide-react';
 import { conversationsApi } from '../api';
 import { resolveMediaUrl } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { AppIcon } from '../components/AppIcon';
 import { UserAvatar } from '../components/UserAvatar';
 import { useWorkspaceMode } from '../hooks/useWorkspaceMode';
 import { BuyerLayout, SupplierLayout } from '../layouts/AppLayouts';
@@ -29,7 +31,7 @@ function ChatImage({ att, href }: { att: MessageAttachment; href: string }) {
   if (broken) {
     return (
       <a href={href} target="_blank" rel="noreferrer" className="bubble-attachment-file">
-        <span className="bubble-attachment-icon">🖼</span>
+        <AppIcon icon={ImageIcon} className="bubble-attachment-icon" size={20} />
         <span className="bubble-attachment-meta">
           <b>{att.fileName}</b>
         </span>
@@ -71,7 +73,7 @@ function MessageAttachments({
             rel="noreferrer"
             className={`bubble-attachment-file${mine ? ' is-mine' : ''}`}
           >
-            <span className="bubble-attachment-icon">📎</span>
+            <AppIcon icon={Paperclip} className="bubble-attachment-icon" size={20} />
             <span className="bubble-attachment-meta">
               <b>{att.fileName}</b>
               {att.sizeBytes ? <small>{formatFileSize(att.sizeBytes)}</small> : null}
@@ -346,7 +348,9 @@ export function ConversationsPage() {
 
         {items.length === 0 && !loading ? (
           <div className="panel chat-empty-state">
-            <div className="leads-placeholder-ico">💬</div>
+            <div className="leads-placeholder-ico">
+              <AppIcon icon={MessageSquare} size={32} strokeWidth={1.5} />
+            </div>
             <b>{t('conversations.emptyTitle')}</b>
             <p>{t('conversations.empty')}</p>
             {!isSupplier ? (
@@ -529,7 +533,8 @@ export function ConversationsPage() {
                     {pendingFile ? (
                       <div className="chat-pending-file">
                         <span className="chat-pending-file-name">
-                          📎 {pendingFile.name}
+                          <AppIcon icon={Paperclip} size={16} className="chat-pending-file-icon" />
+                          {pendingFile.name}
                           <small>{formatFileSize(pendingFile.size)}</small>
                         </span>
                         <button
@@ -559,7 +564,7 @@ export function ConversationsPage() {
                         disabled={sending}
                         onClick={() => fileInputRef.current?.click()}
                       >
-                        📎
+                        <AppIcon icon={Paperclip} size={18} />
                       </button>
                       <textarea
                         value={body}

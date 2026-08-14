@@ -2,8 +2,10 @@ import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Inbox } from 'lucide-react';
 import { companiesApi, leadsApi, offersApi } from '../../api';
 import { useAuth } from '../../auth/AuthContext';
+import { AppIcon } from '../../components/AppIcon';
 import { UserAvatar } from '../../components/UserAvatar';
 import { PresenceDot } from '../../components/PresenceDot';
 import { SupplierLayout } from '../../layouts/AppLayouts';
@@ -444,7 +446,9 @@ export function SupplierLeadsPage() {
               </>
             ) : (
               <div className="panel leads-placeholder">
-                <div className="leads-placeholder-ico">◎</div>
+                <div className="leads-placeholder-ico">
+                  <AppIcon icon={Inbox} size={32} strokeWidth={1.5} />
+                </div>
                 <b>{t('supplier.selectLead')}</b>
                 <p>{t('supplier.selectLeadHint')}</p>
               </div>

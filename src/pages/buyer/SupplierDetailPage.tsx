@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../../api';
 import { ProductCatalogCard } from '../../components/ProductCatalogCard';
+import { RatingStar, VerifiedMark } from '../../components/RatingIcons';
 import { UserAvatar } from '../../components/UserAvatar';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
@@ -77,7 +78,7 @@ export function SupplierDetailPage() {
                       <h1>{company.name}</h1>
                       {company.verified ? (
                         <span className="supplier-profile-verified" title={t('suppliers.verified')}>
-                          ✓ {t('suppliers.verified')}
+                          <VerifiedMark size={14} /> {t('suppliers.verified')}
                         </span>
                       ) : null}
                     </div>
@@ -116,7 +117,7 @@ export function SupplierDetailPage() {
               <div className="supplier-profile-stat">
                 <small>{t('suppliers.statRating')}</small>
                 <b>
-                  <span className="supplier-profile-stars">★</span> {rating.toFixed(1)}
+                  <RatingStar size={16} className="supplier-profile-stars" /> {rating.toFixed(1)}
                 </b>
               </div>
               <div className="supplier-profile-stat">
@@ -150,7 +151,7 @@ export function SupplierDetailPage() {
                     </div>
                     <div>
                       <dt>{t('suppliers.statRating')}</dt>
-                      <dd>★ {rating.toFixed(1)}</dd>
+                      <dd className="inline-rating"><RatingStar size={14} /> {rating.toFixed(1)}</dd>
                     </div>
                     {company.owner?.fullName ? (
                       <div>

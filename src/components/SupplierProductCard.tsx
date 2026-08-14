@@ -1,6 +1,9 @@
+import { Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { resolveMediaUrl } from '../api/client';
+import { AppIcon } from './AppIcon';
+import { RatingStar } from './RatingIcons';
 import type { Product } from '../types';
 
 type Props = {
@@ -23,7 +26,7 @@ export function SupplierProductCard({ product }: Props) {
         ) : (
           <div className="supplier-product-card-placeholder">
             <span className="supplier-product-card-icon" aria-hidden>
-              📦
+              <AppIcon icon={Package} size={28} strokeWidth={1.5} />
             </span>
             <span>{t('products.noPhoto')}</span>
           </div>
@@ -44,7 +47,9 @@ export function SupplierProductCard({ product }: Props) {
         ) : null}
         {product.reviewCount && product.avgRating != null ? (
           <p className="supplier-product-card-rating">
-            <span className="supplier-product-card-stars">★ {product.avgRating.toFixed(1)}</span>
+            <span className="supplier-product-card-stars">
+              <RatingStar size={13} /> {product.avgRating.toFixed(1)}
+            </span>
             <span className="meta">({product.reviewCount})</span>
           </p>
         ) : null}

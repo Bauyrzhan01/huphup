@@ -1,6 +1,8 @@
+import { Star } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { productsApi } from '../api';
+import { AppIcon } from './AppIcon';
 import { ProductImageGallery } from './ProductImageGallery';
 import { useAuth } from '../auth/AuthContext';
 import { useAppLocale } from '../i18n/useAppLocale';
@@ -12,7 +14,7 @@ function Stars({ value, size = 'md' }: { value: number; size?: 'sm' | 'md' }) {
     <span className={`product-stars product-stars-${size}`} aria-label={`${value}`}>
       {[1, 2, 3, 4, 5].map((n) => (
         <span key={n} className={n <= rounded ? 'is-on' : ''}>
-          ★
+          <AppIcon icon={Star} size={size === 'sm' ? 14 : 16} fill={n <= rounded ? 'currentColor' : 'none'} />
         </span>
       ))}
     </span>
@@ -35,7 +37,7 @@ function StarPicker({
           className={n <= value ? 'is-on' : ''}
           onClick={() => onChange(n)}
         >
-          ★
+          <AppIcon icon={Star} size={20} fill={n <= value ? 'currentColor' : 'none'} />
         </button>
       ))}
     </span>

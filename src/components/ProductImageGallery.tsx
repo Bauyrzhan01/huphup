@@ -1,6 +1,8 @@
+import { ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react';
 import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { resolveMediaUrl } from '../api/client';
+import { AppIcon } from './AppIcon';
 
 type ImageItem = { id: string; url: string };
 
@@ -68,9 +70,7 @@ export function ProductImageGallery({ images = [], alt, className = '', placehol
             aria-label={t('products.openGallery')}
           >
             <img src={resolveMediaUrl(current.url)} alt={alt} loading="lazy" />
-            <span className="product-gallery-expand" aria-hidden>
-              ⤢
-            </span>
+            <AppIcon icon={Maximize2} className="product-gallery-expand" size={16} />
           {hasMany ? (
             <span className="product-gallery-count">
               {index + 1}/{images.length}
@@ -110,11 +110,11 @@ export function ProductImageGallery({ images = [], alt, className = '', placehol
             aria-label={t('products.closeGallery')}
             onClick={() => setLightbox(false)}
           >
-            ×
+            <AppIcon icon={X} size={22} />
           </button>
           {hasMany ? (
             <button type="button" className="product-lightbox-nav is-prev" onClick={goPrev}>
-              ‹
+              <AppIcon icon={ChevronLeft} size={28} />
             </button>
           ) : null}
           <img
@@ -124,7 +124,7 @@ export function ProductImageGallery({ images = [], alt, className = '', placehol
           />
           {hasMany ? (
             <button type="button" className="product-lightbox-nav is-next" onClick={goNext}>
-              ›
+              <AppIcon icon={ChevronRight} size={28} />
             </button>
           ) : null}
           {hasMany ? (

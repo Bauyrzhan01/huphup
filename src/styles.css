@@ -1695,6 +1695,30 @@ body.mobile-nav-open{overflow:hidden}
 .side-bottom .user-card:hover{background:#ececee}
 .side-bottom .user-name{font-size:13px;font-weight:700;line-height:1.25}
 .side-bottom .user-role{font-size:11px;color:var(--muted);margin-top:1px;line-height:1.25}
+
+.ui-icon,.ico{
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+  width:18px;height:18px;color:#666;
+}
+.nav a .ico,.nav a .ui-icon{color:#666}
+.nav a.active .ico,.nav a.active .ui-icon{color:#111}
+.inline-rating,.supplier-product-card-stars,.supplier-profile-stars{
+  display:inline-flex;align-items:center;gap:4px;vertical-align:middle;
+}
+.rating-star,.verified-icon{color:inherit}
+.bubble-attachment-icon,.chat-pending-file-icon{display:inline-flex;color:inherit}
+.chat-pending-file-name{display:inline-flex;align-items:center;gap:6px}
+.product-detail-back{display:inline-flex;align-items:center;gap:6px}
+.leads-placeholder-ico,.supplier-products-empty-icon{
+  display:grid;place-items:center;color:#bbb;
+}
+.notif-bell-btn .ui-icon{color:inherit}
+.chat-attach-btn{display:inline-flex;align-items:center;justify-content:center;color:#555}
+.send-icon{color:#fff}
+.composer .send .send-icon{color:#111}
+.product-stars .ui-icon{display:inline-flex}
+.product-stars-pick .ui-icon{color:#ccc}
+.product-stars-pick .is-on .ui-icon,.product-stars .is-on .ui-icon{color:#f59e0b}
 .sr-only{
   position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
 }

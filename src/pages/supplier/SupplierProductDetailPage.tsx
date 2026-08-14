@@ -1,8 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeft, ImageIcon, Package } from 'lucide-react';
 import { companiesApi, productsApi } from '../../api';
 import { resolveMediaUrl } from '../../api/client';
+import { AppIcon } from '../../components/AppIcon';
+import { RatingStar } from '../../components/RatingIcons';
 import { ProductImagesEditor } from '../../components/ProductImagesEditor';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
@@ -128,7 +131,8 @@ export function SupplierProductDetailPage() {
     <SupplierLayout crumb={isNew ? t('products.addTitle') : t('products.detailCrumb')}>
       <div className="page product-detail-page">
         <Link className="product-detail-back" to="/supplier/products">
-          ← {t('products.backToCatalog')}
+          <AppIcon icon={ArrowLeft} size={16} className="product-detail-back-icon" />
+          {t('products.backToCatalog')}
         </Link>
 
         {error ? <p className="notice product-detail-notice is-error">{error}</p> : null}
@@ -148,7 +152,7 @@ export function SupplierProductDetailPage() {
                     </span>
                     {product.avgRating != null && product.reviewCount ? (
                       <span className="badge">
-                        ★ {product.avgRating.toFixed(1)} · {product.reviewCount}
+                        <RatingStar size={14} /> {product.avgRating.toFixed(1)} · {product.reviewCount}
                       </span>
                     ) : null}
                   </div>
@@ -176,7 +180,7 @@ export function SupplierProductDetailPage() {
                       </div>
                     ) : (
                       <div className="product-detail-cover product-detail-cover-empty">
-                        <span aria-hidden>📦</span>
+                        <AppIcon icon={Package} size={32} strokeWidth={1.5} aria-hidden />
                         <span>{t('products.noPhoto')}</span>
                       </div>
                     )}
@@ -255,7 +259,7 @@ export function SupplierProductDetailPage() {
                     />
                   ) : (
                     <div className="supplier-product-photo-hint">
-                      <span aria-hidden>🖼</span>
+                      <AppIcon icon={ImageIcon} size={24} strokeWidth={1.5} aria-hidden />
                       <p>{t('products.imagesAfterSave')}</p>
                     </div>
                   )}
@@ -297,7 +301,9 @@ export function SupplierProductDetailPage() {
                             <li key={review.id} className="product-review-item">
                               <div className="product-review-top">
                                 <b>{review.user.fullName}</b>
-                                <span>★ {review.rating}</span>
+                                <span className="inline-rating">
+                                  <RatingStar size={13} /> {review.rating}
+                                </span>
                               </div>
                               {review.comment ? <p>{review.comment}</p> : null}
                               <small>{formatDateTime(review.createdAt)}</small>

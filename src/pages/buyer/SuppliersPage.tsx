@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../../api';
 import { UserAvatar } from '../../components/UserAvatar';
+import { RatingStar, VerifiedMark } from '../../components/RatingIcons';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import type { Company } from '../../types';
@@ -114,12 +115,12 @@ export function SuppliersPage() {
                     className="supplier-directory-avatar"
                   />
                   <div className="supplier-directory-rating">
-                    ★ {Number(c.rating).toFixed(1)}
+                    <span className="inline-rating"><RatingStar size={13} /> {Number(c.rating).toFixed(1)}</span>
                   </div>
                 </div>
                 <h3>
                   {c.name}
-                  {c.verified ? <span className="verified"> ✓</span> : null}
+                  {c.verified ? <span className="verified"><VerifiedMark size={14} /></span> : null}
                 </h3>
                 <p className="supplier-directory-desc">
                   {c.description || t('suppliers.noDescription')}

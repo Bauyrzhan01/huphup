@@ -1,7 +1,9 @@
+import { X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { productsApi } from '../api';
 import { resolveMediaUrl } from '../api/client';
+import { AppIcon } from './AppIcon';
 import type { ProductImage } from '../types';
 
 type Props = {
@@ -63,7 +65,7 @@ export function ProductImagesEditor({ productId, images, onChange }: Props) {
               aria-label={t('products.removeImage')}
               onClick={() => void onRemove(img.id)}
             >
-              ×
+              <AppIcon icon={X} size={16} />
             </button>
           </div>
         ))}

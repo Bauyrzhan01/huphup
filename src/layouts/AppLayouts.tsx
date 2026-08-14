@@ -1,8 +1,23 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  Building2,
+  ClipboardList,
+  FileCheck,
+  Home,
+  Inbox,
+  LayoutGrid,
+  Menu,
+  MessageSquare,
+  Package,
+  Store,
+  Users,
+  X,
+} from 'lucide-react';
 import { companiesApi, notificationsApi, requestsApi } from '../api';
 import { useAuth } from '../auth/AuthContext';
+import { AppIcon } from '../components/AppIcon';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { NotificationsBell } from '../components/NotificationsBell';
 import { PresenceDot } from '../components/PresenceDot';
@@ -38,7 +53,7 @@ function MobileNavButton({ onOpen }: { onOpen: () => void }) {
       aria-label={t('nav.openMenu')}
       onClick={onOpen}
     >
-      ☰
+      <AppIcon icon={Menu} className="ico" size={20} />
     </button>
   );
 }
@@ -52,7 +67,7 @@ function MobileNavClose({ onClose }: { onClose: () => void }) {
       aria-label={t('nav.closeMenu')}
       onClick={onClose}
     >
-      ×
+      <AppIcon icon={X} className="ico" size={20} />
     </button>
   );
 }
@@ -119,23 +134,23 @@ export function BuyerLayout({
           </Link>
           <nav className="nav">
             <NavLink to="/app" end onClick={closeNav}>
-              <span className="ico">⌂</span>
+              <AppIcon icon={Home} className="ico" />
               {t('nav.home')}
             </NavLink>
             <NavLink to="/requests" onClick={closeNav}>
-              <span className="ico">▤</span>
+              <AppIcon icon={ClipboardList} className="ico" />
               {t('nav.myRequests')}
             </NavLink>
             <NavLink to="/offers" onClick={closeNav}>
-              <span className="ico">◫</span>
+              <AppIcon icon={FileCheck} className="ico" />
               {t('nav.offers')}
             </NavLink>
             <NavLink to="/suppliers" onClick={closeNav}>
-              <span className="ico">◉</span>
+              <AppIcon icon={Store} className="ico" />
               {t('nav.suppliers')}
             </NavLink>
             <NavLink to="/conversations?workspace=buyer" onClick={closeNav}>
-              <span className="ico">✉</span>
+              <AppIcon icon={MessageSquare} className="ico" />
               {t('nav.chats')}
             </NavLink>
           </nav>
@@ -279,25 +294,32 @@ export function SupplierLayout({
           </Link>
           <nav className="nav">
             <NavLink to="/supplier" end onClick={closeNav}>
-              ▦ {t('nav.crm')}
+              <AppIcon icon={LayoutGrid} className="ico" />
+              {t('nav.crm')}
             </NavLink>
             <NavLink to="/supplier/products" onClick={closeNav}>
-              ◈ {t('nav.products')}
+              <AppIcon icon={Package} className="ico" />
+              {t('nav.products')}
             </NavLink>
             <NavLink to="/supplier/offers" onClick={closeNav}>
-              ◫ {t('supplier.myOffers')}
+              <AppIcon icon={FileCheck} className="ico" />
+              {t('supplier.myOffers')}
             </NavLink>
             <NavLink to="/supplier/leads" onClick={closeNav}>
-              ◫ {t('nav.newLeads')}
+              <AppIcon icon={Inbox} className="ico" />
+              {t('nav.newLeads')}
             </NavLink>
             <NavLink to="/supplier/company" onClick={closeNav}>
-              ◉ {t('nav.company')}
+              <AppIcon icon={Building2} className="ico" />
+              {t('nav.company')}
             </NavLink>
             <NavLink to="/supplier/team" onClick={closeNav}>
-              ▤ {t('nav.team')}
+              <AppIcon icon={Users} className="ico" />
+              {t('nav.team')}
             </NavLink>
             <NavLink to="/conversations?workspace=supplier" onClick={closeNav}>
-              ✉ {t('nav.chats')}
+              <AppIcon icon={MessageSquare} className="ico" />
+              {t('nav.chats')}
             </NavLink>
           </nav>
           <div className="side-label">
