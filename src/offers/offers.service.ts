@@ -59,7 +59,12 @@ export class OffersService {
 
     await this.prisma.lead.updateMany({
       where: { requestId: dto.requestId, companyId: company.id },
-      data: { status: 'OFFERED' },
+      data: {
+        status: 'OFFERED',
+        lastActorId: userId,
+        assigneeId: userId,
+        claimedAt: new Date(),
+      },
     });
 
     await this.notifications.notifyUsers([request.buyerId], {

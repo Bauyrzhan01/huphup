@@ -1,7 +1,40 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { LeadStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
 import { GeminiService } from '../gemini/gemini.service';
+
+const leadRequestSelect = {
+  id: true,
+  code: true,
+  title: true,
+  description: true,
+  category: true,
+  city: true,
+  quantity: true,
+  deadline: true,
+  status: true,
+  createdAt: true,
+} as const;
+
+const leadUserSelect = {
+  id: true,
+  fullName: true,
+  email: true,
+  avatarUrl: true,
+} as const;
+
+const leadInclude = {
+  request: { select: leadRequestSelect },
+  assignee: { select: leadUserSelect },
+  lastActor: { select: leadUserSelect },
+} as const;
 
 @Injectable()
 export class MatchingService {
@@ -58,7 +91,6 @@ export class MatchingService {
       matches = this.keywordMatch(requestText, request, products);
     }
 
-    // Strict mode: only suppliers Gemini (or keyword fallback) found
     const scored = matches.map((m) => ({
       companyId: m.companyId,
       score: m.score,
@@ -184,69 +216,118 @@ export class MatchingService {
     return this.prisma.lead.findMany({
       where: { companyId: resolved.company.id },
       orderBy: [{ status: 'asc' }, { score: 'desc' }, { createdAt: 'desc' }],
-      include: {
-        request: {
-          select: {
-            id: true,
-            code: true,
-            title: true,
-            description: true,
-            category: true,
-            city: true,
-            quantity: true,
-            deadline: true,
-            status: true,
-            createdAt: true,
-          },
-        },
-      },
+      include: leadInclude,
     });
   }
 
-  async markLeadViewed(userId: string, leadId: string) {
-    const resolved = await this.companies.resolveCompanyForUser(userId);
-    if (!resolved) {
-      return null;
-    }
-    return this.prisma.lead.updateMany({
-      where: { id: leadId, companyId: resolved.company.id },
-      data: { status: 'VIEWED' },
-    });
-  }
-
-  async skipLead(userId: string, leadId: string) {
+  private async requireCompanyLead(userId: string, leadId: string) {
     const resolved = await this.companies.resolveCompanyForUser(userId);
     if (!resolved) {
       throw new ForbiddenException('Create a company profile first');
     }
     const lead = await this.prisma.lead.findFirst({
       where: { id: leadId, companyId: resolved.company.id },
+      include: leadInclude,
     });
     if (!lead) {
       throw new NotFoundException('Lead not found');
     }
-    if (lead.status === 'OFFERED') {
+    return { resolved, lead };
+  }
+
+  async markLeadViewed(userId: string, leadId: string) {
+    const { resolved, lead } = await this.requireCompanyLead(userId, leadId);
+    const isOwner =
+      resolved.isOwner || resolved.company.ownerId === userId;
+    const shouldClaim =
+      !lead.assigneeId &&
+      !isOwner &&
+      lead.status !== LeadStatus.OFFERED &&
+      lead.status !== LeadStatus.SKIPPED;
+
+    const nextStatus =
+      lead.status === LeadStatus.NEW ? LeadStatus.VIEWED : lead.status;
+
+    return this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        status: nextStatus,
+        lastActorId: userId,
+        ...(shouldClaim
+          ? { assigneeId: userId, claimedAt: new Date() }
+          : {}),
+      },
+      include: leadInclude,
+    });
+  }
+
+  async claimLead(userId: string, leadId: string) {
+    const { lead } = await this.requireCompanyLead(userId, leadId);
+    if (lead.status === LeadStatus.SKIPPED) {
+      throw new BadRequestException('Cannot claim a skipped lead');
+    }
+    if (lead.assigneeId && lead.assigneeId !== userId) {
+      throw new BadRequestException('Lead already assigned to another manager');
+    }
+    return this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        assigneeId: userId,
+        claimedAt: lead.claimedAt ?? new Date(),
+        lastActorId: userId,
+        status:
+          lead.status === LeadStatus.NEW ? LeadStatus.VIEWED : lead.status,
+      },
+      include: leadInclude,
+    });
+  }
+
+  async reassignLead(userId: string, leadId: string, assigneeId: string) {
+    const { resolved, lead } = await this.requireCompanyLead(userId, leadId);
+    const isOwner =
+      resolved.isOwner || resolved.company.ownerId === userId;
+    if (!isOwner) {
+      throw new ForbiddenException('Only company owner can reassign leads');
+    }
+    if (lead.status === LeadStatus.SKIPPED) {
+      throw new BadRequestException('Cannot reassign a skipped lead');
+    }
+
+    const member = await this.prisma.companyMember.findFirst({
+      where: { companyId: resolved.company.id, userId: assigneeId },
+    });
+    const isCompanyOwner = resolved.company.ownerId === assigneeId;
+    if (!member && !isCompanyOwner) {
+      throw new BadRequestException('Assignee must be a company member');
+    }
+
+    return this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        assigneeId,
+        claimedAt: new Date(),
+        lastActorId: userId,
+        status:
+          lead.status === LeadStatus.NEW ? LeadStatus.VIEWED : lead.status,
+      },
+      include: leadInclude,
+    });
+  }
+
+  async skipLead(userId: string, leadId: string) {
+    const { lead } = await this.requireCompanyLead(userId, leadId);
+    if (lead.status === LeadStatus.OFFERED) {
       throw new BadRequestException('Cannot skip a lead with an offer sent');
     }
     return this.prisma.lead.update({
       where: { id: leadId },
-      data: { status: 'SKIPPED' },
-      include: {
-        request: {
-          select: {
-            id: true,
-            code: true,
-            title: true,
-            description: true,
-            category: true,
-            city: true,
-            quantity: true,
-            deadline: true,
-            status: true,
-            createdAt: true,
-          },
-        },
+      data: {
+        status: LeadStatus.SKIPPED,
+        lastActorId: userId,
+        assigneeId: lead.assigneeId ?? userId,
+        claimedAt: lead.claimedAt ?? new Date(),
       },
+      include: leadInclude,
     });
   }
 }

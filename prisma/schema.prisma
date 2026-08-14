@@ -78,6 +78,8 @@ model User {
   usedInvites      CompanyInvite[]     @relation("InviteUser")
   passwordResets   PasswordResetToken[]
   productReviews   ProductReview[]
+  assignedLeads    Lead[]              @relation("LeadAssignee")
+  actedLeads       Lead[]              @relation("LeadLastActor")
 
   @@index([role])
   @@map("users")
@@ -252,19 +254,25 @@ model Offer {
 }
 
 model Lead {
-  id        String     @id @default(cuid())
-  requestId String
-  companyId String
-  score     Float      @default(0)
-  status    LeadStatus @default(NEW)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  requestId   String
+  companyId   String
+  score       Float      @default(0)
+  status      LeadStatus @default(NEW)
+  assigneeId  String?
+  claimedAt   DateTime?
+  lastActorId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignee  User?   @relation("LeadAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  lastActor User?   @relation("LeadLastActor", fields: [lastActorId], references: [id], onDelete: SetNull)
 
   @@unique([requestId, companyId])
   @@index([companyId, status])
+  @@index([assigneeId])
   @@map("leads")
 }
 
