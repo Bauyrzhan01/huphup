@@ -59,54 +59,60 @@ export function ProductImageGallery({ images = [], alt, className = '', placehol
 
   return (
     <>
-      <div className={`product-gallery ${className}`.trim()}>
-        <button
-          type="button"
-          className="product-gallery-main"
-          onClick={() => setLightbox(true)}
-          aria-label={t('products.openGallery')}
-        >
-          <img src={resolveMediaUrl(current.url)} alt={alt} loading="lazy" />
-          {hasMany ? (
-            <span className="product-gallery-count">
-              {index + 1}/{images.length}
+      <div className={`product-gallery${hasMany ? ' has-many' : ''} ${className}`.trim()}>
+        <div className="product-gallery-stage">
+          <button
+            type="button"
+            className="product-gallery-main"
+            onClick={() => setLightbox(true)}
+            aria-label={t('products.openGallery')}
+          >
+            <img src={resolveMediaUrl(current.url)} alt={alt} loading="lazy" />
+            <span className="product-gallery-expand" aria-hidden>
+              ⤢
             </span>
+            {hasMany ? (
+              <span className="product-gallery-count">
+                {index + 1}/{images.length}
+              </span>
+            ) : null}
+          </button>
+          {hasMany ? (
+            <>
+              <button
+                type="button"
+                className="product-gallery-nav is-prev"
+                aria-label={t('products.prevPhoto')}
+                onClick={goPrev}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="product-gallery-nav is-next"
+                aria-label={t('products.nextPhoto')}
+                onClick={goNext}
+              >
+                ›
+              </button>
+            </>
           ) : null}
-        </button>
+        </div>
         {hasMany ? (
-          <>
-            <button
-              type="button"
-              className="product-gallery-nav is-prev"
-              aria-label={t('products.prevPhoto')}
-              onClick={goPrev}
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              className="product-gallery-nav is-next"
-              aria-label={t('products.nextPhoto')}
-              onClick={goNext}
-            >
-              ›
-            </button>
-            <div className="product-gallery-dots" role="tablist" aria-label={alt}>
-              {images.map((img, i) => (
-                <button
-                  key={img.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={i === index}
-                  className={`product-gallery-dot${i === index ? ' is-on' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIndex(i);
-                  }}
-                />
-              ))}
-            </div>
-          </>
+          <div className="product-gallery-thumbs" role="tablist" aria-label={alt}>
+            {images.map((img, i) => (
+              <button
+                key={img.id}
+                type="button"
+                role="tab"
+                aria-selected={i === index}
+                className={`product-gallery-thumb${i === index ? ' is-on' : ''}`}
+                onClick={() => setIndex(i)}
+              >
+                <img src={resolveMediaUrl(img.url)} alt="" />
+              </button>
+            ))}
+          </div>
         ) : null}
       </div>
 
