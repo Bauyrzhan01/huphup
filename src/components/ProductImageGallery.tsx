@@ -71,32 +71,12 @@ export function ProductImageGallery({ images = [], alt, className = '', placehol
             <span className="product-gallery-expand" aria-hidden>
               ⤢
             </span>
-            {hasMany ? (
-              <span className="product-gallery-count">
-                {index + 1}/{images.length}
-              </span>
-            ) : null}
-          </button>
           {hasMany ? (
-            <>
-              <button
-                type="button"
-                className="product-gallery-nav is-prev"
-                aria-label={t('products.prevPhoto')}
-                onClick={goPrev}
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                className="product-gallery-nav is-next"
-                aria-label={t('products.nextPhoto')}
-                onClick={goNext}
-              >
-                ›
-              </button>
-            </>
+            <span className="product-gallery-count">
+              {index + 1}/{images.length}
+            </span>
           ) : null}
+        </button>
         </div>
         {hasMany ? (
           <div className="product-gallery-thumbs" role="tablist" aria-label={alt}>

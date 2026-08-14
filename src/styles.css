@@ -1311,13 +1311,6 @@ body.mobile-nav-open{overflow:hidden}
   position:absolute;bottom:8px;right:8px;z-index:2;background:rgba(0,0,0,.72);color:#fff;
   border-radius:999px;padding:3px 8px;font-size:10px;font-weight:700;
 }
-.product-gallery-nav{
-  position:absolute;top:50%;transform:translateY(-50%);z-index:2;
-  width:30px;height:30px;border:0;border-radius:999px;background:rgba(0,0,0,.55);
-  color:#fff;font-size:18px;line-height:1;cursor:pointer;
-}
-.product-gallery-nav.is-prev{left:6px}
-.product-gallery-nav.is-next{right:6px}
 .product-gallery-thumbs{
   display:flex;gap:6px;padding:8px;background:#fff;border-top:1px solid var(--line);overflow-x:auto;
 }
