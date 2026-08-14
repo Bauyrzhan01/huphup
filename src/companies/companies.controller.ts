@@ -30,7 +30,6 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Post()
-  @SupplierMember()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateCompanyDto) {
     return this.companiesService.create(user.id, user.role, dto);
   }
