@@ -5,7 +5,7 @@ import { requestsApi } from '../../api';
 import { ApiError } from '../../api/client';
 import { MatchedSupplierCard } from '../../components/MatchedSupplierCard';
 import { BuyerLayout } from '../../layouts/AppLayouts';
-import { isConfirmReply, shouldSkipAssistantReply } from '../../utils/requestChat';
+import { shouldSkipAssistantReply } from '../../utils/requestChat';
 import type { AnalyzeResult, PublishResult, RequestItem } from '../../types';
 
 const HOME_CHAT_KEY = 'huphup_home_chat';
@@ -156,11 +156,6 @@ export function HomePage() {
       await startConversation(trimmed);
       return;
     }
-    if (ready && isConfirmReply(trimmed)) {
-      setChat((prev) => [...prev, { role: 'user', text: trimmed }]);
-      setQ('');
-      return;
-    }
     const current = analyzed?.questions?.[0];
     const nextAnswers = [
       ...collectedAnswers,
@@ -190,17 +185,17 @@ export function HomePage() {
       setDescription(res.description || originalText);
       const ask = res.questions?.[0];
       const done = res.ready === true || !ask;
-      const assistantText = done
-        ? t('requests.chatReady')
-        : res.assistantMessage || ask?.question || t('requests.chatReady');
+      const assistantText = res.ackOnly
+        ? ''
+        : done
+          ? res.assistantMessage || t('requests.chatReady')
+          : res.assistantMessage || ask?.question || t('requests.chatReady');
       const lastAssistant = [...nextChat]
         .reverse()
         .find((m) => m.role === 'assistant');
-      const skipAssistant = shouldSkipAssistantReply(
-        lastAssistant?.text,
-        assistantText,
-        done,
-      );
+      const skipAssistant =
+        res.ackOnly ||
+        shouldSkipAssistantReply(lastAssistant?.text, assistantText, done);
       setChat([
         ...nextChat,
         ...(skipAssistant

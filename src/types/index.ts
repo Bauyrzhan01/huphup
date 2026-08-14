@@ -225,6 +225,7 @@ export type AnalyzeResult = {
   items?: AnalyzeItem[];
   questions?: AnalyzeQuestion[];
   ready?: boolean;
+  ackOnly?: boolean;
 };
 
 export type NotificationPayload = {

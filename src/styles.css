@@ -884,11 +884,11 @@ body.mobile-nav-open{overflow:hidden}
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .deal-assignee{
-  display:flex;align-items:center;gap:6px;font-size:11px;color:#555;min-width:0;
+  display:flex;align-items:center;gap:8px;font-size:11px;color:#555;min-width:0;
 }
 .deal-assignee-avatar{
-  width:18px;height:18px;border-radius:6px;background:#111;color:#fff;
-  display:grid;place-items:center;font-size:8px;font-weight:800;flex-shrink:0;
+  width:24px;height:24px;border-radius:8px;background:#111;color:#fff;
+  display:grid;place-items:center;font-size:10px;font-weight:800;flex-shrink:0;
 }
 .deal-assignee > span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .deal-unassigned{color:#b45309;font-size:11px;font-weight:650}
@@ -1671,6 +1671,9 @@ body.mobile-nav-open{overflow:hidden}
 .lead-assignee-avatar-wrap .presence-dot-mark,
 .side-team-avatar-wrap .presence-dot-mark{
   width:12px;height:12px;
+}
+.deal-assignee-avatar-wrap .presence-dot-mark{
+  width:10px;height:10px;
 }
 .team-member-presence,.lead-assignee-presence{margin-left:2px}
 .side-team-member{
