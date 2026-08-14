@@ -57,7 +57,15 @@ export type CompanyMember = {
   id: string;
   role?: CompanyMemberRole;
   title?: string | null;
-  user: { id: string; fullName: string; email: string };
+  createdAt?: string;
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone?: string | null;
+    avatarUrl?: string | null;
+    createdAt?: string;
+  };
 };
 
 export type Company = {
