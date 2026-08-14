@@ -21,6 +21,7 @@ import { SupplierCrmPage } from './pages/supplier/SupplierCrmPage';
 import { SupplierOffersPage } from './pages/supplier/SupplierOffersPage';
 import { SupplierLeadsPage } from './pages/supplier/SupplierLeadsPage';
 import { SupplierProductsPage } from './pages/supplier/SupplierProductsPage';
+import { SupplierProductDetailPage } from './pages/supplier/SupplierProductDetailPage';
 import { SupplierTeamPage } from './pages/supplier/SupplierTeamPage';
 import { InviteAcceptPage } from './pages/InviteAcceptPage';
 import { LandingPage } from './pages/LandingPage';
@@ -139,6 +140,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <SupplierLeadsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supplier/products/new"
+          element={
+            <ProtectedRoute>
+              <SupplierProductDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supplier/products/:id"
+          element={
+            <ProtectedRoute>
+              <SupplierProductDetailPage />
             </ProtectedRoute>
           }
         />

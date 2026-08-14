@@ -1,23 +1,21 @@
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { resolveMediaUrl } from '../api/client';
 import type { Product } from '../types';
 
 type Props = {
   product: Product;
-  selected: boolean;
-  onSelect: () => void;
 };
 
-export function SupplierProductCard({ product, selected, onSelect }: Props) {
+export function SupplierProductCard({ product }: Props) {
   const { t } = useTranslation();
   const cover = product.images?.[0];
   const imageCount = product.images?.length ?? 0;
 
   return (
-    <button
-      type="button"
-      className={`supplier-product-card${selected ? ' is-selected' : ''}${product.isActive ? '' : ' is-hidden'}`}
-      onClick={onSelect}
+    <Link
+      to={`/supplier/products/${product.id}`}
+      className={`supplier-product-card${product.isActive ? '' : ' is-hidden'}`}
     >
       <div className="supplier-product-card-media">
         {cover ? (
@@ -51,6 +49,6 @@ export function SupplierProductCard({ product, selected, onSelect }: Props) {
           </p>
         ) : null}
       </div>
-    </button>
+    </Link>
   );
 }
