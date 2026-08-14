@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../api';
-import { resolveMediaUrl } from '../api/client';
+import { ProductImageGallery } from './ProductImageGallery';
 import { UserAvatar } from './UserAvatar';
 import type { PublicProduct } from '../types';
 
@@ -112,7 +112,6 @@ export function MatchedSupplierCard({
             <>
               <div className="matched-products-grid">
                 {products.map((p) => {
-                  const cover = p.images?.[0];
                   const isMatch = highlightProductId === p.id;
                   return (
                     <div
@@ -120,17 +119,11 @@ export function MatchedSupplierCard({
                       className={`matched-product-tile${isMatch ? ' is-match' : ''}`}
                     >
                       <div className="matched-product-media">
-                        {cover ? (
-                          <img
-                            src={resolveMediaUrl(cover.url)}
-                            alt={p.name}
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="matched-product-placeholder">
-                            {p.name.slice(0, 1)}
-                          </div>
-                        )}
+                        <ProductImageGallery
+                          images={p.images}
+                          alt={p.name}
+                          placeholder={p.name.slice(0, 1)}
+                        />
                         {isMatch ? (
                           <span className="matched-product-badge">
                             {t('requests.matchedProduct')}

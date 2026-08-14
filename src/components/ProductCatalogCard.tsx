@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { productsApi } from '../api';
-import { resolveMediaUrl } from '../api/client';
+import { ProductImageGallery } from './ProductImageGallery';
 import { useAuth } from '../auth/AuthContext';
 import { useAppLocale } from '../i18n/useAppLocale';
 import type { PublicProduct, ProductReview } from '../types';
@@ -53,7 +53,6 @@ export function ProductCatalogCard({ product }: { product: PublicProduct }) {
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
   const [reviewError, setReviewError] = useState('');
-  const cover = product.images?.[0];
 
   useEffect(() => {
     if (!open) return;
@@ -89,16 +88,7 @@ export function ProductCatalogCard({ product }: { product: PublicProduct }) {
 
   return (
     <article className="supplier-card product-catalog-card">
-      <div className="product-card-media">
-        {cover ? (
-          <img src={resolveMediaUrl(cover.url)} alt={product.name} />
-        ) : (
-          <div className="product-card-placeholder">{product.name.slice(0, 1)}</div>
-        )}
-        {(product.images?.length ?? 0) > 1 ? (
-          <span className="product-card-count">+{(product.images?.length ?? 0) - 1}</span>
-        ) : null}
-      </div>
+      <ProductImageGallery images={product.images} alt={product.name} className="product-card-gallery" />
       <div className="product-card-body">
         <h3>{product.name}</h3>
         <p>{product.description || t('common.empty')}</p>
