@@ -151,6 +151,7 @@ export type RequestItem = {
   budgetMax?: string | number | null;
   status: string;
   createdAt: string;
+  rawText?: string | null;
   _count?: { offers: number; leads: number };
   offers?: Offer[];
   leads?: Array<{

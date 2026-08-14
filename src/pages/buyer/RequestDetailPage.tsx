@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Link, useParams } from 'react-router-dom';
 
@@ -13,6 +13,8 @@ import { RequestAttachments } from '../../components/RequestAttachments';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
+
+import { normalizeRequestDescription } from '../../utils/requestText';
 
 import type { Offer, RequestItem } from '../../types';
 
@@ -189,6 +191,18 @@ export function RequestDetailPage() {
 
     request?.status === 'PUBLISHED' || request?.status === 'IN_PROGRESS';
 
+  const displayDescription = useMemo(
+    () =>
+      request
+        ? normalizeRequestDescription(
+            request.title,
+            request.description,
+            request.rawText ?? undefined,
+          )
+        : '',
+    [request],
+  );
+
 
 
   return (
@@ -303,13 +317,12 @@ export function RequestDetailPage() {
 
               <div className="detail-main">
 
-                <div className="panel">
-
-                  <h3 className="section-title">{t('requests.description')}</h3>
-
-                  <p style={{ margin: 0, lineHeight: 1.5 }}>{request.description}</p>
-
-                </div>
+                {displayDescription ? (
+                  <div className="panel">
+                    <h3 className="section-title">{t('requests.description')}</h3>
+                    <p style={{ margin: 0, lineHeight: 1.5 }}>{displayDescription}</p>
+                  </div>
+                ) : null}
 
                 {request.status !== 'DRAFT' && request.status !== 'CANCELLED' ? (
 
