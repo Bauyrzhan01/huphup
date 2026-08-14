@@ -4,6 +4,7 @@ import { companiesApi } from '../../api';
 import { useAuth } from '../../auth/AuthContext';
 import { UserAvatar } from '../../components/UserAvatar';
 import { SupplierLayout } from '../../layouts/AppLayouts';
+import { mapApiError } from '../../utils/apiErrors';
 import type { Company } from '../../types';
 
 const CATEGORY_OPTIONS = [
@@ -57,7 +58,7 @@ export function SupplierCompanyPage() {
       setCompany(updated);
       setMsg(t('supplier.logoSaved'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setLogoSaving(false);
       if (logoInputRef.current) logoInputRef.current.value = '';
@@ -74,7 +75,7 @@ export function SupplierCompanyPage() {
       setCompany(updated);
       setMsg(t('supplier.logoRemoved'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setLogoSaving(false);
     }
@@ -109,7 +110,7 @@ export function SupplierCompanyPage() {
       }
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 

@@ -6,6 +6,7 @@ import { companiesApi, productsApi } from '../../api';
 import { AppIcon } from '../../components/AppIcon';
 import { SupplierProductCard } from '../../components/SupplierProductCard';
 import { SupplierLayout } from '../../layouts/AppLayouts';
+import { isNoCompanyError, mapApiError } from '../../utils/apiErrors';
 import type { Product } from '../../types';
 
 export function SupplierProductsPage() {
@@ -17,22 +18,19 @@ export function SupplierProductsPage() {
 
   useEffect(() => {
     setLoading(true);
-    void Promise.all([
-      companiesApi.me().catch(() => {
-        throw new Error('no-company');
-      }),
-      productsApi.mine(),
-    ])
-      .then(([, list]) => {
+    void companiesApi
+      .me()
+      .then(() => productsApi.mine())
+      .then((list) => {
         setHasCompany(true);
         setProducts(list);
       })
       .catch((err) => {
-        if (err instanceof Error && err.message === 'no-company') {
+        if (isNoCompanyError(err)) {
           setHasCompany(false);
           setProducts([]);
         } else {
-          setError(err instanceof Error ? err.message : t('common.error'));
+          setError(mapApiError(err, t));
         }
       })
       .finally(() => setLoading(false));
@@ -42,9 +40,11 @@ export function SupplierProductsPage() {
     <SupplierLayout
       crumb={t('products.crumb')}
       actions={
-        <Link className="primary" to="/supplier/products/new">
-          {t('products.addNew')}
-        </Link>
+        hasCompany ? (
+          <Link className="primary" to="/supplier/products/new">
+            {t('products.addNew')}
+          </Link>
+        ) : null
       }
     >
       <div className="page">

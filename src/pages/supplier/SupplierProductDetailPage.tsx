@@ -9,6 +9,7 @@ import { RatingStar } from '../../components/RatingIcons';
 import { ProductImagesEditor } from '../../components/ProductImagesEditor';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
+import { mapApiError } from '../../utils/apiErrors';
 import type { Product, ProductReview } from '../../types';
 
 const emptyForm = {
@@ -33,6 +34,7 @@ export function SupplierProductDetailPage() {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [activeImage, setActiveImage] = useState(0);
+  const [hasCompany, setHasCompany] = useState(!isNew);
 
   async function loadProduct(productId: string) {
     const [item, list] = await Promise.all([
@@ -52,9 +54,13 @@ export function SupplierProductDetailPage() {
 
   useEffect(() => {
     if (isNew) {
-      void companiesApi.me().catch(() => {
-        setError(t('products.noCompany'));
-      });
+      void companiesApi
+        .me()
+        .then(() => setHasCompany(true))
+        .catch((err) => {
+          setHasCompany(false);
+          setError(mapApiError(err, t));
+        });
       return;
     }
     if (!id) return;
@@ -62,7 +68,7 @@ export function SupplierProductDetailPage() {
     setLoading(true);
     setError('');
     void loadProduct(id)
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
+      .catch((err) => setError(mapApiError(err, t)))
       .finally(() => setLoading(false));
   }, [id, isNew, t]);
 
@@ -73,6 +79,7 @@ export function SupplierProductDetailPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (isNew && !hasCompany) return;
     setSaving(true);
     setError('');
     setMsg('');
@@ -94,7 +101,7 @@ export function SupplierProductDetailPage() {
       setProduct(updated);
       setMsg(t('products.updated'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setSaving(false);
     }
@@ -108,7 +115,7 @@ export function SupplierProductDetailPage() {
       setProduct(updated);
       setMsg(updated.isActive ? t('products.shown') : t('products.hiddenMsg'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 
@@ -119,7 +126,7 @@ export function SupplierProductDetailPage() {
       await productsApi.remove(product.id);
       navigate('/supplier/products', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 
@@ -135,7 +142,17 @@ export function SupplierProductDetailPage() {
           {t('products.backToCatalog')}
         </Link>
 
-        {error ? <p className="notice product-detail-notice is-error">{error}</p> : null}
+        {error ? (
+          <p className="notice product-detail-notice is-error">
+            {error}
+            {isNew && !hasCompany ? (
+              <>
+                {' '}
+                <Link to="/supplier/company">{t('products.createCompany')}</Link>
+              </>
+            ) : null}
+          </p>
+        ) : null}
         {msg ? <p className="notice product-detail-notice">{msg}</p> : null}
 
         {loading ? (
@@ -317,7 +334,11 @@ export function SupplierProductDetailPage() {
               </div>
 
               <div className="product-detail-footer">
-                <button type="submit" className="primary" disabled={saving}>
+                <button
+                  type="submit"
+                  className="primary"
+                  disabled={saving || (isNew && !hasCompany)}
+                >
                   {saving
                     ? t('common.loading')
                     : isNew
