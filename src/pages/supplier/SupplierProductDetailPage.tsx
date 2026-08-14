@@ -30,6 +30,7 @@ export function SupplierProductDetailPage() {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [activeImage, setActiveImage] = useState(0);
+  const [showReviews, setShowReviews] = useState(false);
 
   async function loadProduct(productId: string) {
     const [item, list] = await Promise.all([
@@ -134,127 +135,74 @@ export function SupplierProductDetailPage() {
       }
     >
       <div className="page product-detail-page">
-        <div className="product-detail-head">
-          <div>
-            <Link className="product-detail-back" to="/supplier/products">
-              ← {t('products.backToCatalog')}
-            </Link>
-            <h1>{loading && !isNew ? t('common.loading') : title}</h1>
-            {product ? (
-              <div className="product-detail-badges">
-                <span className={`badge ${product.isActive ? 'green' : 'amber'}`}>
-                  {product.isActive ? t('products.active') : t('products.hidden')}
-                </span>
-                {product.avgRating != null && product.reviewCount ? (
-                  <span className="badge">
-                    ★ {product.avgRating.toFixed(1)} · {product.reviewCount}
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          {product ? (
-            <div className="product-detail-head-actions">
-              <button type="button" className="ghost" onClick={() => void toggleActive()}>
-                {product.isActive ? t('products.hide') : t('products.show')}
-              </button>
-              <button type="button" className="ghost" onClick={() => void removeProduct()}>
-                {t('products.delete')}
-              </button>
-            </div>
-          ) : null}
-        </div>
-
-        {error ? <p className="notice supplier-products-notice is-error">{error}</p> : null}
-        {msg ? <p className="notice supplier-products-notice">{msg}</p> : null}
+        {error ? <p className="notice product-detail-notice is-error">{error}</p> : null}
+        {msg ? <p className="notice product-detail-notice">{msg}</p> : null}
 
         {loading ? (
           <p className="assist-note">{t('common.loading')}</p>
         ) : (
-          <div className="product-detail-layout">
-            {!isNew && product ? (
-              <aside className="product-detail-side">
-                <div className="panel product-detail-gallery">
-                  {cover ? (
-                    <div className="product-detail-cover">
-                      <img src={resolveMediaUrl(cover.url)} alt={product.name} />
-                    </div>
-                  ) : (
-                    <div className="product-detail-cover product-detail-cover-empty">
-                      <span aria-hidden>📦</span>
-                      <span>{t('products.noPhoto')}</span>
-                    </div>
-                  )}
-                  {images.length > 1 ? (
-                    <div className="product-detail-thumbs">
-                      {images.map((img, index) => (
-                        <button
-                          key={img.id}
-                          type="button"
-                          className={`product-detail-thumb${index === activeImage ? ' is-active' : ''}`}
-                          onClick={() => setActiveImage(index)}
-                        >
-                          <img src={resolveMediaUrl(img.url)} alt="" />
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
+          <div className="product-detail-shell">
+            <div className="product-detail-top">
+              <div className="product-detail-title-wrap">
+                <h1>{title}</h1>
+                {product ? (
+                  <div className="product-detail-badges">
+                    <span className={`badge ${product.isActive ? 'green' : 'amber'}`}>
+                      {product.isActive ? t('products.active') : t('products.hidden')}
+                    </span>
+                    {product.avgRating != null && product.reviewCount ? (
+                      <span className="badge">
+                        ★ {product.avgRating.toFixed(1)} · {product.reviewCount}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+              {product ? (
+                <div className="product-detail-top-actions">
+                  <button type="button" className="ghost" onClick={() => void toggleActive()}>
+                    {product.isActive ? t('products.hide') : t('products.show')}
+                  </button>
+                  <button type="button" className="ghost" onClick={() => void removeProduct()}>
+                    {t('products.delete')}
+                  </button>
                 </div>
+              ) : null}
+            </div>
 
-                <div className="panel product-detail-info">
-                  <h3 className="section-title">{t('products.infoSection')}</h3>
-                  <div className="kv">
-                    <span>{t('products.unit')}</span>
-                    <b>{product.unit || t('common.empty')}</b>
+            <form className="product-detail-card" onSubmit={onSubmit}>
+              <div className={`product-detail-body${isNew ? ' is-solo' : ''}`}>
+                {!isNew && product ? (
+                  <div className="product-detail-media">
+                    {cover ? (
+                      <div className="product-detail-cover">
+                        <img src={resolveMediaUrl(cover.url)} alt={product.name} />
+                      </div>
+                    ) : (
+                      <div className="product-detail-cover product-detail-cover-empty">
+                        <span aria-hidden>📦</span>
+                        <span>{t('products.noPhoto')}</span>
+                      </div>
+                    )}
+                    {images.length > 1 ? (
+                      <div className="product-detail-thumbs">
+                        {images.map((img, index) => (
+                          <button
+                            key={img.id}
+                            type="button"
+                            className={`product-detail-thumb${index === activeImage ? ' is-active' : ''}`}
+                            onClick={() => setActiveImage(index)}
+                          >
+                            <img src={resolveMediaUrl(img.url)} alt="" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                  <div className="kv">
-                    <span>{t('products.city')}</span>
-                    <b>{product.city || t('common.empty')}</b>
-                  </div>
-                  <div className="kv">
-                    <span>{t('products.statusLabel')}</span>
-                    <b>{product.isActive ? t('products.active') : t('products.hidden')}</b>
-                  </div>
-                  <div className="kv">
-                    <span>{t('products.createdAt')}</span>
-                    <b>{formatDateTime(product.createdAt)}</b>
-                  </div>
-                  <div className="kv">
-                    <span>{t('products.updatedAt')}</span>
-                    <b>{formatDateTime(product.updatedAt)}</b>
-                  </div>
-                  <p className="meta product-price-contact">{t('products.priceOnContact')}</p>
-                </div>
+                ) : null}
 
-                <div className="panel product-detail-reviews">
-                  <h3 className="section-title">{t('products.reviewsSection')}</h3>
-                  {reviews.length === 0 ? (
-                    <p className="meta">{t('products.noReviews')}</p>
-                  ) : (
-                    <ul className="product-review-list">
-                      {reviews.map((review) => (
-                        <li key={review.id} className="product-review-item">
-                          <div className="product-review-top">
-                            <b>{review.user.fullName}</b>
-                            <span>★ {review.rating}</span>
-                          </div>
-                          {review.comment ? <p>{review.comment}</p> : null}
-                          <small>{formatDateTime(review.createdAt)}</small>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </aside>
-            ) : null}
-
-            <section className="panel product-detail-form">
-              <h3 className="section-title">
-                {isNew ? t('products.addTitle') : t('products.editTitle')}
-              </h3>
-              <form onSubmit={onSubmit}>
-                <div className="form-grid supplier-product-fields">
-                  <div className="field full">
+                <div className="product-detail-fields">
+                  <div className="field">
                     <label>{t('products.name')}</label>
                     <input
                       value={form.name}
@@ -264,7 +212,7 @@ export function SupplierProductDetailPage() {
                       minLength={2}
                     />
                   </div>
-                  <div className="field full">
+                  <div className="field">
                     <label>{t('products.description')}</label>
                     <textarea
                       value={form.description}
@@ -272,10 +220,10 @@ export function SupplierProductDetailPage() {
                         setForm((f) => ({ ...f, description: e.target.value }))
                       }
                       placeholder={t('products.descriptionPlaceholder')}
-                      rows={5}
+                      rows={4}
                     />
                   </div>
-                  <div className="field-row">
+                  <div className="product-detail-inline-fields">
                     <div className="field">
                       <label>{t('products.unit')}</label>
                       <input
@@ -302,7 +250,7 @@ export function SupplierProductDetailPage() {
                       />
                     </div>
                   </div>
-                  <p className="meta supplier-product-price-note">{t('products.priceOnContact')}</p>
+                  <p className="meta product-detail-price-note">{t('products.priceOnContact')}</p>
                   {!isNew && product ? (
                     <ProductImagesEditor
                       productId={product.id}
@@ -316,20 +264,55 @@ export function SupplierProductDetailPage() {
                     </div>
                   )}
                 </div>
-                <div className="actions supplier-product-actions">
-                  <Link className="ghost" to="/supplier/products">
-                    {t('common.cancel')}
-                  </Link>
-                  <button type="submit" className="primary" disabled={saving}>
-                    {saving
-                      ? t('common.loading')
-                      : isNew
-                        ? t('products.addBtn')
-                        : t('common.save')}
-                  </button>
+              </div>
+
+              {!isNew && product ? (
+                <div className="product-detail-meta">
+                  <span>{t('products.createdAt')}: {formatDateTime(product.createdAt)}</span>
+                  <span>{t('products.updatedAt')}: {formatDateTime(product.updatedAt)}</span>
+                  {reviews.length > 0 ? (
+                    <button
+                      type="button"
+                      className="product-detail-reviews-toggle"
+                      onClick={() => setShowReviews((v) => !v)}
+                    >
+                      {showReviews ? t('products.hideReviews') : t('products.showReviews')}
+                      {' '}({reviews.length})
+                    </button>
+                  ) : (
+                    <span className="meta">{t('products.noReviews')}</span>
+                  )}
                 </div>
-              </form>
-            </section>
+              ) : null}
+
+              {showReviews && reviews.length > 0 ? (
+                <ul className="product-review-list">
+                  {reviews.map((review) => (
+                    <li key={review.id} className="product-review-item">
+                      <div className="product-review-top">
+                        <b>{review.user.fullName}</b>
+                        <span>★ {review.rating}</span>
+                      </div>
+                      {review.comment ? <p>{review.comment}</p> : null}
+                      <small>{formatDateTime(review.createdAt)}</small>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              <div className="product-detail-footer">
+                <Link className="ghost" to="/supplier/products">
+                  {t('common.cancel')}
+                </Link>
+                <button type="submit" className="primary" disabled={saving}>
+                  {saving
+                    ? t('common.loading')
+                    : isNew
+                      ? t('products.addBtn')
+                      : t('common.save')}
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </div>
