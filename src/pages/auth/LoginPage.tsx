@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { PasswordInput } from '../../components/PasswordInput';
+import { mapApiError } from '../../utils/apiErrors';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -28,7 +29,7 @@ export function LoginPage() {
       await login(email, password);
       navigate(next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('auth.loginError'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }

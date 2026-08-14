@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { PasswordInput } from '../../components/PasswordInput';
+import { mapApiError } from '../../utils/apiErrors';
 
 export function RegisterPage() {
   const { t } = useTranslation();
@@ -29,7 +30,7 @@ export function RegisterPage() {
       await register({ email, password, fullName });
       navigate(next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('auth.registerError'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }
