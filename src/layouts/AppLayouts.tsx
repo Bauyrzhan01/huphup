@@ -329,11 +329,6 @@ export function SupplierLayout({
                     {m.user.fullName}
                     {m.title ? ` · ${m.title}` : ''}
                   </span>
-                  <PresenceDot
-                    lastSeenAt={m.user.lastSeenAt}
-                    showLabel
-                    className="side-team-presence"
-                  />
                 </Link>
               ))
             )}

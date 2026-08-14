@@ -865,55 +865,40 @@ body.mobile-nav-open{overflow:hidden}
 .notification-item-static:hover{background:#fff}
 .notification-item .badge{flex-shrink:0}
 .profile-account{margin-top:0}
-.kanban-crm{grid-template-columns:repeat(4,minmax(0,1fr));align-items:start}
-.kanban-crm .column{min-height:0;padding:12px}
-.crm-stats{grid-template-columns:repeat(4,minmax(140px,1fr));max-width:720px}
-.deal-link{display:block;color:inherit;text-decoration:none;overflow:visible}
-.deal-link:hover{background:#fafafa;border-color:#ddd}
-.deal-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-.deal-score{
-  font-size:11px;font-weight:800;color:#087a5e;background:#eaf8f3;
-  border-radius:999px;padding:4px 8px;flex-shrink:0;
+.kanban-crm{grid-template-columns:repeat(4,minmax(0,1fr));align-items:start;gap:8px;padding-bottom:8px}
+.kanban-crm .column{min-height:0;padding:8px;min-height:unset;border-radius:12px}
+.crm-page{padding:16px 20px 28px}
+.crm-toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;
 }
-.deal-meta{font-size:12px;color:var(--muted);line-height:1.45;margin:6px 0 10px}
-.deal .deal-title{font-size:13px;line-height:1.4;margin:0}
-.deal-assignee{
-  display:flex;align-items:center;gap:8px;font-size:12px;color:#444;margin-bottom:8px;min-width:0;
-}
-.deal-assignee-avatar{
-  width:22px;height:22px;border-radius:8px;background:#111;color:#fff;
-  display:grid;place-items:center;font-size:9px;font-weight:800;flex-shrink:0;
-}
-.deal-assignee-copy{display:grid;gap:1px;min-width:0}
-.deal-assignee-copy b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.deal-presence-label{font-size:11px}
-.deal-unassigned{
-  color:#b45309;background:#fff7ed;border:1px solid #fed7aa;
-  border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700;
-}
-.deal-next{
-  font-size:11px;font-weight:700;color:#087a5e;background:#eaf8f3;
-  border-radius:8px;padding:6px 8px;margin-bottom:8px;
-}
-.deal-foot{font-size:11px;color:#999;margin-top:0}
-.crm-filter-chips{
-  display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;
-}
-.crm-member-chip{display:inline-flex;align-items:center;gap:6px}
+.crm-toolbar h1{margin:0;font-size:20px;letter-spacing:-.4px}
+.crm-filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.crm-filter-chips .chip{padding:4px 8px;font-size:11px}
+.crm-member-chip{display:inline-flex;align-items:center;gap:5px}
 .crm-member-online{
-  width:8px;height:8px;border-radius:50%;background:#c4c4c4;flex-shrink:0;
+  width:7px;height:7px;border-radius:50%;background:#c4c4c4;flex-shrink:0;
 }
 .crm-member-online.is-on{background:#22c55e}
-.crm-col-hint{margin:4px 0 0;font-size:11px;color:#888;font-weight:500;line-height:1.35}
-.crm-col .column-head{align-items:flex-start}
-.crm-col-new .column-head b{color:#111}
-.crm-col-viewed .column-head b{color:#1d4ed8}
-.crm-col-offered .column-head b{color:#087a5e}
-.crm-col-skipped .column-head b{color:#888}
-.crm-filters{
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;
+.crm-col .column-head{padding:2px 2px 8px}
+.deal-link{display:block;color:inherit;text-decoration:none}
+.deal-link:hover{background:#fafafa;border-color:#ddd}
+.kanban-crm .deal{padding:8px 9px;margin-bottom:6px;border-radius:10px}
+.deal-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.deal-date{font-size:10px;color:#999}
+.kanban-crm .deal-title{
+  font-size:13px;line-height:1.3;margin:0 0 6px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
-.crm-filters .filter{min-width:220px}
+.deal-assignee{
+  display:flex;align-items:center;gap:6px;font-size:11px;color:#555;min-width:0;
+}
+.deal-assignee-avatar{
+  width:18px;height:18px;border-radius:6px;background:#111;color:#fff;
+  display:grid;place-items:center;font-size:8px;font-weight:800;flex-shrink:0;
+}
+.deal-assignee > span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.deal-unassigned{color:#b45309;font-size:11px;font-weight:650}
+.kanban-empty{margin:4px 2px 0;font-size:11px;color:var(--muted)}
 .lead-assignee-panel{
   margin-top:14px;padding-top:14px;border-top:1px solid #f0f0f1;
   display:grid;gap:12px;
@@ -927,7 +912,6 @@ body.mobile-nav-open{overflow:hidden}
 .lead-assignee-main small{display:block;font-size:11px;color:#888;margin-bottom:2px}
 .lead-assignee-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .lead-assignee-note{margin:0}
-.kanban-empty{margin:8px 4px 0;font-size:12px;color:var(--muted)}
 @media(max-width:980px){
   .kanban-crm{grid-template-columns:repeat(2,minmax(0,1fr))}
   .crm-stats{grid-template-columns:repeat(2,minmax(120px,1fr));max-width:none}
@@ -1559,12 +1543,8 @@ body.mobile-nav-open{overflow:hidden}
 }
 .team-member-presence,.lead-assignee-presence{margin-left:2px}
 .side-team-member{
-  display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;
-  column-gap:10px;row-gap:2px;align-items:center;padding:9px 11px;font-size:13px;color:inherit;text-decoration:none;
+  display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:13px;color:inherit;text-decoration:none;
 }
-.side-team-avatar-wrap{grid-row:1 / span 2}
-.side-team-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.side-team-presence{grid-column:2;font-size:11px}
 .side-team-avatar{
   width:28px;height:28px;border-radius:10px;background:#111;color:#fff;
   display:grid;place-items:center;font-size:10px;font-weight:800;
