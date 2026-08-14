@@ -1030,7 +1030,7 @@ body.mobile-nav-open{overflow:hidden}
   padding:0 20px 20px;flex-wrap:wrap;position:relative;z-index:2;
 }
 .supplier-profile-identity{
-  display:flex;gap:16px;align-items:flex-end;min-width:0;flex:1;margin-top:-52px;
+  display:flex;gap:16px;align-items:flex-start;min-width:0;flex:1;margin-top:-52px;
   position:relative;z-index:3;
 }
 .supplier-profile-avatar{
@@ -1039,12 +1039,15 @@ body.mobile-nav-open{overflow:hidden}
   border:4px solid #fff;box-shadow:0 10px 28px rgba(0,0,0,.18);
   position:relative;z-index:3;
 }
-.supplier-profile-title{min-width:0;padding-bottom:4px}
+.supplier-profile-title{
+  min-width:0;padding-top:58px;padding-bottom:4px;
+}
 .supplier-profile-name-row{
   display:flex;flex-wrap:wrap;gap:10px;align-items:center;
 }
 .supplier-profile-title h1{
   margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:-.8px;line-height:1.15;
+  color:#111;
 }
 .supplier-profile-verified{
   font-size:11px;font-weight:800;color:#087a5e;background:#eaf8f3;
@@ -1187,6 +1190,7 @@ body.mobile-nav-open{overflow:hidden}
     flex:1;justify-content:center;text-align:center;
   }
   .supplier-profile-identity{flex-direction:column;align-items:flex-start;margin-top:-44px}
+  .supplier-profile-title{padding-top:40px}
   .supplier-profile-avatar{width:76px;height:76px;font-size:22px;border-radius:20px}
   .supplier-profile-cover{height:132px}
   .supplier-directory-grid{grid-template-columns:1fr}
