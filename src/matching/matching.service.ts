@@ -214,11 +214,59 @@ export class MatchingService {
       return [];
     }
 
+    await this.backfillAssigneesFromOffers(resolved.company.id);
+
     return this.prisma.lead.findMany({
       where: { companyId: resolved.company.id },
       orderBy: [{ status: 'asc' }, { score: 'desc' }, { createdAt: 'desc' }],
       include: leadInclude,
     });
+  }
+
+  /** Old offered leads had no assignee — attach the manager who sent the KP. */
+  private async backfillAssigneesFromOffers(companyId: string) {
+    const orphans = await this.prisma.lead.findMany({
+      where: {
+        companyId,
+        status: LeadStatus.OFFERED,
+        assigneeId: null,
+      },
+      select: { id: true, requestId: true },
+    });
+    if (!orphans.length) return;
+
+    const offers = await this.prisma.offer.findMany({
+      where: {
+        companyId,
+        requestId: { in: orphans.map((l) => l.requestId) },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { requestId: true, authorId: true, createdAt: true },
+    });
+    const authorByRequest = new Map<string, { authorId: string; createdAt: Date }>();
+    for (const offer of offers) {
+      if (!authorByRequest.has(offer.requestId)) {
+        authorByRequest.set(offer.requestId, {
+          authorId: offer.authorId,
+          createdAt: offer.createdAt,
+        });
+      }
+    }
+
+    await Promise.all(
+      orphans.map((lead) => {
+        const offer = authorByRequest.get(lead.requestId);
+        if (!offer) return Promise.resolve();
+        return this.prisma.lead.update({
+          where: { id: lead.id },
+          data: {
+            assigneeId: offer.authorId,
+            lastActorId: offer.authorId,
+            claimedAt: offer.createdAt,
+          },
+        });
+      }),
+    );
   }
 
   private async requireCompanyLead(userId: string, leadId: string) {
@@ -240,9 +288,18 @@ export class MatchingService {
     const { resolved, lead } = await this.requireCompanyLead(userId, leadId);
     const isOwner =
       resolved.isOwner || resolved.company.ownerId === userId;
+
+    // Owner can inspect a lead without taking it from the inbox.
+    if (isOwner && !lead.assigneeId) {
+      return this.prisma.lead.update({
+        where: { id: leadId },
+        data: { lastActorId: userId },
+        include: leadInclude,
+      });
+    }
+
     const shouldClaim =
       !lead.assigneeId &&
-      !isOwner &&
       lead.status !== LeadStatus.OFFERED &&
       lead.status !== LeadStatus.SKIPPED;
 
