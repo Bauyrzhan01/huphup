@@ -1680,10 +1680,21 @@ body.mobile-nav-open{overflow:hidden}
   display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:13px;color:inherit;text-decoration:none;
 }
 .side-team-avatar{
-  width:28px;height:28px;border-radius:10px;background:#111;color:#fff;
-  display:grid;place-items:center;font-size:10px;font-weight:800;
+  width:32px;height:32px;border-radius:10px;background:#111;color:#fff;
+  display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0;
+  overflow:hidden;
+}
+.side-team-avatar .avatar-image{
+  width:100%;height:100%;object-fit:cover;border-radius:10px;
 }
 .side-team-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-bottom .user-card{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;
+  color:inherit;text-decoration:none;
+}
+.side-bottom .user-card:hover{background:#ececee}
+.side-bottom .user-name{font-size:13px;font-weight:700;line-height:1.25}
+.side-bottom .user-role{font-size:11px;color:var(--muted);margin-top:1px;line-height:1.25}
 .sr-only{
   position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
 }

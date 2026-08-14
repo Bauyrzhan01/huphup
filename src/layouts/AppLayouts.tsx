@@ -154,10 +154,11 @@ export function BuyerLayout({
             )}
           </div>
           <div className="side-bottom">
-            <Link className="user-card" to="/profile" onClick={closeNav}>
+            <Link className="user-card side-team-member" to="/profile" onClick={closeNav}>
               <UserAvatar
                 name={user?.fullName ?? 'U'}
                 avatarUrl={user?.avatarUrl}
+                className="side-team-avatar"
               />
               <div>
                 <div className="user-name">{user?.fullName ?? t('common.empty')}</div>
@@ -334,10 +335,11 @@ export function SupplierLayout({
             )}
           </div>
           <div className="side-bottom">
-            <Link className="user-card" to="/profile" onClick={closeNav}>
+            <Link className="user-card side-team-member" to="/profile" onClick={closeNav}>
               <UserAvatar
                 name={user?.fullName ?? companyName}
                 avatarUrl={user?.avatarUrl}
+                className="side-team-avatar"
               />
               <div>
                 <div className="user-name">{user?.fullName ?? companyName}</div>
