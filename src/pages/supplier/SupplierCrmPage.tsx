@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { companiesApi, leadsApi } from '../../api';
 import { useAuth } from '../../auth/AuthContext';
 import { UserAvatar } from '../../components/UserAvatar';
+import { PresenceDot } from '../../components/PresenceDot';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import type { CompanyMember, Lead } from '../../types';
@@ -32,6 +33,15 @@ export function SupplierCrmPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
       .finally(() => setLoading(false));
+
+    const timer = window.setInterval(() => {
+      void leadsApi.list().then(setLeads).catch(() => undefined);
+      void companiesApi
+        .me()
+        .then((company) => setMembers(company.members ?? []))
+        .catch(() => undefined);
+    }, 40_000);
+    return () => window.clearInterval(timer);
   }, [t]);
 
   const filtered = useMemo(() => {
@@ -153,11 +163,14 @@ export function SupplierCrmPage() {
                   <div className="deal-assignee">
                     {lead.assignee ? (
                       <>
-                        <UserAvatar
-                          name={lead.assignee.fullName}
-                          avatarUrl={lead.assignee.avatarUrl}
-                          className="deal-assignee-avatar"
-                        />
+                        <span className="deal-assignee-avatar-wrap">
+                          <UserAvatar
+                            name={lead.assignee.fullName}
+                            avatarUrl={lead.assignee.avatarUrl}
+                            className="deal-assignee-avatar"
+                          />
+                          <PresenceDot lastSeenAt={lead.assignee.lastSeenAt} />
+                        </span>
                         <span>{lead.assignee.fullName}</span>
                       </>
                     ) : (

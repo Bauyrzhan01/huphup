@@ -29,6 +29,10 @@
     "ru": "Рус",
     "kk": "Қаз"
   },
+  "presence": {
+    "online": "Онлайн",
+    "offline": "Оффлайн"
+  },
   "auth": {
     "login": "Кіру",
     "register": "Тіркелу",
@@ -484,6 +488,7 @@
     "noCompany": "Алдымен компания жасаңыз.",
     "toCompany": "Компанияға",
     "statTotal": "Барлығы",
+    "statOnline": "Онлайн",
     "statOwners": "Иелер",
     "statManagers": "Менеджерлер",
     "statMyRole": "Сіздің рөліңіз",

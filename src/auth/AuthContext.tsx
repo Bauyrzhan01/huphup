@@ -62,6 +62,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    let timer: number | undefined;
+
+    async function beat() {
+      if (cancelled || document.visibilityState === 'hidden') return;
+      try {
+        const res = await usersApi.heartbeat();
+        if (!cancelled) {
+          setUser((prev) => {
+            if (!prev) return prev;
+            const next = { ...prev, lastSeenAt: res.lastSeenAt };
+            writeCachedUser(next);
+            return next;
+          });
+        }
+      } catch {
+        /* ignore transient heartbeat errors */
+      }
+    }
+
+    void beat();
+    timer = window.setInterval(() => void beat(), 30_000);
+
+    function onVisible() {
+      if (document.visibilityState === 'visible') void beat();
+    }
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [user?.id]);
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login({ email, password });
     localStorage.setItem('huphup_token', res.accessToken);

@@ -46,6 +46,7 @@ export type User = {
   fullName: string;
   phone?: string | null;
   avatarUrl?: string | null;
+  lastSeenAt?: string | null;
   role: UserRole;
   createdAt?: string;
   company?: Company | null;
@@ -64,6 +65,7 @@ export type CompanyMember = {
     email: string;
     phone?: string | null;
     avatarUrl?: string | null;
+    lastSeenAt?: string | null;
     createdAt?: string;
   };
 };
@@ -178,6 +180,7 @@ export type LeadUser = {
   fullName: string;
   email?: string;
   avatarUrl?: string | null;
+  lastSeenAt?: string | null;
 };
 
 export type Lead = {

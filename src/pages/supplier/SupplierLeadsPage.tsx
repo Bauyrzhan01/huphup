@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { companiesApi, leadsApi, offersApi } from '../../api';
 import { useAuth } from '../../auth/AuthContext';
 import { UserAvatar } from '../../components/UserAvatar';
+import { PresenceDot } from '../../components/PresenceDot';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
 import type { CompanyMember, Lead } from '../../types';
@@ -330,11 +331,14 @@ export function SupplierLeadsPage() {
                   <div className="lead-assignee-panel">
                     <div className="lead-assignee-main">
                       {selected.assignee ? (
-                        <UserAvatar
-                          name={selected.assignee.fullName}
-                          avatarUrl={selected.assignee.avatarUrl}
-                          className="lead-assignee-avatar"
-                        />
+                        <span className="lead-assignee-avatar-wrap">
+                          <UserAvatar
+                            name={selected.assignee.fullName}
+                            avatarUrl={selected.assignee.avatarUrl}
+                            className="lead-assignee-avatar"
+                          />
+                          <PresenceDot lastSeenAt={selected.assignee.lastSeenAt} />
+                        </span>
                       ) : (
                         <div className="lead-assignee-avatar is-empty">?</div>
                       )}
@@ -343,6 +347,13 @@ export function SupplierLeadsPage() {
                         <b>
                           {selected.assignee?.fullName || t('supplier.unassigned')}
                         </b>
+                        {selected.assignee ? (
+                          <PresenceDot
+                            lastSeenAt={selected.assignee.lastSeenAt}
+                            showLabel
+                            className="lead-assignee-presence"
+                          />
+                        ) : null}
                         {selected.claimedAt ? (
                           <p className="meta" style={{ margin: '4px 0 0' }}>
                             {t('supplier.claimedAt', {

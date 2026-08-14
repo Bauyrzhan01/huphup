@@ -4,13 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../../api';
 import { useAuth } from '../../auth/AuthContext';
 import { UserAvatar } from '../../components/UserAvatar';
+import { PresenceDot } from '../../components/PresenceDot';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
+import { isUserOnline } from '../../utils/presence';
 import type { Company, CompanyMember, CompanyMemberRole } from '../../types';
 
 export function SupplierTeamPage() {
   const { t } = useTranslation();
-  const { formatDate, formatDateTime } = useAppLocale();
+  const { formatDate } = useAppLocale();
   const { user } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [members, setMembers] = useState<CompanyMember[]>([]);
@@ -53,7 +55,14 @@ export function SupplierTeamPage() {
 
   useEffect(() => {
     void load();
+    const timer = window.setInterval(() => void load(), 40_000);
+    return () => window.clearInterval(timer);
   }, []);
+
+  const onlineCount = useMemo(
+    () => members.filter((m) => isUserOnline(m.user.lastSeenAt)).length,
+    [members],
+  );
 
   async function createInvite() {
     setBusy(true);
@@ -141,8 +150,8 @@ export function SupplierTeamPage() {
                 <b>{stats.total}</b>
               </div>
               <div className="supplier-profile-stat">
-                <small>{t('team.statOwners')}</small>
-                <b>{stats.owners}</b>
+                <small>{t('team.statOnline')}</small>
+                <b>{onlineCount}</b>
               </div>
               <div className="supplier-profile-stat">
                 <small>{t('team.statManagers')}</small>
@@ -244,11 +253,14 @@ export function SupplierTeamPage() {
                       const joinedAt = m.createdAt ?? m.user.createdAt;
                       return (
                         <article key={m.id} className="team-member-card">
-                          <UserAvatar
-                            name={m.user.fullName}
-                            avatarUrl={m.user.avatarUrl}
-                            className="team-member-avatar"
-                          />
+                          <div className="team-member-avatar-wrap">
+                            <UserAvatar
+                              name={m.user.fullName}
+                              avatarUrl={m.user.avatarUrl}
+                              className="team-member-avatar"
+                            />
+                            <PresenceDot lastSeenAt={m.user.lastSeenAt} />
+                          </div>
                           <div className="team-member-body">
                             <div className="team-member-top">
                               <div className="team-member-name-row">
@@ -256,6 +268,11 @@ export function SupplierTeamPage() {
                                 {isYou ? (
                                   <span className="chip soft">{t('team.you')}</span>
                                 ) : null}
+                                <PresenceDot
+                                  lastSeenAt={m.user.lastSeenAt}
+                                  showLabel
+                                  className="team-member-presence"
+                                />
                               </div>
                               <span className={`badge ${role === 'OWNER' ? 'amber' : 'blue'}`}>
                                 {role === 'OWNER'

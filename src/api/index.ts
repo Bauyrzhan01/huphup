@@ -61,6 +61,10 @@ export const usersApi = {
     return uploadApi<User>('/users/me/avatar', form);
   },
   removeAvatar: () => api<{ ok: boolean }>('/users/me/avatar', { method: 'DELETE' }),
+  heartbeat: () =>
+    api<{ ok: boolean; lastSeenAt: string }>('/users/me/heartbeat', {
+      method: 'POST',
+    }),
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     api<{ ok: boolean }>('/users/me/password', {
       method: 'POST',

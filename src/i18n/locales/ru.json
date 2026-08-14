@@ -13,6 +13,8 @@
     "logout": "Выйти",
     "home": "На главную",
     "empty": "—",
+    "online": "Онлайн",
+    "offline": "Оффлайн",
     "days": "{{count}} дня",
     "daysShort": "{{count}} дн.",
     "rating": "рейтинг {{value}}",
@@ -55,6 +57,10 @@
     "newPassword": "Новый пароль",
     "resetSubmit": "Сохранить пароль",
     "resetSuccess": "Пароль обновлён. Перенаправляем на вход…"
+  },
+  "presence": {
+    "online": "Онлайн",
+    "offline": "Оффлайн"
   },
   "nav": {
     "requestsMobile": "Заявки",
@@ -484,6 +490,7 @@
     "noCompany": "Сначала создайте компанию.",
     "toCompany": "К компании",
     "statTotal": "Всего",
+    "statOnline": "Онлайн",
     "statOwners": "Владельцы",
     "statManagers": "Менеджеры",
     "statMyRole": "Ваша роль",

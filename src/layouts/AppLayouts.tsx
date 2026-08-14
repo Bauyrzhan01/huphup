@@ -5,6 +5,7 @@ import { companiesApi, notificationsApi, requestsApi } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { NotificationsBell } from '../components/NotificationsBell';
+import { PresenceDot } from '../components/PresenceDot';
 import { UserAvatar } from '../components/UserAvatar';
 import { useMobileNav } from '../hooks/useMobileNav';
 import type { CompanyMember, NotificationItem, RequestItem } from '../types';
@@ -235,6 +236,14 @@ export function SupplierLayout({
       .list()
       .then(setNotifications)
       .catch(() => setNotifications([]));
+
+    const timer = window.setInterval(() => {
+      void companiesApi
+        .me()
+        .then((c) => setMembers(c.members ?? []))
+        .catch(() => undefined);
+    }, 40_000);
+    return () => window.clearInterval(timer);
   }, [user?.fullName, t]);
 
   const unread = notifications.filter((n) => !n.isRead).length;
@@ -306,10 +315,20 @@ export function SupplierLayout({
                   key={m.id}
                   to="/supplier/team"
                   onClick={closeNav}
-                  style={{ padding: '9px 11px', display: 'block', fontSize: 13 }}
+                  className="side-team-member"
                 >
-                  {m.user.fullName}
-                  {m.title ? ` · ${m.title}` : ''}
+                  <span className="side-team-avatar-wrap">
+                    <UserAvatar
+                      name={m.user.fullName}
+                      avatarUrl={m.user.avatarUrl}
+                      className="side-team-avatar"
+                    />
+                    <PresenceDot lastSeenAt={m.user.lastSeenAt} />
+                  </span>
+                  <span className="side-team-name">
+                    {m.user.fullName}
+                    {m.title ? ` · ${m.title}` : ''}
+                  </span>
                 </Link>
               ))
             )}
