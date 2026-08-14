@@ -5,6 +5,7 @@ import { requestsApi } from '../../api';
 import { ApiError } from '../../api/client';
 import { MatchedSupplierCard } from '../../components/MatchedSupplierCard';
 import { BuyerLayout } from '../../layouts/AppLayouts';
+import { isConfirmReply, shouldSkipAssistantReply } from '../../utils/requestChat';
 import type { AnalyzeResult, PublishResult, RequestItem } from '../../types';
 
 const HOME_CHAT_KEY = 'huphup_home_chat';
@@ -155,6 +156,11 @@ export function HomePage() {
       await startConversation(trimmed);
       return;
     }
+    if (ready && isConfirmReply(trimmed)) {
+      setChat((prev) => [...prev, { role: 'user', text: trimmed }]);
+      setQ('');
+      return;
+    }
     const current = analyzed?.questions?.[0];
     const nextAnswers = [
       ...collectedAnswers,
@@ -184,21 +190,28 @@ export function HomePage() {
       setDescription(res.description || originalText);
       const ask = res.questions?.[0];
       const done = res.ready === true || !ask;
-      const assistantText =
-        res.assistantMessage ||
-        ask?.question ||
-        t('requests.chatReady');
-      const last = nextChat[nextChat.length - 1];
-      const nextAssistant: ChatTurn = {
-        role: 'assistant',
-        text: assistantText,
-        options: done ? undefined : ask?.options,
-      };
+      const assistantText = done
+        ? t('requests.chatReady')
+        : res.assistantMessage || ask?.question || t('requests.chatReady');
+      const lastAssistant = [...nextChat]
+        .reverse()
+        .find((m) => m.role === 'assistant');
+      const skipAssistant = shouldSkipAssistantReply(
+        lastAssistant?.text,
+        assistantText,
+        done,
+      );
       setChat([
         ...nextChat,
-        ...(last?.role === 'assistant' && last.text === assistantText
+        ...(skipAssistant
           ? []
-          : [nextAssistant]),
+          : [
+              {
+                role: 'assistant' as const,
+                text: assistantText,
+                options: done ? undefined : ask?.options,
+              },
+            ]),
       ]);
     } catch (err) {
       setError(errorText(err));
