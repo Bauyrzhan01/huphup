@@ -43,7 +43,8 @@ export class RequestsService {
       previous: dto.previous as never,
       messages: dto.messages,
     });
-    const base = geminiResult ?? this.clarifyFallback(dto.text, dto.answers);
+    const base =
+      geminiResult ?? this.clarifyFallback(dto.text, dto.answers, dto.previous);
     return withRequiredSpecQuestions(base, extra, asked);
   }
 
@@ -93,7 +94,21 @@ export class RequestsService {
   private clarifyFallback(
     text: string,
     answers: Array<{ id: string; answer: string }>,
+    previous?: Record<string, unknown> | null,
   ) {
+    if (previous?.ready === true) {
+      const lastAnswer = answers.at(-1)?.answer?.trim() || text.trim();
+      return {
+        ...(previous as Record<string, unknown>),
+        rawText: text,
+        assistantMessage: '',
+        questions: [],
+        ready: true,
+        ackOnly: true,
+        understanding: String(previous.understanding ?? lastAnswer).slice(0, 400),
+      } as never;
+    }
+
     const base = this.analyzeFallback(text);
     const byId = new Map(answers.map((a) => [a.id, a.answer.trim()]));
     const extra = answers

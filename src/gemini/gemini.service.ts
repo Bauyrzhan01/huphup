@@ -33,6 +33,7 @@ export type GeminiAnalyzeResult = {
   items: GeminiRequestItem[];
   questions: GeminiClarifyQuestion[];
   ready: boolean;
+  ackOnly?: boolean;
 };
 
 export type GeminiClarifyAnswer = {
@@ -86,6 +87,9 @@ export class GeminiService {
 - Не спрашивай общее «какие характеристики важны поставщику?», если марка или тип уже названы.
 - Не выдумывай факты. Язык как у клиента (казахский или русский).
 - ready=true только если есть реальный товар и хватает данных для КП поставщику.
+- Если заявка уже готова (ready=true) и клиент только подтверждает, соглашается, благодарит или просит опубликовать — любым языком и формулировкой, без новых данных о закупке — установи ackOnly=true, assistantMessage="", ready=true, questions=[].
+- Не повторяй «Собрал заявку» и не задавай новых вопросов при ackOnly.
+- Если после ready клиент добавляет новые факты о товаре — ackOnly=false, обнови поля и задай вопрос при необходимости.
 
 Ответ — только JSON:
 {
@@ -99,7 +103,8 @@ export class GeminiService {
   "deadline": "",
   "items": [{ "name": "", "quantity": "", "specs": "", "city": "" }],
   "questions": [{ "id": "q1", "field": "spec", "question": "короткий вопрос", "placeholder": "", "options": [] }],
-  "ready": false
+  "ready": false,
+  "ackOnly": false
 }`;
 
   async analyzeRequest(text: string): Promise<GeminiAnalyzeResult | null> {
@@ -126,14 +131,33 @@ export class GeminiService {
           }))
         : [{ role: 'user' as const, text: input.text }];
 
-    const raw = await this.generateChatJson(turns);
+    const readyContext = input.previous?.ready
+      ? '\n\nКОНТЕКСТ СЕССИИ: заявка уже собрана (ready=true). Ассистент уже сообщил, что заявку можно проверить и опубликовать. Если новое сообщение клиента — только подтверждение, согласие или просьба опубликовать без новых фактов о закупке, верни ackOnly=true и пустой assistantMessage.'
+      : '';
+    const raw = await this.generateChatJson(turns, readyContext);
     if (!raw) return null;
     const userTexts = turns.filter((t) => t.role === 'user').map((t) => t.text);
-    return this.normalizeAnalyze(
+    const parsed = this.normalizeAnalyze(
       input.text,
       this.parseJson<Record<string, unknown>>(raw),
       userTexts,
     );
+    if (!parsed || !input.previous?.ready || !parsed.ackOnly) return parsed;
+    return {
+      ...input.previous,
+      ...parsed,
+      title: parsed.title || input.previous.title || '',
+      description: parsed.description || input.previous.description || '',
+      category: parsed.category || input.previous.category || '',
+      city: parsed.city || input.previous.city || '',
+      quantity: parsed.quantity || input.previous.quantity || '',
+      deadline: parsed.deadline || input.previous.deadline || '',
+      items: parsed.items.length ? parsed.items : (input.previous.items ?? []),
+      assistantMessage: '',
+      questions: [],
+      ready: true,
+      ackOnly: true,
+    };
   }
 
   async matchProducts(input: {
@@ -274,7 +298,8 @@ ${JSON.stringify(catalog)}`;
       firstQuestion,
     ).slice(0, 800);
 
-    const ready = parsed.ready === true && questions.length === 0;
+    const ackOnly = parsed.ackOnly === true;
+    const ready = (parsed.ready === true && questions.length === 0) || ackOnly;
 
     const title = String(parsed.title || text).slice(0, 120);
     const rawDescription = String(parsed.description || text).slice(0, 4000);
@@ -298,10 +323,11 @@ ${JSON.stringify(catalog)}`;
       deadline: String(parsed.deadline || 'Уточнить').slice(0, 80),
       rawText: text,
       understanding,
-      assistantMessage,
+      assistantMessage: ackOnly ? '' : assistantMessage,
       items,
-      questions,
+      questions: ackOnly ? [] : questions,
       ready,
+      ...(ackOnly ? { ackOnly: true } : {}),
     };
   }
 
@@ -329,6 +355,7 @@ ${JSON.stringify(catalog)}`;
 
   private async generateChatJson(
     turns: Array<{ role: 'user' | 'model'; text: string }>,
+    systemExtra = '',
   ): Promise<string | null> {
     const merged: Array<{ role: 'user' | 'model'; text: string }> = [];
     for (const t of turns) {
@@ -347,7 +374,7 @@ ${JSON.stringify(catalog)}`;
     }));
     return this.generateContent(contents, {
       temperature: 0.5,
-      system: this.chatSystem,
+      system: this.chatSystem + systemExtra,
     });
   }
 

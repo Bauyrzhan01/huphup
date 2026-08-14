@@ -310,6 +310,8 @@ export function withRequiredSpecQuestions(
     assistantMessage = isNotAProduct(first)
       ? 'Привет! Что нужно закупить — товар или услугу?'
       : 'Что нужно закупить — товар или услугу?';
+  } else if (isReady && result.ackOnly) {
+    assistantMessage = '';
   } else if (isReady) {
     assistantMessage =
       'Собрал заявку. Можно проверить и опубликовать.';
@@ -323,5 +325,6 @@ export function withRequiredSpecQuestions(
     questions: next,
     assistantMessage,
     ready: isReady,
+    ...(result.ackOnly && isReady ? { ackOnly: true } : {}),
   };
 }
