@@ -5,10 +5,12 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { LeadStatus } from '@prisma/client';
+import { LeadActivityType, LeadStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
 import { GeminiService } from '../gemini/gemini.service';
+import { LeadCrmService } from '../crm/lead-crm.service';
+import type { BulkLeadsDto, SetNextStepDto } from '../crm/dto/crm.dto';
 
 const leadRequestSelect = {
   id: true,
@@ -45,6 +47,7 @@ export class MatchingService {
     private readonly prisma: PrismaService,
     private readonly companies: CompaniesService,
     private readonly gemini: GeminiService,
+    private readonly crm: LeadCrmService,
   ) {}
 
   async createLeadsForRequest(requestId: string) {
@@ -120,8 +123,18 @@ export class MatchingService {
           requestId,
           companyId: item.companyId,
           score: item.score,
+          matchReason: item.reason?.slice(0, 500),
         },
-        update: { score: item.score },
+        update: {
+          score: item.score,
+          matchReason: item.reason?.slice(0, 500),
+        },
+      });
+      await this.crm.logActivity({
+        leadId: lead.id,
+        type: LeadActivityType.CREATED,
+        message: `Lead matched (score ${Math.round(item.score)})`,
+        meta: { reason: item.reason, productId: item.productId },
       });
       const memberUserIds = await this.companies.listMemberUserIds(
         item.companyId,
@@ -215,12 +228,21 @@ export class MatchingService {
     }
 
     await this.backfillAssigneesFromOffers(resolved.company.id);
+    await this.crm.ensureCompanyCrmDefaults(resolved.company.id);
+    void this.crm
+      .runAutomations(resolved.company.id, resolved.company.ownerId)
+      .catch(() => undefined);
 
-    return this.prisma.lead.findMany({
+    const leads = await this.prisma.lead.findMany({
       where: { companyId: resolved.company.id },
       orderBy: [{ status: 'asc' }, { score: 'desc' }, { createdAt: 'desc' }],
       include: leadInclude,
     });
+
+    return leads.map((lead) => ({
+      ...lead,
+      idleState: this.crm.isLeadIdle(lead),
+    }));
   }
 
   /** Old offered leads had no assignee — attach the manager who sent the KP. */
@@ -291,11 +313,18 @@ export class MatchingService {
 
     // Owner can inspect a lead without taking it from the inbox.
     if (isOwner && !lead.assigneeId) {
-      return this.prisma.lead.update({
+      const updated = await this.prisma.lead.update({
         where: { id: leadId },
         data: { lastActorId: userId },
         include: leadInclude,
       });
+      await this.crm.logActivity({
+        leadId,
+        userId,
+        type: LeadActivityType.VIEWED,
+        message: 'Owner inspected lead',
+      });
+      return updated;
     }
 
     const shouldClaim =
@@ -306,17 +335,27 @@ export class MatchingService {
     const nextStatus =
       lead.status === LeadStatus.NEW ? LeadStatus.VIEWED : lead.status;
 
-    return this.prisma.lead.update({
+    const updated = await this.prisma.lead.update({
       where: { id: leadId },
       data: {
         status: nextStatus,
         lastActorId: userId,
+        ...(nextStatus !== lead.status
+          ? { statusChangedAt: new Date() }
+          : {}),
         ...(shouldClaim
           ? { assigneeId: userId, claimedAt: new Date() }
           : {}),
       },
       include: leadInclude,
     });
+    await this.crm.logActivity({
+      leadId,
+      userId,
+      type: shouldClaim ? LeadActivityType.CLAIMED : LeadActivityType.VIEWED,
+      message: shouldClaim ? 'Lead claimed on view' : 'Lead viewed',
+    });
+    return updated;
   }
 
   async claimLead(userId: string, leadId: string) {
@@ -327,7 +366,7 @@ export class MatchingService {
     if (lead.assigneeId && lead.assigneeId !== userId) {
       throw new BadRequestException('Lead already assigned to another manager');
     }
-    return this.prisma.lead.update({
+    const updated = await this.prisma.lead.update({
       where: { id: leadId },
       data: {
         assigneeId: userId,
@@ -335,9 +374,19 @@ export class MatchingService {
         lastActorId: userId,
         status:
           lead.status === LeadStatus.NEW ? LeadStatus.VIEWED : lead.status,
+        ...(lead.status === LeadStatus.NEW
+          ? { statusChangedAt: new Date() }
+          : {}),
       },
       include: leadInclude,
     });
+    await this.crm.logActivity({
+      leadId,
+      userId,
+      type: LeadActivityType.CLAIMED,
+      message: 'Lead claimed',
+    });
+    return updated;
   }
 
   async reassignLead(userId: string, leadId: string, assigneeId: string) {
@@ -359,7 +408,7 @@ export class MatchingService {
       throw new BadRequestException('Assignee must be a company member');
     }
 
-    return this.prisma.lead.update({
+    const updated = await this.prisma.lead.update({
       where: { id: leadId },
       data: {
         assigneeId,
@@ -367,9 +416,20 @@ export class MatchingService {
         lastActorId: userId,
         status:
           lead.status === LeadStatus.NEW ? LeadStatus.VIEWED : lead.status,
+        ...(lead.status === LeadStatus.NEW
+          ? { statusChangedAt: new Date() }
+          : {}),
       },
       include: leadInclude,
     });
+    await this.crm.logActivity({
+      leadId,
+      userId,
+      type: LeadActivityType.REASSIGNED,
+      message: 'Lead reassigned',
+      meta: { assigneeId },
+    });
+    return updated;
   }
 
   async skipLead(userId: string, leadId: string) {
@@ -377,15 +437,107 @@ export class MatchingService {
     if (lead.status === LeadStatus.OFFERED) {
       throw new BadRequestException('Cannot skip a lead with an offer sent');
     }
-    return this.prisma.lead.update({
+    const updated = await this.prisma.lead.update({
       where: { id: leadId },
       data: {
         status: LeadStatus.SKIPPED,
+        statusChangedAt: new Date(),
         lastActorId: userId,
         assigneeId: lead.assigneeId ?? userId,
         claimedAt: lead.claimedAt ?? new Date(),
       },
       include: leadInclude,
     });
+    await this.crm.logActivity({
+      leadId,
+      userId,
+      type: LeadActivityType.SKIPPED,
+      message: 'Lead skipped',
+    });
+    return updated;
+  }
+
+  async updateStatus(userId: string, leadId: string, status: LeadStatus) {
+    const { lead } = await this.requireCompanyLead(userId, leadId);
+    if (lead.status === LeadStatus.OFFERED && status !== LeadStatus.OFFERED) {
+      const hasOffer = await this.prisma.offer.findFirst({
+        where: { requestId: lead.requestId, companyId: lead.companyId },
+      });
+      if (hasOffer && status !== LeadStatus.SKIPPED) {
+        throw new BadRequestException('Lead has an offer — only skip is allowed');
+      }
+    }
+
+    const updated = await this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        status,
+        statusChangedAt: new Date(),
+        lastActorId: userId,
+      },
+      include: leadInclude,
+    });
+    await this.crm.logActivity({
+      leadId,
+      userId,
+      type: LeadActivityType.STATUS_CHANGED,
+      message: `Status → ${status}`,
+      meta: { from: lead.status, to: status },
+    });
+    return updated;
+  }
+
+  async setNextStep(userId: string, leadId: string, dto: SetNextStepDto) {
+    await this.requireCompanyLead(userId, leadId);
+    const updated = await this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        nextStepText: dto.text?.trim() || null,
+        nextStepAt: dto.at ? new Date(dto.at) : null,
+        lastActorId: userId,
+      },
+      include: leadInclude,
+    });
+    await this.crm.logActivity({
+      leadId,
+      userId,
+      type: LeadActivityType.NEXT_STEP_SET,
+      message: dto.text?.trim() || 'Next step cleared',
+      meta: { at: dto.at },
+    });
+    return updated;
+  }
+
+  async getActivities(userId: string, leadId: string) {
+    await this.requireCompanyLead(userId, leadId);
+    return this.crm.getActivities(leadId);
+  }
+
+  async getNotes(userId: string, leadId: string) {
+    await this.requireCompanyLead(userId, leadId);
+    return this.crm.listNotes(leadId);
+  }
+
+  async addNote(userId: string, leadId: string, body: string) {
+    await this.requireCompanyLead(userId, leadId);
+    return this.crm.addNote(leadId, userId, body);
+  }
+
+  async bulkUpdate(userId: string, dto: BulkLeadsDto) {
+    const results = [];
+    for (const id of dto.ids) {
+      try {
+        if (dto.action === 'skip') {
+          results.push(await this.skipLead(userId, id));
+        } else if (dto.action === 'reassign' && dto.assigneeId) {
+          results.push(await this.reassignLead(userId, id, dto.assigneeId));
+        } else if (dto.action === 'status' && dto.status) {
+          results.push(await this.updateStatus(userId, id, dto.status));
+        }
+      } catch {
+        /* skip failed ids */
+      }
+    }
+    return results;
   }
 }

@@ -14,6 +14,7 @@ import { ProductsModule } from './products/products.module';
 import { RequestsModule } from './requests/requests.module';
 import { OffersModule } from './offers/offers.module';
 import { MatchingModule } from './matching/matching.module';
+import { CrmModule } from './crm/crm.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AttachmentsModule } from './attachments/attachments.module';
@@ -32,6 +33,7 @@ import { HealthModule } from './health/health.module';
     RequestsModule,
     OffersModule,
     MatchingModule,
+    CrmModule,
     ConversationsModule,
     NotificationsModule,
     AttachmentsModule,

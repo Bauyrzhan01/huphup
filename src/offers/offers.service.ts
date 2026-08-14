@@ -4,11 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OfferStatus, RequestStatus } from '@prisma/client';
+import { OfferStatus, RequestStatus, LeadActivityType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { CompaniesService } from '../companies/companies.service';
+import { LeadCrmService } from '../crm/lead-crm.service';
 import { CreateOfferDto } from './dto/offer.dto';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class OffersService {
     private readonly notifications: NotificationsService,
     private readonly conversations: ConversationsService,
     private readonly companies: CompaniesService,
+    private readonly crm: LeadCrmService,
   ) {}
 
   async create(userId: string, dto: CreateOfferDto) {
@@ -61,11 +63,25 @@ export class OffersService {
       where: { requestId: dto.requestId, companyId: company.id },
       data: {
         status: 'OFFERED',
+        statusChangedAt: new Date(),
         lastActorId: userId,
         assigneeId: userId,
         claimedAt: new Date(),
       },
     });
+
+    const lead = await this.prisma.lead.findFirst({
+      where: { requestId: dto.requestId, companyId: company.id },
+    });
+    if (lead) {
+      await this.crm.logActivity({
+        leadId: lead.id,
+        userId,
+        type: LeadActivityType.OFFER_SENT,
+        message: `Offer sent: ${dto.price} ${dto.currency ?? 'KZT'}`,
+        meta: { offerId: offer.id },
+      });
+    }
 
     await this.notifications.notifyUsers([request.buyerId], {
       type: 'NEW_OFFER',
