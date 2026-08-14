@@ -12,9 +12,12 @@ export class HealthController {
   @Get()
   async check() {
     let database: 'up' | 'down' = 'down';
+    let dbLatencyMs: number | null = null;
+    const started = Date.now();
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       database = 'up';
+      dbLatencyMs = Date.now() - started;
     } catch {
       database = 'down';
     }
@@ -22,6 +25,7 @@ export class HealthController {
       status: database === 'up' ? 'ok' : 'degraded',
       service: 'huphup-backend',
       database,
+      dbLatencyMs,
       time: new Date().toISOString(),
     };
   }
