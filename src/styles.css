@@ -877,7 +877,33 @@ body.mobile-nav-open{overflow:hidden}
 }
 .deal-meta{font-size:12px;color:var(--muted);line-height:1.45;margin:6px 0 10px}
 .deal .deal-title{font-size:13px;line-height:1.4;margin:0}
+.deal-assignee{
+  display:flex;align-items:center;gap:8px;font-size:12px;color:#444;margin-bottom:8px;min-width:0;
+}
+.deal-assignee-avatar{
+  width:22px;height:22px;border-radius:8px;background:#111;color:#fff;
+  display:grid;place-items:center;font-size:9px;font-weight:800;flex-shrink:0;
+}
+.deal-assignee span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.deal-unassigned{color:#999;font-style:normal}
 .deal-foot{font-size:11px;color:#999;margin-top:0}
+.crm-filters{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;
+}
+.crm-filters .filter{min-width:220px}
+.lead-assignee-panel{
+  margin-top:14px;padding-top:14px;border-top:1px solid #f0f0f1;
+  display:grid;gap:12px;
+}
+.lead-assignee-main{display:flex;gap:12px;align-items:center}
+.lead-assignee-avatar{
+  width:48px;height:48px;border-radius:14px;background:#111;color:#fff;
+  display:grid;place-items:center;font-size:14px;font-weight:800;flex-shrink:0;
+}
+.lead-assignee-avatar.is-empty{background:#eee;color:#888}
+.lead-assignee-main small{display:block;font-size:11px;color:#888;margin-bottom:2px}
+.lead-assignee-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lead-assignee-note{margin:0}
 .kanban-empty{margin:8px 4px 0;font-size:12px;color:var(--muted)}
 @media(max-width:980px){
   .kanban-crm{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1430,6 +1456,8 @@ body.mobile-nav-open{overflow:hidden}
 .matched-supplier-logo,
 .account-profile-avatar,
 .team-member-avatar,
+.deal-assignee-avatar,
+.lead-assignee-avatar,
 .chat-avatar,
 .bubble-avatar{
   overflow:hidden;

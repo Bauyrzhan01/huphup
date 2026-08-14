@@ -1,10 +1,13 @@
 import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { leadsApi, offersApi } from '../../api';
+import { companiesApi, leadsApi, offersApi } from '../../api';
+import { useAuth } from '../../auth/AuthContext';
+import { UserAvatar } from '../../components/UserAvatar';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
-import type { Lead } from '../../types';
+import type { CompanyMember, Lead } from '../../types';
 
 function scoreTone(score: number) {
   if (score >= 85) return 'high';
@@ -14,9 +17,14 @@ function scoreTone(score: number) {
 
 export function SupplierLeadsPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { formatDateTime } = useAppLocale();
   const statusLabel = useStatusLabel();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const leadFromUrl = searchParams.get('leadId');
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [members, setMembers] = useState<CompanyMember[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
   const [selected, setSelected] = useState<Lead | null>(null);
   const [price, setPrice] = useState('');
   const [days, setDays] = useState('3');
@@ -24,6 +32,7 @@ export function SupplierLeadsPage() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const stats = useMemo(
     () => ({
@@ -31,16 +40,25 @@ export function SupplierLeadsPage() {
       new: leads.filter((l) => l.status === 'NEW').length,
       viewed: leads.filter((l) => l.status === 'VIEWED').length,
       offered: leads.filter((l) => l.status === 'OFFERED').length,
+      unassigned: leads.filter((l) => !l.assigneeId).length,
     }),
     [leads],
   );
 
   async function load() {
-    const list = await leadsApi.list();
+    const [list, company] = await Promise.all([
+      leadsApi.list(),
+      companiesApi.me().catch(() => null),
+    ]);
     setLeads(list);
+    if (company) {
+      setIsOwner(Boolean(company.isOwner));
+      setMembers(company.members ?? []);
+    }
     setSelected((prev) => {
-      if (!prev) return prev;
-      return list.find((l) => l.id === prev.id) ?? prev;
+      const preferId = leadFromUrl || prev?.id;
+      if (!preferId) return prev;
+      return list.find((l) => l.id === preferId) ?? prev;
     });
   }
 
@@ -50,15 +68,56 @@ export function SupplierLeadsPage() {
     );
   }, [t]);
 
-  async function openLead(lead: Lead) {
+  useEffect(() => {
+    if (!leadFromUrl || leads.length === 0) return;
+    const found = leads.find((l) => l.id === leadFromUrl);
+    if (found && selected?.id !== found.id) {
+      void openLead(found, false);
+    }
+  }, [leadFromUrl, leads]);
+
+  async function openLead(lead: Lead, writeUrl = true) {
     setSelected(lead);
     setMsg('');
     setError('');
+    if (writeUrl) {
+      setSearchParams({ leadId: lead.id }, { replace: true });
+    }
     try {
       await leadsApi.view(lead.id);
       await load();
     } catch {
       /* ignore */
+    }
+  }
+
+  async function claimLead() {
+    if (!selected) return;
+    setBusy(true);
+    setError('');
+    try {
+      await leadsApi.claim(selected.id);
+      setMsg(t('supplier.leadClaimed'));
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reassignLead(assigneeId: string) {
+    if (!selected || !assigneeId) return;
+    setBusy(true);
+    setError('');
+    try {
+      await leadsApi.reassign(selected.id, assigneeId);
+      setMsg(t('supplier.leadReassigned'));
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -68,6 +127,7 @@ export function SupplierLeadsPage() {
       await leadsApi.skip(selected.id);
       setMsg(t('supplier.leadSkipped'));
       setSelected(null);
+      setSearchParams({}, { replace: true });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
@@ -98,6 +158,13 @@ export function SupplierLeadsPage() {
   }
 
   const req = selected?.request;
+  const canClaim =
+    selected &&
+    !selected.assigneeId &&
+    selected.status !== 'SKIPPED' &&
+    selected.status !== 'OFFERED';
+  const assignedToOther =
+    selected?.assigneeId && selected.assigneeId !== user?.id;
 
   return (
     <SupplierLayout crumb={t('nav.newLeads')}>
@@ -119,12 +186,12 @@ export function SupplierLeadsPage() {
             <b>{stats.new}</b>
           </div>
           <div className="stat">
-            <small>{t('supplier.statViewed')}</small>
-            <b>{stats.viewed}</b>
-          </div>
-          <div className="stat">
             <small>{t('supplier.statOffered')}</small>
             <b>{stats.offered}</b>
+          </div>
+          <div className="stat">
+            <small>{t('supplier.statUnassigned')}</small>
+            <b>{stats.unassigned}</b>
           </div>
         </div>
 
@@ -170,12 +237,15 @@ export function SupplierLeadsPage() {
                     <span>{lead.request.city || t('common.empty')}</span>
                     <span>·</span>
                     <span>
-                      {lead.request.quantity || t('requests.quantity')}
+                      {lead.assignee?.fullName || t('supplier.unassigned')}
                     </span>
                   </div>
                   <div className="lead-card-foot">
                     <div className={`score-pill score-${tone}`}>
-                      <span className="score-ring" style={{ ['--p' as string]: `${Math.min(100, lead.score)}%` }} />
+                      <span
+                        className="score-ring"
+                        style={{ ['--p' as string]: `${Math.min(100, lead.score)}%` }}
+                      />
                       <b>{Math.round(lead.score)}</b>
                       <small>{t('supplier.matchScore')}</small>
                     </div>
@@ -202,7 +272,9 @@ export function SupplierLeadsPage() {
                     <div>
                       <div className="lead-hero-chips">
                         <span className="chip-strong">{req.code}</span>
-                        <span className={`badge ${selected.status === 'NEW' ? 'green' : selected.status === 'OFFERED' ? 'amber' : 'blue'}`}>
+                        <span
+                          className={`badge ${selected.status === 'NEW' ? 'green' : selected.status === 'OFFERED' ? 'amber' : 'blue'}`}
+                        >
                           {statusLabel.lead(selected.status)}
                         </span>
                         <span className="chip soft">
@@ -213,10 +285,16 @@ export function SupplierLeadsPage() {
                       <p className="lead-hero-desc">{req.description}</p>
                     </div>
                     <div className={`match-meter score-${scoreTone(selected.score)}`}>
-                      <div className="match-meter-value">{Math.round(selected.score)}</div>
-                      <div className="match-meter-label">{t('supplier.matchScore')}</div>
+                      <div className="match-meter-value">
+                        {Math.round(selected.score)}
+                      </div>
+                      <div className="match-meter-label">
+                        {t('supplier.matchScore')}
+                      </div>
                       <div className="progress">
-                        <span style={{ width: `${Math.min(100, selected.score)}%` }} />
+                        <span
+                          style={{ width: `${Math.min(100, selected.score)}%` }}
+                        />
                       </div>
                       <p>{t('supplier.matchHint')}</p>
                     </div>
@@ -247,6 +325,77 @@ export function SupplierLeadsPage() {
                       <small>{t('supplier.receivedAt')}</small>
                       <b>{formatDateTime(selected.createdAt)}</b>
                     </div>
+                  </div>
+
+                  <div className="lead-assignee-panel">
+                    <div className="lead-assignee-main">
+                      {selected.assignee ? (
+                        <UserAvatar
+                          name={selected.assignee.fullName}
+                          avatarUrl={selected.assignee.avatarUrl}
+                          className="lead-assignee-avatar"
+                        />
+                      ) : (
+                        <div className="lead-assignee-avatar is-empty">?</div>
+                      )}
+                      <div>
+                        <small>{t('supplier.assignee')}</small>
+                        <b>
+                          {selected.assignee?.fullName || t('supplier.unassigned')}
+                        </b>
+                        {selected.claimedAt ? (
+                          <p className="meta" style={{ margin: '4px 0 0' }}>
+                            {t('supplier.claimedAt', {
+                              date: formatDateTime(selected.claimedAt),
+                            })}
+                          </p>
+                        ) : null}
+                        {selected.lastActor ? (
+                          <p className="meta" style={{ margin: '4px 0 0' }}>
+                            {t('supplier.lastActor', {
+                              name: selected.lastActor.fullName,
+                            })}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="lead-assignee-actions">
+                      {canClaim ? (
+                        <button
+                          type="button"
+                          className="primary"
+                          disabled={busy}
+                          onClick={() => void claimLead()}
+                        >
+                          {t('supplier.claimLead')}
+                        </button>
+                      ) : null}
+                      {isOwner && selected.status !== 'SKIPPED' ? (
+                        <select
+                          className="filter"
+                          disabled={busy}
+                          value={selected.assigneeId ?? ''}
+                          onChange={(e) => {
+                            if (e.target.value) void reassignLead(e.target.value);
+                          }}
+                          aria-label={t('supplier.reassignLead')}
+                        >
+                          <option value="">{t('supplier.reassignPick')}</option>
+                          {members.map((m) => (
+                            <option key={m.user.id} value={m.user.id}>
+                              {m.user.fullName}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
+                    </div>
+                    {assignedToOther ? (
+                      <p className="meta lead-assignee-note">
+                        {t('supplier.assignedToOther', {
+                          name: selected.assignee?.fullName,
+                        })}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -291,12 +440,24 @@ export function SupplierLeadsPage() {
                       </div>
                     </div>
                     <div className="actions">
-                      {selected.status !== 'OFFERED' && selected.status !== 'SKIPPED' ? (
-                        <button type="button" className="ghost" onClick={() => void skipLead()}>
+                      {selected.status !== 'OFFERED' &&
+                      selected.status !== 'SKIPPED' ? (
+                        <button
+                          type="button"
+                          className="ghost"
+                          onClick={() => void skipLead()}
+                        >
                           {t('supplier.skipLead')}
                         </button>
                       ) : null}
-                      <button className="primary" disabled={sending || selected.status === 'OFFERED' || selected.status === 'SKIPPED'}>
+                      <button
+                        className="primary"
+                        disabled={
+                          sending ||
+                          selected.status === 'OFFERED' ||
+                          selected.status === 'SKIPPED'
+                        }
+                      >
                         {selected.status === 'OFFERED'
                           ? t('supplier.alreadyOffered')
                           : sending

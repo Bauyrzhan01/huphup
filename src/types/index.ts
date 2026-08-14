@@ -173,11 +173,23 @@ export type Offer = {
   request?: Pick<RequestItem, 'id' | 'code' | 'title' | 'city' | 'status'>;
 };
 
+export type LeadUser = {
+  id: string;
+  fullName: string;
+  email?: string;
+  avatarUrl?: string | null;
+};
+
 export type Lead = {
   id: string;
   score: number;
   status: string;
   createdAt: string;
+  claimedAt?: string | null;
+  assigneeId?: string | null;
+  lastActorId?: string | null;
+  assignee?: LeadUser | null;
+  lastActor?: LeadUser | null;
   request: RequestItem;
 };
 

@@ -252,7 +252,13 @@ export const offersApi = {
 
 export const leadsApi = {
   list: () => api<Lead[]>('/leads'),
-  view: (id: string) => api(`/leads/${id}/view`, { method: 'POST' }),
+  view: (id: string) => api<Lead>(`/leads/${id}/view`, { method: 'POST' }),
+  claim: (id: string) => api<Lead>(`/leads/${id}/claim`, { method: 'POST' }),
+  reassign: (id: string, assigneeId: string) =>
+    api<Lead>(`/leads/${id}/reassign`, {
+      method: 'POST',
+      body: JSON.stringify({ assigneeId }),
+    }),
   skip: (id: string) => api<Lead>(`/leads/${id}/skip`, { method: 'POST' }),
 };
 
