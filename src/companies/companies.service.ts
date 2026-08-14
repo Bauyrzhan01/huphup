@@ -318,7 +318,16 @@ export class CompaniesService {
         owner: { select: { avatarUrl: true } },
         members: {
           include: {
-            user: { select: { id: true, fullName: true, email: true } },
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+                avatarUrl: true,
+                createdAt: true,
+              },
+            },
           },
           orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
         },
@@ -341,7 +350,16 @@ export class CompaniesService {
     return this.prisma.companyMember.findMany({
       where: { companyId: resolved.company.id },
       include: {
-        user: { select: { id: true, fullName: true, email: true } },
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+            createdAt: true,
+          },
+        },
       },
       orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
     });
