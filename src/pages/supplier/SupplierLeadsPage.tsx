@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi, leadsApi, offersApi } from '../../api';
@@ -34,17 +34,6 @@ export function SupplierLeadsPage() {
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const stats = useMemo(
-    () => ({
-      total: leads.length,
-      new: leads.filter((l) => l.status === 'NEW').length,
-      viewed: leads.filter((l) => l.status === 'VIEWED').length,
-      offered: leads.filter((l) => l.status === 'OFFERED').length,
-      unassigned: leads.filter((l) => !l.assigneeId).length,
-    }),
-    [leads],
-  );
 
   async function load() {
     const [list, company] = await Promise.all([
@@ -170,32 +159,6 @@ export function SupplierLeadsPage() {
   return (
     <SupplierLayout crumb={t('nav.newLeads')}>
       <div className="page leads-page">
-        <div className="page-head">
-          <div>
-            <h1>{t('supplier.leadsTitle')}</h1>
-            <p>{t('supplier.leadsSubtitle')}</p>
-          </div>
-        </div>
-
-        <div className="stat-grid leads-stats">
-          <div className="stat">
-            <small>{t('supplier.statTotal')}</small>
-            <b>{stats.total}</b>
-          </div>
-          <div className="stat">
-            <small>{t('supplier.statNew')}</small>
-            <b>{stats.new}</b>
-          </div>
-          <div className="stat">
-            <small>{t('supplier.statOffered')}</small>
-            <b>{stats.offered}</b>
-          </div>
-          <div className="stat">
-            <small>{t('supplier.statUnassigned')}</small>
-            <b>{stats.unassigned}</b>
-          </div>
-        </div>
-
         {error ? (
           <p className="notice" style={{ color: '#b45309' }}>
             {error}

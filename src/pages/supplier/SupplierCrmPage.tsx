@@ -80,7 +80,7 @@ export function SupplierCrmPage() {
 
   return (
     <SupplierLayout
-      crumb={t('supplier.crmCrumb')}
+      crumb={t('supplier.dealsTitle')}
       actions={
         <Link className="ghost" to="/supplier/leads">
           {t('supplier.newLeadsAction')}
@@ -88,46 +88,43 @@ export function SupplierCrmPage() {
       }
     >
       <div className="page crm-page">
-        <div className="crm-toolbar">
-          <h1>{t('supplier.dealsTitle')}</h1>
-          <div className="crm-filter-chips" role="tablist" aria-label={t('supplier.filterByManager')}>
-            <button
-              type="button"
-              className={`chip pick${filter === 'all' ? ' is-on' : ''}`}
-              onClick={() => setFilter('all')}
-            >
-              {t('supplier.filterAll')}
-            </button>
-            <button
-              type="button"
-              className={`chip pick${filter === 'inbox' ? ' is-on' : ''}`}
-              onClick={() => setFilter('inbox')}
-            >
-              {t('supplier.filterInbox', { count: inboxLeads.length })}
-            </button>
-            <button
-              type="button"
-              className={`chip pick${filter === 'mine' ? ' is-on' : ''}`}
-              onClick={() => setFilter('mine')}
-            >
-              {t('supplier.filterMine', { count: mineCount })}
-            </button>
-            {isOwner
-              ? members.map((m) => (
-                  <button
-                    key={m.user.id}
-                    type="button"
-                    className={`chip pick crm-member-chip${filter === m.user.id ? ' is-on' : ''}`}
-                    onClick={() => setFilter(m.user.id)}
-                  >
-                    <span
-                      className={`crm-member-online${isUserOnline(m.user.lastSeenAt) ? ' is-on' : ''}`}
-                    />
-                    {m.user.fullName}
-                  </button>
-                ))
-              : null}
-          </div>
+        <div className="crm-filter-chips" role="tablist" aria-label={t('supplier.filterByManager')}>
+          <button
+            type="button"
+            className={`chip pick${filter === 'all' ? ' is-on' : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            {t('supplier.filterAll')}
+          </button>
+          <button
+            type="button"
+            className={`chip pick${filter === 'inbox' ? ' is-on' : ''}`}
+            onClick={() => setFilter('inbox')}
+          >
+            {t('supplier.filterInbox', { count: inboxLeads.length })}
+          </button>
+          <button
+            type="button"
+            className={`chip pick${filter === 'mine' ? ' is-on' : ''}`}
+            onClick={() => setFilter('mine')}
+          >
+            {t('supplier.filterMine', { count: mineCount })}
+          </button>
+          {isOwner
+            ? members.map((m) => (
+                <button
+                  key={m.user.id}
+                  type="button"
+                  className={`chip pick crm-member-chip${filter === m.user.id ? ' is-on' : ''}`}
+                  onClick={() => setFilter(m.user.id)}
+                >
+                  <span
+                    className={`crm-member-online${isUserOnline(m.user.lastSeenAt) ? ' is-on' : ''}`}
+                  />
+                  {m.user.fullName}
+                </button>
+              ))
+            : null}
         </div>
 
         {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
