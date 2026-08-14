@@ -298,6 +298,7 @@ export function withRequiredSpecQuestions(
   }
 
   const next = questions.slice(0, 1);
+  const isReady = productKnown && next.length === 0;
   let assistantMessage = result.assistantMessage?.trim() ?? '';
   const dumped = compact(result.rawText);
   const echoed = dumped.length > 6 && compact(assistantMessage).includes(dumped);
@@ -309,17 +310,18 @@ export function withRequiredSpecQuestions(
     assistantMessage = isNotAProduct(first)
       ? 'Привет! Что нужно закупить — товар или услугу?'
       : 'Что нужно закупить — товар или услугу?';
+  } else if (isReady) {
+    assistantMessage =
+      'Собрал заявку. Можно проверить и опубликовать.';
   } else if (echoed || repeated || !assistantMessage) {
-    assistantMessage = next[0]?.question || 'Записал. Могу собрать заявку для поставщиков.';
-  }
-  if (!next.length && !assistantMessage) {
-    assistantMessage = 'Собрал заявку для поставщиков. Можно публиковать.';
+    assistantMessage =
+      next[0]?.question || 'Записал. Могу собрать заявку для поставщиков.';
   }
   return {
     ...result,
     items,
     questions: next,
     assistantMessage,
-    ready: productKnown && next.length === 0,
+    ready: isReady,
   };
 }
