@@ -55,6 +55,12 @@ export const usersApi = {
   me: () => api<User>('/users/me'),
   updateMe: (body: { fullName?: string; phone?: string }) =>
     api<User>('/users/me', { method: 'PATCH', body: JSON.stringify(body) }),
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.set('file', file);
+    return uploadApi<User>('/users/me/avatar', form);
+  },
+  removeAvatar: () => api<{ ok: boolean }>('/users/me/avatar', { method: 'DELETE' }),
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     api<{ ok: boolean }>('/users/me/password', {
       method: 'POST',
@@ -97,6 +103,12 @@ export const companiesApi = {
       body: JSON.stringify(body),
     }),
   get: (id: string) => api<Company>(`/companies/${id}`),
+  uploadLogo: (file: File) => {
+    const form = new FormData();
+    form.set('file', file);
+    return uploadApi<Company>('/companies/me/logo', form);
+  },
+  removeLogo: () => api<Company>('/companies/me/logo', { method: 'DELETE' }),
   products: (id: string, params?: { page?: number; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.page) q.set('page', String(params.page));
@@ -164,6 +176,21 @@ export const requestsApi = {
     api<AnalyzeResult>('/requests/analyze', {
       method: 'POST',
       body: JSON.stringify({ text }),
+    }),
+  clarify: (
+    text: string,
+    answers: Array<{ id: string; answer: string }>,
+    previous?: AnalyzeResult | null,
+    messages?: Array<{ role: string; content: string }>,
+  ) =>
+    api<AnalyzeResult>('/requests/analyze/clarify', {
+      method: 'POST',
+      body: JSON.stringify({
+        text,
+        answers,
+        previous: previous ?? undefined,
+        messages,
+      }),
     }),
   list: () => api<RequestItem[]>('/requests'),
   get: (id: string) => api<RequestItem>(`/requests/${id}`),
@@ -264,6 +291,12 @@ export const conversationsApi = {
       method: 'POST',
       body: JSON.stringify({ body }),
     }),
+  sendWithFile: (id: string, file: File, body?: string) => {
+    const form = new FormData();
+    form.set('file', file);
+    if (body?.trim()) form.set('body', body.trim());
+    return uploadApi<MessageItem>(`/conversations/${id}/messages/file`, form);
+  },
   subscribeStream: (
     conversationId: string,
     onMessage: (msg: MessageItem) => void,

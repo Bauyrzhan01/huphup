@@ -3,29 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { notificationsApi } from '../api';
 import { useAppLocale } from '../i18n/useAppLocale';
+import { useWorkspaceMode } from '../hooks/useWorkspaceMode';
+import { getNotificationHref } from '../utils/notificationNavigation';
 import type { NotificationItem } from '../types';
-
-function notificationHref(n: NotificationItem): string | null {
-  const p = n.payload;
-  if (!p) return null;
-  switch (n.type) {
-    case 'NEW_LEAD':
-      return '/supplier/leads';
-    case 'NEW_OFFER':
-      return p.requestId ? `/offers?requestId=${p.requestId}` : '/offers';
-    case 'OFFER_ACCEPTED':
-    case 'NEW_MESSAGE':
-      return p.conversationId
-        ? `/conversations?conversationId=${p.conversationId}`
-        : '/conversations';
-    default:
-      return null;
-  }
-}
 
 export function NotificationsBell() {
   const { t } = useTranslation();
   const { formatDateTime } = useAppLocale();
+  const { mode } = useWorkspaceMode();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -44,8 +29,17 @@ export function NotificationsBell() {
 
   useEffect(() => {
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 15000);
-    return () => window.clearInterval(timer);
+    function refreshOnVisible() {
+      if (document.visibilityState === 'visible') void refresh();
+    }
+    const timer = window.setInterval(refreshOnVisible, 30000);
+    window.addEventListener('focus', refreshOnVisible);
+    document.addEventListener('visibilitychange', refreshOnVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refreshOnVisible);
+      document.removeEventListener('visibilitychange', refreshOnVisible);
+    };
   }, []);
 
   useEffect(() => {
@@ -63,7 +57,7 @@ export function NotificationsBell() {
         prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)),
       );
     }
-    const href = notificationHref(n);
+    const href = getNotificationHref(n, mode);
     setOpen(false);
     if (href) navigate(href);
   }
@@ -100,7 +94,7 @@ export function NotificationsBell() {
               <p className="notif-empty">{t('notifications.empty')}</p>
             ) : (
               items.slice(0, 8).map((n) => {
-                const href = notificationHref(n);
+                const href = getNotificationHref(n, mode);
                 return (
                   <button
                     key={n.id}

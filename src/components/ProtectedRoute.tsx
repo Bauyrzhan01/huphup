@@ -8,7 +8,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (loading && !user) {
     return (
       <div className="home-shell">
         <div className="assist-note">{t('common.loading')}</div>

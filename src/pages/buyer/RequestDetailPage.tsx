@@ -199,7 +199,7 @@ export function RequestDetailPage() {
 
     >
 
-      <div className="page">
+      <div className="page request-detail-page">
 
         {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
 
@@ -211,7 +211,7 @@ export function RequestDetailPage() {
 
             {chatId ? (
 
-              <Link className="primary" to={`/conversations?conversationId=${chatId}`}>
+              <Link className="primary" to={`/conversations?workspace=buyer&conversationId=${chatId}`}>
 
                 {t('offers.openChat')}
 
@@ -522,6 +522,7 @@ export function RequestDetailPage() {
                           companyId={lead.company.id}
                           companyName={lead.company.name}
                           city={lead.company.city}
+                          avatarUrl={lead.company.avatarUrl}
                           score={lead.score}
                           highlightProductId={lead.productId}
                         />

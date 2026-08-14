@@ -11,6 +11,16 @@ const WORKSPACE_KEY = 'huphup_workspace';
 
 export type WorkspaceMode = 'buyer' | 'supplier';
 
+export function conversationsPath(
+  workspace: WorkspaceMode,
+  conversationId?: string | null,
+): string {
+  const params = new URLSearchParams();
+  params.set('workspace', workspace);
+  if (conversationId) params.set('conversationId', conversationId);
+  return `/conversations?${params.toString()}`;
+}
+
 function readStored(): WorkspaceMode {
   if (typeof window === 'undefined') return 'buyer';
   const v = localStorage.getItem(WORKSPACE_KEY);
@@ -44,11 +54,11 @@ function syncModeFromPath(pathname: string, search: string): WorkspaceMode | nul
     pathname.startsWith('/requests') ||
     pathname.startsWith('/offers') ||
     pathname.startsWith('/suppliers') ||
-    pathname.startsWith('/profile')
+    pathname.startsWith('/profile') ||
+    pathname.startsWith('/conversations')
   ) {
     return 'buyer';
   }
-  // Shared routes (e.g. /conversations) keep the last chosen workspace.
   return null;
 }
 

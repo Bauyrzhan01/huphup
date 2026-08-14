@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../api';
 import { resolveMediaUrl } from '../api/client';
+import { UserAvatar } from './UserAvatar';
 import type { PublicProduct } from '../types';
 
 type Props = {
   companyId: string;
   companyName: string;
   city?: string | null;
+  avatarUrl?: string | null;
   score?: number;
   reason?: string | null;
   highlightProductId?: string | null;
@@ -18,6 +20,7 @@ export function MatchedSupplierCard({
   companyId,
   companyName,
   city,
+  avatarUrl,
   score,
   reason,
   highlightProductId,
@@ -66,9 +69,11 @@ export function MatchedSupplierCard({
     <div className={`matched-supplier-card${open ? ' is-open' : ''}`}>
       <div className="matched-supplier-head">
         <div className="matched-supplier-info">
-          <div className="matched-supplier-logo" aria-hidden>
-            {companyName.slice(0, 2).toUpperCase()}
-          </div>
+          <UserAvatar
+            name={companyName}
+            avatarUrl={avatarUrl}
+            className="matched-supplier-logo"
+          />
           <div>
             <b>{companyName}</b>
             {city ? <div className="meta">{city}</div> : null}

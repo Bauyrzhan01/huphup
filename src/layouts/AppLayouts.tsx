@@ -5,17 +5,9 @@ import { companiesApi, notificationsApi, requestsApi } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { NotificationsBell } from '../components/NotificationsBell';
+import { UserAvatar } from '../components/UserAvatar';
 import { useMobileNav } from '../hooks/useMobileNav';
 import type { CompanyMember, NotificationItem, RequestItem } from '../types';
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 function LogoutButton() {
   const { t } = useTranslation();
@@ -141,7 +133,7 @@ export function BuyerLayout({
               <span className="ico">◉</span>
               {t('nav.suppliers')}
             </NavLink>
-            <NavLink to="/conversations" onClick={closeNav}>
+            <NavLink to="/conversations?workspace=buyer" onClick={closeNav}>
               <span className="ico">✉</span>
               {t('nav.chats')}
             </NavLink>
@@ -162,7 +154,10 @@ export function BuyerLayout({
           </div>
           <div className="side-bottom">
             <Link className="user-card" to="/profile" onClick={closeNav}>
-              <div className="avatar">{initials(user?.fullName ?? 'U')}</div>
+              <UserAvatar
+                name={user?.fullName ?? 'U'}
+                avatarUrl={user?.avatarUrl}
+              />
               <div>
                 <div className="user-name">{user?.fullName ?? t('common.empty')}</div>
                 <div className="user-role">
@@ -291,7 +286,7 @@ export function SupplierLayout({
             <NavLink to="/supplier/team" onClick={closeNav}>
               ▤ {t('nav.team')}
             </NavLink>
-            <NavLink to="/conversations" onClick={closeNav}>
+            <NavLink to="/conversations?workspace=supplier" onClick={closeNav}>
               ✉ {t('nav.chats')}
             </NavLink>
           </nav>
@@ -320,12 +315,15 @@ export function SupplierLayout({
             )}
           </div>
           <div className="side-bottom">
-            <Link className="user-card" to="/supplier/company" onClick={closeNav}>
-              <div className="avatar">{initials(companyName)}</div>
+            <Link className="user-card" to="/profile" onClick={closeNav}>
+              <UserAvatar
+                name={user?.fullName ?? companyName}
+                avatarUrl={user?.avatarUrl}
+              />
               <div>
-                <div className="user-name">{companyName}</div>
+                <div className="user-name">{user?.fullName ?? companyName}</div>
                 <div className="user-role">
-                  {t('nav.supplier')}
+                  {companyName}
                   {unread > 0 ? ` · ${t('common.unreadShort', { count: unread })}` : ''}
                 </div>
               </div>

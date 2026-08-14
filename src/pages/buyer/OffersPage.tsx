@@ -21,26 +21,35 @@ export function OffersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void Promise.all([requestsApi.list(), offersApi.mine()])
-      .then(([list, mine]) => {
+    const requestIdFromUrl = params.get('requestId') ?? '';
+    void Promise.all([
+      requestsApi.list(),
+      offersApi.mine(),
+      requestIdFromUrl ? offersApi.byRequest(requestIdFromUrl) : Promise.resolve([] as Offer[]),
+    ])
+      .then(([list, mine, initialOffers]) => {
+        const id = requestIdFromUrl || list[0]?.id || '';
         setRequests(list);
         setAllOffers(mine);
-        setSelectedId((prev) => prev || list[0]?.id || '');
+        setSelectedId(id);
+        if (requestIdFromUrl) setOffers(initialOffers);
       })
       .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
       .finally(() => setLoading(false));
-  }, [t]);
+  }, [t, params]);
 
   useEffect(() => {
     if (!selectedId) {
       setOffers([]);
       return;
     }
+    const requestIdFromUrl = params.get('requestId') ?? '';
+    if (requestIdFromUrl && selectedId === requestIdFromUrl) return;
     void offersApi
       .byRequest(selectedId)
       .then(setOffers)
       .catch(() => setOffers([]));
-  }, [selectedId]);
+  }, [selectedId, params]);
 
   const selected = useMemo(
     () => requests.find((r) => r.id === selectedId),
@@ -73,7 +82,7 @@ export function OffersPage() {
 
   return (
     <BuyerLayout crumb={t('offers.title')}>
-      <div className="page">
+      <div className="page offers-page-compact">
         <div className="page-head">
           <div>
             <h1>{t('offers.title')}</h1>
@@ -100,7 +109,7 @@ export function OffersPage() {
           <div className="notice notice-success">
             <span>{msg}</span>
             {chatId ? (
-              <Link className="primary" to={`/conversations?conversationId=${chatId}`}>
+              <Link className="primary" to={`/conversations?workspace=buyer&conversationId=${chatId}`}>
                 {t('offers.openChat')}
               </Link>
             ) : null}

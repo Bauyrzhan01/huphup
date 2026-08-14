@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { notificationsApi, usersApi } from '../../api';
+import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import { PasswordInput } from '../../components/PasswordInput';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useRoleLabel } from '../../i18n/useAppLocale';
+import { getNotificationHref } from '../../utils/notificationNavigation';
 import type { NotificationItem } from '../../types';
 
 function initials(name: string) {
@@ -17,23 +19,12 @@ function initials(name: string) {
     .join('');
 }
 
-function coverTone(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  const tones = [
-    'linear-gradient(135deg,#111 0%,#2d2d2d 48%,#0f8a68 140%)',
-    'linear-gradient(135deg,#1a1a1a 0%,#334 55%,#087a5e 130%)',
-    'linear-gradient(145deg,#0c0c0c 0%,#222 50%,#145c4a 125%)',
-    'linear-gradient(135deg,#171717 0%,#2a2a2a 45%,#1b6b55 135%)',
-  ];
-  return tones[hash % tones.length];
-}
-
 export function ProfilePage() {
   const { t } = useTranslation();
   const { formatDateTime } = useAppLocale();
   const roleLabel = useRoleLabel();
-  const { user, refresh } = useAuth();
+  const { user, refresh, patchUser } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -45,6 +36,9 @@ export function ProfilePage() {
   const [pwdMsg, setPwdMsg] = useState('');
   const [pwdError, setPwdError] = useState('');
   const [pwdSaving, setPwdSaving] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void notificationsApi.list().then(setNotifications).catch(() => setNotifications([]));
@@ -95,38 +89,120 @@ export function ProfilePage() {
     }
   }
 
+  async function onAvatarPick(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file || avatarSaving) return;
+    setAvatarSaving(true);
+    setError('');
+    setMsg('');
+    try {
+      const updated = await usersApi.uploadAvatar(file);
+      patchUser(updated);
+      setMsg(t('profile.avatarSaved'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setAvatarSaving(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  }
+
+  async function onAvatarRemove() {
+    if (avatarSaving || !user?.avatarUrl) return;
+    setAvatarSaving(true);
+    setError('');
+    setMsg('');
+    try {
+      await usersApi.removeAvatar();
+      if (user) patchUser({ ...user, avatarUrl: null });
+      setMsg(t('profile.avatarRemoved'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setAvatarSaving(false);
+    }
+  }
+
+  async function onNotificationClick(n: NotificationItem) {
+    if (!n.isRead) {
+      await notificationsApi.read(n.id).catch(() => undefined);
+      setNotifications((prev) =>
+        prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)),
+      );
+    }
+    const href = getNotificationHref(n);
+    if (href) navigate(href);
+  }
+
   const unread = notifications.filter((n) => !n.isRead).length;
   const displayName = fullName || user?.fullName || 'U';
-  const cover = useMemo(
-    () => coverTone(user?.id || displayName),
-    [user?.id, displayName],
-  );
+  const notificationPreviewCount = 4;
+  const hasMoreNotifications = notifications.length > notificationPreviewCount;
+  const visibleNotifications = showAllNotifications
+    ? notifications
+    : notifications.slice(0, notificationPreviewCount);
 
   return (
     <BuyerLayout crumb={t('profile.title')}>
       <div className="page account-profile-page">
-        <section className="supplier-profile-hero">
-          <div className="supplier-profile-cover" style={{ background: cover }} aria-hidden>
-            <div className="supplier-profile-cover-pattern" />
-          </div>
-          <div className="supplier-profile-hero-body">
-            <div className="supplier-profile-identity">
-              <div className="supplier-profile-avatar">{initials(displayName)}</div>
-              <div className="supplier-profile-title">
-                <div className="supplier-profile-name-row">
-                  <h1>{displayName}</h1>
-                  {user?.role ? (
-                    <span className="account-profile-role">{roleLabel(user.role)}</span>
-                  ) : null}
-                </div>
-                <p className="supplier-profile-sub">
-                  {[user?.email, user?.company?.name || user?.company?.city]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </p>
+        <section className="panel account-profile-hero">
+          <div className="account-profile-hero-main">
+            <div className="account-profile-avatar-block">
+              <div className="account-profile-avatar">
+                {user?.avatarUrl ? (
+                  <img
+                    src={resolveMediaUrl(user.avatarUrl)}
+                    alt={displayName}
+                    className="profile-avatar-image"
+                  />
+                ) : (
+                  initials(displayName)
+                )}
+              </div>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => void onAvatarPick(e.target.files)}
+              />
+              <div className="account-profile-avatar-actions">
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={avatarSaving}
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  {avatarSaving ? t('profile.avatarUploading') : t('profile.avatarUpload')}
+                </button>
+                {user?.avatarUrl ? (
+                  <button
+                    type="button"
+                    className="ghost"
+                    disabled={avatarSaving}
+                    onClick={() => void onAvatarRemove()}
+                  >
+                    {t('profile.avatarRemove')}
+                  </button>
+                ) : null}
               </div>
             </div>
-            <div className="supplier-profile-actions">
+
+            <div className="account-profile-hero-info">
+              <div className="account-profile-name-row">
+                <h1>{displayName}</h1>
+                {user?.role ? (
+                  <span className="account-profile-role">{roleLabel(user.role)}</span>
+                ) : null}
+              </div>
+              <p className="account-profile-sub">
+                {[user?.email, user?.company?.name || user?.company?.city]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            </div>
+
+            <div className="account-profile-hero-actions">
               {user?.role === 'SUPPLIER' || user?.company ? (
                 <Link className="ghost" to="/supplier/company">
                   {t('profile.goCompany')}
@@ -270,25 +346,21 @@ export function ProfilePage() {
               </span>
             ) : null}
           </div>
-          <div className="account-notif-list">
+          <div
+            className={`account-notif-list${showAllNotifications ? ' is-expanded' : ' is-collapsed'}`}
+          >
             {notifications.length === 0 ? (
               <div className="account-notif-empty">
                 <b>{t('profile.noNotifications')}</b>
                 <p>{t('profile.noNotificationsHint')}</p>
               </div>
             ) : (
-              notifications.map((n) => (
+              visibleNotifications.map((n) => (
                 <button
                   key={n.id}
                   type="button"
                   className={`account-notif-item${n.isRead ? '' : ' is-unread'}`}
-                  onClick={() =>
-                    void notificationsApi.read(n.id).then(() =>
-                      setNotifications((prev) =>
-                        prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)),
-                      ),
-                    )
-                  }
+                  onClick={() => void onNotificationClick(n)}
                 >
                   <div className="account-notif-body">
                     <b>{n.title}</b>
@@ -303,6 +375,19 @@ export function ProfilePage() {
               ))
             )}
           </div>
+          {hasMoreNotifications ? (
+            <div className="account-notif-toggle-wrap">
+              <button
+                type="button"
+                className="ghost account-notif-toggle"
+                onClick={() => setShowAllNotifications((prev) => !prev)}
+              >
+                {showAllNotifications
+                  ? t('profile.showLessNotifications')
+                  : t('profile.showAllNotifications', { count: notifications.length })}
+              </button>
+            </div>
+          ) : null}
         </section>
       </div>
     </BuyerLayout>

@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../../api';
 import { useAuth } from '../../auth/AuthContext';
+import { UserAvatar } from '../../components/UserAvatar';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import type { Company } from '../../types';
 
@@ -27,6 +28,8 @@ export function SupplierCompanyPage() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [logoSaving, setLogoSaving] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void companiesApi
@@ -42,6 +45,40 @@ export function SupplierCompanyPage() {
       .catch(() => setCompany(null))
       .finally(() => setLoading(false));
   }, []);
+
+  async function onLogoPick(files: FileList | null) {
+    const file = files?.[0];
+    if (!file || logoSaving || !company) return;
+    setError('');
+    setMsg('');
+    setLogoSaving(true);
+    try {
+      const updated = await companiesApi.uploadLogo(file);
+      setCompany(updated);
+      setMsg(t('supplier.logoSaved'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setLogoSaving(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  }
+
+  async function onLogoRemove() {
+    if (logoSaving || !company?.logoUrl) return;
+    setError('');
+    setMsg('');
+    setLogoSaving(true);
+    try {
+      const updated = await companiesApi.removeLogo();
+      setCompany(updated);
+      setMsg(t('supplier.logoRemoved'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setLogoSaving(false);
+    }
+  }
 
   function toggleCategory(cat: string) {
     setCategories((prev) =>
@@ -94,6 +131,50 @@ export function SupplierCompanyPage() {
         {!loading ? (
           <form className="panel" onSubmit={onSubmit}>
             <div className="form-grid">
+              {company ? (
+                <div className="field full">
+                  <label>{t('supplier.logo')}</label>
+                  <div className="account-profile-avatar-block">
+                    <UserAvatar
+                      name={name || company.name}
+                      avatarUrl={company.avatarUrl || company.logoUrl}
+                      className="supplier-directory-avatar"
+                    />
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => void onLogoPick(e.target.files)}
+                    />
+                    <div className="account-profile-avatar-actions">
+                      <button
+                        type="button"
+                        className="ghost"
+                        disabled={logoSaving}
+                        onClick={() => logoInputRef.current?.click()}
+                      >
+                        {logoSaving
+                          ? t('supplier.logoUploading')
+                          : t('supplier.logoUpload')}
+                      </button>
+                      {company.logoUrl ? (
+                        <button
+                          type="button"
+                          className="ghost"
+                          disabled={logoSaving}
+                          onClick={() => void onLogoRemove()}
+                        >
+                          {t('supplier.logoRemove')}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <p className="meta" style={{ margin: '8px 0 0' }}>
+                    {t('supplier.logoHint')}
+                  </p>
+                </div>
+              ) : null}
               <div className="field full">
                 <label>{t('supplier.companyName')}</label>
                 <input value={name} onChange={(e) => setName(e.target.value)} required />

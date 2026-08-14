@@ -2,13 +2,86 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { conversationsApi } from '../api';
+import { resolveMediaUrl } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { UserAvatar } from '../components/UserAvatar';
 import { useWorkspaceMode } from '../hooks/useWorkspaceMode';
 import { BuyerLayout, SupplierLayout } from '../layouts/AppLayouts';
 import { useAppLocale } from '../i18n/useAppLocale';
-import type { ConversationItem, MessageItem } from '../types';
+import type { ConversationItem, MessageAttachment, MessageItem } from '../types';
 
 type PreviewMessage = ConversationItem['messages'][number];
+
+function formatFileSize(bytes?: number | null) {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function isImageAttachment(att: MessageAttachment) {
+  if (att.mimeType?.startsWith('image/')) return true;
+  return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(att.fileName || att.fileUrl || '');
+}
+
+function ChatImage({ att, href }: { att: MessageAttachment; href: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className="bubble-attachment-file">
+        <span className="bubble-attachment-icon">🖼</span>
+        <span className="bubble-attachment-meta">
+          <b>{att.fileName}</b>
+        </span>
+      </a>
+    );
+  }
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="bubble-attachment-image-link">
+      <img
+        src={href}
+        alt={att.fileName}
+        className="bubble-attachment-image"
+        onError={() => setBroken(true)}
+      />
+    </a>
+  );
+}
+
+function MessageAttachments({
+  attachments,
+  mine,
+}: {
+  attachments: MessageAttachment[];
+  mine: boolean;
+}) {
+  if (!attachments.length) return null;
+  return (
+    <div className="bubble-attachments">
+      {attachments.map((att) => {
+        const href = resolveMediaUrl(att.fileUrl);
+        if (isImageAttachment(att)) {
+          return <ChatImage key={att.id} att={att} href={href} />;
+        }
+        return (
+          <a
+            key={att.id}
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className={`bubble-attachment-file${mine ? ' is-mine' : ''}`}
+          >
+            <span className="bubble-attachment-icon">📎</span>
+            <span className="bubble-attachment-meta">
+              <b>{att.fileName}</b>
+              {att.sizeBytes ? <small>{formatFileSize(att.sizeBytes)}</small> : null}
+            </span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 
 function previewToMessages(
   previews: PreviewMessage[],
@@ -28,6 +101,7 @@ function previewToMessages(
         fallbackSender?.fullName ??
         '—',
       role: fallbackSender?.role ?? 'SUPPLIER',
+      avatarUrl: fallbackSender?.avatarUrl ?? null,
     },
   }));
 }
@@ -49,7 +123,9 @@ export function ConversationsPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const stickToBottomRef = useRef(true);
 
   const conversationFromUrl = searchParams.get('conversationId');
@@ -92,10 +168,19 @@ export function ConversationsPage() {
       }
     }
     void loadList(true);
-    const timer = window.setInterval(() => void loadList(false), 8000);
+
+    function refreshOnVisible() {
+      if (document.visibilityState === 'visible') {
+        void loadList(false);
+      }
+    }
+
+    window.addEventListener('focus', refreshOnVisible);
+    document.addEventListener('visibilitychange', refreshOnVisible);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      window.removeEventListener('focus', refreshOnVisible);
+      document.removeEventListener('visibilitychange', refreshOnVisible);
     };
   }, [t, conversationFromUrl]);
 
@@ -108,10 +193,18 @@ export function ConversationsPage() {
 
     let cancelled = false;
     stickToBottomRef.current = true;
-    setMessagesLoading(true);
+
+    const convSnapshot = items.find((c) => c.id === selectedId);
+    if (convSnapshot?.messages?.length) {
+      setMessages(
+        previewToMessages(convSnapshot.messages, convSnapshot.participants, user?.id),
+      );
+      setMessagesLoading(false);
+    } else {
+      setMessagesLoading(true);
+    }
 
     async function loadMessages() {
-      const convSnapshot = items.find((c) => c.id === selectedId);
       try {
         const res = await conversationsApi.messages(selectedId, { limit: 50 });
         if (cancelled) return;
@@ -195,15 +288,21 @@ export function ConversationsPage() {
 
   async function send(e: FormEvent) {
     e.preventDefault();
-    if (!selectedId || !body.trim() || sending) return;
+    if (!selectedId || sending) return;
+    const text = body.trim();
+    if (!text && !pendingFile) return;
     setSending(true);
     try {
-      const msg = await conversationsApi.send(selectedId, body.trim());
+      const msg = pendingFile
+        ? await conversationsApi.sendWithFile(selectedId, pendingFile, text || undefined)
+        : await conversationsApi.send(selectedId, text);
       setMessages((prev) =>
         prev.some((m) => m.id === msg.id) ? prev : [...prev, msg],
       );
       stickToBottomRef.current = true;
       setBody('');
+      setPendingFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       setError('');
       const list = await conversationsApi.list();
       setItems(list);
@@ -213,6 +312,19 @@ export function ConversationsPage() {
       setSending(false);
     }
   }
+
+  function onPickFile(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError(t('conversations.fileTooLarge'));
+      return;
+    }
+    setError('');
+    setPendingFile(file);
+  }
+
+  const canSend = Boolean(body.trim() || pendingFile);
 
   return (
     <Layout
@@ -261,6 +373,7 @@ export function ConversationsPage() {
                 const withLabel =
                   others.map((p) => p.companyName ?? p.fullName).filter(Boolean)[0] ??
                   null;
+                const other = others[0];
                 return (
                   <button
                     key={c.id}
@@ -268,9 +381,11 @@ export function ConversationsPage() {
                     className={`chat-item${active ? ' is-active' : ''}`}
                     onClick={() => setSelectedId(c.id)}
                   >
-                    <div className="chat-avatar">
-                      {(withLabel ?? c.request?.title ?? 'HH').slice(0, 2).toUpperCase()}
-                    </div>
+                    <UserAvatar
+                      name={other?.fullName ?? withLabel ?? c.request?.title ?? 'HH'}
+                      avatarUrl={other?.avatarUrl}
+                      className="chat-avatar"
+                    />
                     <div className="chat-item-body">
                       <div className="chat-item-top">
                         <b>{c.request?.title ?? t('conversations.dialog')}</b>
@@ -357,63 +472,114 @@ export function ConversationsPage() {
                       </div>
                     ) : null}
 
-                    {messagesLoading ? (
-                      <div className="chat-thread-empty">
-                        <b>{t('common.loading')}</b>
-                      </div>
-                    ) : messages.length === 0 ? (
-                      <div className="chat-thread-empty">
-                        <b>{t('conversations.noMessagesYet')}</b>
-                        <p>{t('conversations.startHint')}</p>
-                        {counterpartLabel ? (
-                          <p className="meta">{t('conversations.partnerWaiting', { name: counterpartLabel })}</p>
-                        ) : null}
-                      </div>
-                    ) : (
-                      messages.map((m) => {
-                        const mine = m.sender.id === user?.id;
-                        return (
-                          <div
-                            key={m.id}
-                            className={`bubble-row${mine ? ' is-mine' : ''}`}
-                          >
-                            {!mine ? (
-                              <div className="bubble-avatar">
-                                {m.sender.fullName.slice(0, 1).toUpperCase()}
-                              </div>
-                            ) : null}
-                            <div className={`bubble${mine ? ' mine' : ''}`}>
+                    <div className="chat-messages">
+                      {messagesLoading ? (
+                        <div className="chat-thread-empty">
+                          <b>{t('common.loading')}</b>
+                        </div>
+                      ) : messages.length === 0 ? (
+                        <div className="chat-thread-empty">
+                          <b>{t('conversations.noMessagesYet')}</b>
+                          <p>{t('conversations.startHint')}</p>
+                          {counterpartLabel ? (
+                            <p className="meta">{t('conversations.partnerWaiting', { name: counterpartLabel })}</p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        messages.map((m) => {
+                          const mine = m.sender.id === user?.id;
+                          return (
+                            <div
+                              key={m.id}
+                              className={`bubble-row${mine ? ' is-mine' : ''}`}
+                            >
+                              {!mine ? (
+                                <UserAvatar
+                                  name={m.sender.fullName}
+                                  avatarUrl={m.sender.avatarUrl}
+                                  className="bubble-avatar"
+                                />
+                              ) : (
+                                <UserAvatar
+                                  name={user?.fullName ?? 'U'}
+                                  avatarUrl={user?.avatarUrl}
+                                  className="bubble-avatar"
+                                />
+                              )}
+                              <div className={`bubble${mine ? ' mine' : ''}`}>
                               {!mine ? (
                                 <div className="bubble-name">{m.sender.fullName}</div>
                               ) : null}
-                              <div className="bubble-text">{m.body}</div>
-                              <div className="bubble-time">
-                                {formatDateTime(m.createdAt)}
+                              {m.attachments?.length ? (
+                                <MessageAttachments attachments={m.attachments} mine={mine} />
+                              ) : null}
+                              {m.body ? <div className="bubble-text">{m.body}</div> : null}
+                                <div className="bubble-time">
+                                  {formatDateTime(m.createdAt)}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })
-                    )}
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
 
                   <form className="chat-composer" onSubmit={(e) => void send(e)}>
-                    <textarea
-                      value={body}
-                      onChange={(e) => setBody(e.target.value)}
-                      placeholder={t('conversations.placeholder')}
-                      rows={2}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          void send(e as unknown as FormEvent);
-                        }
-                      }}
-                      required
-                    />
-                    <button className="primary" disabled={sending || !body.trim()}>
-                      {sending ? t('conversations.sending') : t('common.send')}
-                    </button>
+                    {pendingFile ? (
+                      <div className="chat-pending-file">
+                        <span className="chat-pending-file-name">
+                          📎 {pendingFile.name}
+                          <small>{formatFileSize(pendingFile.size)}</small>
+                        </span>
+                        <button
+                          type="button"
+                          className="ghost chat-pending-file-remove"
+                          onClick={() => {
+                            setPendingFile(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                        >
+                          {t('conversations.removeFile')}
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className="chat-composer-row">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                        style={{ display: 'none' }}
+                        onChange={(e) => onPickFile(e.target.files)}
+                      />
+                      <button
+                        type="button"
+                        className="chat-attach-btn"
+                        aria-label={t('conversations.attachFile')}
+                        disabled={sending}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        📎
+                      </button>
+                      <textarea
+                        value={body}
+                        onChange={(e) => setBody(e.target.value)}
+                        placeholder={t('conversations.placeholder')}
+                        rows={1}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            void send(e as unknown as FormEvent);
+                          }
+                        }}
+                      />
+                      <button
+                        className="primary chat-composer-send"
+                        disabled={sending || !canSend}
+                      >
+                        {sending ? t('conversations.sending') : t('common.send')}
+                      </button>
+                    </div>
                   </form>
                 </>
               ) : (

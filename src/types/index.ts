@@ -45,6 +45,7 @@ export type User = {
   email: string;
   fullName: string;
   phone?: string | null;
+  avatarUrl?: string | null;
   role: UserRole;
   createdAt?: string;
   company?: Company | null;
@@ -70,7 +71,9 @@ export type Company = {
   rating: number;
   ownerId?: string;
   createdAt?: string;
-  owner?: { id: string; fullName: string; email?: string };
+  logoUrl?: string | null;
+  avatarUrl?: string | null;
+  owner?: { id: string; fullName: string; email?: string; avatarUrl?: string | null };
   members?: CompanyMember[];
   myRole?: CompanyMemberRole;
   isOwner?: boolean;
@@ -145,7 +148,7 @@ export type RequestItem = {
     score: number;
     status: string;
     productId?: string | null;
-    company: Pick<Company, 'id' | 'name' | 'city' | 'verified'>;
+    company: Pick<Company, 'id' | 'name' | 'city' | 'verified' | 'avatarUrl'>;
   }>;
 };
 
@@ -158,7 +161,7 @@ export type Offer = {
   comment?: string | null;
   status: string;
   createdAt?: string;
-  company: Pick<Company, 'id' | 'name' | 'city' | 'verified' | 'rating'>;
+  company: Pick<Company, 'id' | 'name' | 'city' | 'verified' | 'rating' | 'avatarUrl'>;
   request?: Pick<RequestItem, 'id' | 'code' | 'title' | 'city' | 'status'>;
 };
 
@@ -170,6 +173,21 @@ export type Lead = {
   request: RequestItem;
 };
 
+export type AnalyzeQuestion = {
+  id: string;
+  field: string;
+  question: string;
+  placeholder?: string;
+  options?: string[];
+};
+
+export type AnalyzeItem = {
+  name: string;
+  quantity: string;
+  specs: string;
+  city: string;
+};
+
 export type AnalyzeResult = {
   title: string;
   description: string;
@@ -178,6 +196,11 @@ export type AnalyzeResult = {
   quantity: string;
   deadline: string;
   rawText: string;
+  understanding?: string;
+  assistantMessage?: string;
+  items?: AnalyzeItem[];
+  questions?: AnalyzeQuestion[];
+  ready?: boolean;
 };
 
 export type NotificationPayload = {
@@ -206,6 +229,7 @@ export type PublishResult = {
     companyId: string;
     companyName: string;
     city: string | null;
+    avatarUrl?: string | null;
     score: number;
     reason?: string;
     productId?: string;
@@ -222,12 +246,23 @@ export type ConversationItem = {
     fullName: string;
     role: string;
     companyName: string | null;
+    avatarUrl?: string | null;
   }>;
+};
+
+export type MessageAttachment = {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  mimeType?: string | null;
+  sizeBytes?: number | null;
+  createdAt?: string;
 };
 
 export type MessageItem = {
   id: string;
   body: string;
   createdAt: string;
-  sender: { id: string; fullName: string; role: string };
+  sender: { id: string; fullName: string; role: string; avatarUrl?: string | null };
+  attachments?: MessageAttachment[];
 };

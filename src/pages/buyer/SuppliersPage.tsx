@@ -2,20 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../../api';
+import { UserAvatar } from '../../components/UserAvatar';
 import { BuyerLayout } from '../../layouts/AppLayouts';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import type { Company } from '../../types';
 
 const CITIES = ['', 'Алматы', 'Астана', 'Шымкент'];
 const PAGE_SIZE = 12;
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
-}
 
 function coverTone(seed: string) {
   let hash = 0;
@@ -36,18 +29,19 @@ export function SuppliersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [city, setCity] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     setPage(1);
-  }, [q, city]);
+  }, [debouncedQ, city]);
 
   useEffect(() => {
     setLoading(true);
     void companiesApi
-      .list({ q: q || undefined, city: city || undefined, page, limit: PAGE_SIZE })
+      .list({ q: debouncedQ || undefined, city: city || undefined, page, limit: PAGE_SIZE })
       .then((res) => {
         setItems(res.items);
         setTotalPages(res.totalPages);
@@ -55,7 +49,7 @@ export function SuppliersPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
       .finally(() => setLoading(false));
-  }, [q, city, page, t]);
+  }, [debouncedQ, city, page, t]);
 
   return (
     <BuyerLayout crumb={t('suppliers.title')}>
@@ -114,7 +108,11 @@ export function SuppliersPage() {
               />
               <div className="supplier-directory-body">
                 <div className="supplier-directory-top">
-                  <div className="supplier-directory-avatar">{initials(c.name)}</div>
+                  <UserAvatar
+                    name={c.name}
+                    avatarUrl={c.avatarUrl || c.logoUrl || c.owner?.avatarUrl}
+                    className="supplier-directory-avatar"
+                  />
                   <div className="supplier-directory-rating">
                     ★ {Number(c.rating).toFixed(1)}
                   </div>

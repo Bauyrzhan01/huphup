@@ -35,9 +35,13 @@ export function SupplierProductsPage() {
     setLoading(true);
     setError('');
     try {
-      await companiesApi.me();
+      const [, list] = await Promise.all([
+        companiesApi.me().catch(() => {
+          throw new Error('no-company');
+        }),
+        productsApi.mine(),
+      ]);
       setHasCompany(true);
-      const list = await productsApi.mine();
       setProducts(list);
     } catch {
       setHasCompany(false);

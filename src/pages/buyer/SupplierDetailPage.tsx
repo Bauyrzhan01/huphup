@@ -3,20 +3,12 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../../api';
 import { ProductCatalogCard } from '../../components/ProductCatalogCard';
+import { UserAvatar } from '../../components/UserAvatar';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import type { Company, PublicProduct } from '../../types';
 
 const PAGE_SIZE = 12;
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
-}
 
 function coverTone(seed: string) {
   let hash = 0;
@@ -90,7 +82,15 @@ export function SupplierDetailPage() {
               </div>
               <div className="supplier-profile-hero-body">
                 <div className="supplier-profile-identity">
-                  <div className="supplier-profile-avatar">{initials(company.name)}</div>
+                  <UserAvatar
+                    name={company.name}
+                    avatarUrl={
+                      company.avatarUrl ||
+                      company.logoUrl ||
+                      company.owner?.avatarUrl
+                    }
+                    className="supplier-profile-avatar"
+                  />
                   <div className="supplier-profile-title">
                     <div className="supplier-profile-name-row">
                       <h1>{company.name}</h1>
