@@ -9,6 +9,7 @@ import { MatchingService } from '../matching/matching.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { GeminiService } from '../gemini/gemini.service';
 import { withRequiredSpecQuestions, isNotAProduct } from './spec-questions';
+import { buildRequestDescription, normalizeRequestDescription } from './request-text.util';
 import {
   AnalyzeRequestDto,
   ClarifyRequestDto,
@@ -104,7 +105,11 @@ export class RequestsService {
     if (byId.get('quantity')) base.quantity = byId.get('quantity')!;
     if (byId.get('deadline')) base.deadline = byId.get('deadline')!;
 
-    const description = [text, extra].filter(Boolean).join('\n\n');
+    const description = normalizeRequestDescription(
+      base.title,
+      [text, extra].filter(Boolean).join('\n\n'),
+      text,
+    ) || buildRequestDescription(base);
     return {
       ...base,
       description,
@@ -116,12 +121,15 @@ export class RequestsService {
 
   async create(buyerId: string, dto: CreateRequestDto) {
     const code = await this.nextCode();
+    const description =
+      normalizeRequestDescription(dto.title, dto.description, dto.rawText) ||
+      buildRequestDescription(dto);
     return this.prisma.request.create({
       data: {
         code,
         buyerId,
         title: dto.title,
-        description: dto.description,
+        description: description || dto.description,
         category: dto.category,
         city: dto.city,
         quantity: dto.quantity,

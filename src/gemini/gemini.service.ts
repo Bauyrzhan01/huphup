@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  buildRequestDescription,
+  normalizeRequestDescription,
+} from '../requests/request-text.util';
 
 export type GeminiClarifyQuestion = {
   id: string;
@@ -272,9 +276,22 @@ ${JSON.stringify(catalog)}`;
 
     const ready = parsed.ready === true && questions.length === 0;
 
+    const title = String(parsed.title || text).slice(0, 120);
+    const rawDescription = String(parsed.description || text).slice(0, 4000);
+    const description =
+      normalizeRequestDescription(title, rawDescription, text) ||
+      buildRequestDescription({
+        title,
+        description: rawDescription,
+        category: String(parsed.category || 'Товары и материалы').slice(0, 80),
+        city: String(parsed.city || '').slice(0, 80),
+        quantity: String(parsed.quantity || '—').slice(0, 80),
+        deadline: String(parsed.deadline || 'Уточнить').slice(0, 80),
+      });
+
     return {
-      title: String(parsed.title || text).slice(0, 120),
-      description: String(parsed.description || text).slice(0, 4000),
+      title,
+      description,
       category: String(parsed.category || 'Товары и материалы').slice(0, 80),
       city: String(parsed.city || '').slice(0, 80),
       quantity: String(parsed.quantity || '—').slice(0, 80),
