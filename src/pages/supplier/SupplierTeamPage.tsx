@@ -12,7 +12,7 @@ import type { Company, CompanyMember, CompanyMemberRole } from '../../types';
 
 export function SupplierTeamPage() {
   const { t } = useTranslation();
-  const { formatDate } = useAppLocale();
+  const { formatDate, formatDateTime } = useAppLocale();
   const { user } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [members, setMembers] = useState<CompanyMember[]>([]);
