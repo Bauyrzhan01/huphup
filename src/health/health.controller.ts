@@ -27,6 +27,9 @@ export class HealthController {
       database,
       dbLatencyMs,
       time: new Date().toISOString(),
+      uptimeSec: Math.floor(process.uptime()),
+      memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+      nodeVersion: process.version,
     };
   }
 }
