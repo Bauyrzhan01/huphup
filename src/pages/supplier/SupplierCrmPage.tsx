@@ -1,51 +1,66 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { companiesApi, leadsApi } from '../../api';
-import { useAuth } from '../../auth/AuthContext';
-import { UserAvatar } from '../../components/UserAvatar';
-import { PresenceDot } from '../../components/PresenceDot';
+import { companiesApi, crmApi, leadsApi } from '../../api';
+import { CrmAnalyticsBar } from '../../components/crm/CrmAnalyticsBar';
+import { CrmKanbanBoard } from '../../components/crm/CrmKanbanBoard';
+import { CrmListView } from '../../components/crm/CrmListView';
 import { SupplierLayout } from '../../layouts/AppLayouts';
+import { useAuth } from '../../auth/AuthContext';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import { isUserOnline } from '../../utils/presence';
-import type { CompanyMember, Lead } from '../../types';
+import type { CompanyMember, CrmAnalytics, CrmStage, Lead } from '../../types';
 
 type AssigneeFilter = 'all' | 'inbox' | 'mine' | string;
+type ViewMode = 'kanban' | 'list';
 
-const STAGES = ['NEW', 'VIEWED', 'OFFERED', 'SKIPPED'] as const;
+const DEFAULT_STAGES: CrmStage[] = [
+  { id: 'NEW', status: 'NEW', label: 'Входящие', sortOrder: 0, color: '#3b82f6' },
+  { id: 'VIEWED', status: 'VIEWED', label: 'В работе', sortOrder: 1, color: '#8b5cf6' },
+  { id: 'OFFERED', status: 'OFFERED', label: 'КП отправлено', sortOrder: 2, color: '#f59e0b' },
+  { id: 'SKIPPED', status: 'SKIPPED', label: 'Пропущено', sortOrder: 3, color: '#9ca3af' },
+];
 
 export function SupplierCrmPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { formatDate } = useAppLocale();
+  const { formatDate, formatDateTime } = useAppLocale();
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [stages, setStages] = useState<CrmStage[]>(DEFAULT_STAGES);
+  const [analytics, setAnalytics] = useState<CrmAnalytics | null>(null);
   const [members, setMembers] = useState<CompanyMember[]>([]);
   const [isOwner, setIsOwner] = useState(false);
   const [filter, setFilter] = useState<AssigneeFilter>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const refresh = useCallback(async () => {
+    const [list, company, stageList, stats] = await Promise.all([
+      leadsApi.list(),
+      companiesApi.me().catch(() => null),
+      crmApi.stages().catch(() => DEFAULT_STAGES),
+      crmApi.analytics().catch(() => null),
+    ]);
+    setLeads(list);
+    setStages(stageList.length ? stageList : DEFAULT_STAGES);
+    setAnalytics(stats);
+    if (company) {
+      setIsOwner(Boolean(company.isOwner));
+      setMembers(company.members ?? []);
+    }
+  }, []);
+
   useEffect(() => {
-    void Promise.all([leadsApi.list(), companiesApi.me().catch(() => null)])
-      .then(([list, company]) => {
-        setLeads(list);
-        if (company) {
-          setIsOwner(Boolean(company.isOwner));
-          setMembers(company.members ?? []);
-        }
-      })
+    void refresh()
       .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
       .finally(() => setLoading(false));
-
     const timer = window.setInterval(() => {
-      void leadsApi.list().then(setLeads).catch(() => undefined);
-      void companiesApi
-        .me()
-        .then((company) => setMembers(company.members ?? []))
-        .catch(() => undefined);
+      void refresh().catch(() => undefined);
     }, 40_000);
     return () => window.clearInterval(timer);
-  }, [t]);
+  }, [refresh, t]);
 
   const inboxLeads = useMemo(
     () => leads.filter((l) => l.status === 'NEW' && !l.assigneeId),
@@ -59,119 +74,161 @@ export function SupplierCrmPage() {
     return leads.filter((l) => l.assigneeId === filter);
   }, [leads, filter, user?.id, inboxLeads]);
 
-  const columns = useMemo(
-    () => ({
-      NEW: filtered.filter((l) => l.status === 'NEW'),
-      VIEWED: filtered.filter((l) => l.status === 'VIEWED'),
-      OFFERED: filtered.filter((l) => l.status === 'OFFERED'),
-      SKIPPED: filtered.filter((l) => l.status === 'SKIPPED'),
-    }),
-    [filtered],
+  const columns = useMemo(() => {
+    const map: Record<string, Lead[]> = {};
+    for (const stage of stages) {
+      map[stage.status] = filtered.filter((l) => l.status === stage.status);
+    }
+    return map;
+  }, [filtered, stages]);
+
+  const stageLabel = useCallback(
+    (status: string) =>
+      stages.find((s) => s.status === status)?.label ?? status,
+    [stages],
   );
 
-  const columnTitles = {
-    NEW: t('supplier.colNew'),
-    VIEWED: t('supplier.colViewed'),
-    OFFERED: t('supplier.colOffered'),
-    SKIPPED: t('supplier.colSkipped'),
-  } as const;
-
   const mineCount = leads.filter((l) => l.assigneeId === user?.id).length;
+
+  async function onDrop(leadId: string, status: string) {
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead || lead.status === status) return;
+    try {
+      await leadsApi.updateStatus(leadId, status);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    }
+  }
+
+  async function bulkSkip() {
+    if (!selectedIds.length) return;
+    try {
+      await leadsApi.bulk({ ids: selectedIds, action: 'skip' });
+      setSelectedIds([]);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) =>
+      prev.length === filtered.length ? [] : filtered.map((l) => l.id),
+    );
+  }
 
   return (
     <SupplierLayout
       crumb={t('supplier.dealsTitle')}
       actions={
-        <Link className="ghost" to="/supplier/leads">
-          {t('supplier.newLeadsAction')}
-        </Link>
+        <div className="crm-head-actions">
+          {isOwner ? (
+            <Link className="ghost" to="/supplier/crm/settings">
+              {t('supplier.crmSettings')}
+            </Link>
+          ) : null}
+          <Link className="ghost" to="/supplier/leads">
+            {t('supplier.newLeadsAction')}
+          </Link>
+        </div>
       }
     >
       <div className="page crm-page">
-        <div className="crm-filter-chips" role="tablist" aria-label={t('supplier.filterByManager')}>
-          <button
-            type="button"
-            className={`chip pick${filter === 'all' ? ' is-on' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            {t('supplier.filterAll')}
-          </button>
-          <button
-            type="button"
-            className={`chip pick${filter === 'inbox' ? ' is-on' : ''}`}
-            onClick={() => setFilter('inbox')}
-          >
-            {t('supplier.filterInbox', { count: inboxLeads.length })}
-          </button>
-          <button
-            type="button"
-            className={`chip pick${filter === 'mine' ? ' is-on' : ''}`}
-            onClick={() => setFilter('mine')}
-          >
-            {t('supplier.filterMine', { count: mineCount })}
-          </button>
-          {isOwner
-            ? members.map((m) => (
-                <button
-                  key={m.user.id}
-                  type="button"
-                  className={`chip pick crm-member-chip${filter === m.user.id ? ' is-on' : ''}`}
-                  onClick={() => setFilter(m.user.id)}
-                >
-                  <span
-                    className={`crm-member-online${isUserOnline(m.user.lastSeenAt) ? ' is-on' : ''}`}
-                  />
-                  {m.user.fullName}
-                </button>
-              ))
-            : null}
+        <CrmAnalyticsBar analytics={analytics} />
+
+        <div className="crm-toolbar">
+          <div className="crm-filter-chips" role="tablist" aria-label={t('supplier.filterByManager')}>
+            <button
+              type="button"
+              className={`chip pick${filter === 'all' ? ' is-on' : ''}`}
+              onClick={() => setFilter('all')}
+            >
+              {t('supplier.filterAll')}
+            </button>
+            <button
+              type="button"
+              className={`chip pick${filter === 'inbox' ? ' is-on' : ''}`}
+              onClick={() => setFilter('inbox')}
+            >
+              {t('supplier.filterInbox', { count: inboxLeads.length })}
+            </button>
+            <button
+              type="button"
+              className={`chip pick${filter === 'mine' ? ' is-on' : ''}`}
+              onClick={() => setFilter('mine')}
+            >
+              {t('supplier.filterMine', { count: mineCount })}
+            </button>
+            {isOwner
+              ? members.map((m) => (
+                  <button
+                    key={m.user.id}
+                    type="button"
+                    className={`chip pick crm-member-chip${filter === m.user.id ? ' is-on' : ''}`}
+                    onClick={() => setFilter(m.user.id)}
+                  >
+                    <span
+                      className={`crm-member-online${isUserOnline(m.user.lastSeenAt) ? ' is-on' : ''}`}
+                    />
+                    {m.user.fullName}
+                  </button>
+                ))
+              : null}
+          </div>
+          <div className="crm-view-toggle">
+            <button
+              type="button"
+              className={`chip pick${viewMode === 'kanban' ? ' is-on' : ''}`}
+              onClick={() => setViewMode('kanban')}
+            >
+              {t('supplier.viewKanban')}
+            </button>
+            <button
+              type="button"
+              className={`chip pick${viewMode === 'list' ? ' is-on' : ''}`}
+              onClick={() => setViewMode('list')}
+            >
+              {t('supplier.viewList')}
+            </button>
+          </div>
         </div>
+
+        {viewMode === 'list' && selectedIds.length > 0 ? (
+          <div className="crm-bulk-bar">
+            <span>{t('supplier.selectedCount', { count: selectedIds.length })}</span>
+            <button type="button" className="ghost" onClick={() => void bulkSkip()}>
+              {t('supplier.bulkSkip')}
+            </button>
+          </div>
+        ) : null}
 
         {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
 
-        <div className="kanban kanban-crm">
-          {STAGES.map((key) => (
-            <div key={key} className="column crm-col">
-              <div className="column-head">
-                <b>{columnTitles[key]}</b>
-                <span className="count">{columns[key].length}</span>
-              </div>
-              {columns[key].map((lead) => (
-                <Link
-                  key={lead.id}
-                  className="deal deal-link"
-                  to={`/supplier/leads?leadId=${lead.id}`}
-                >
-                  <div className="deal-top">
-                    <span className="lead-code">{lead.request.code}</span>
-                    <span className="deal-date">{formatDate(lead.createdAt)}</span>
-                  </div>
-                  <div className="deal-title">{lead.request.title}</div>
-                  <div className="deal-assignee">
-                    {lead.assignee ? (
-                      <>
-                        <span className="deal-assignee-avatar-wrap">
-                          <UserAvatar
-                            name={lead.assignee.fullName}
-                            avatarUrl={lead.assignee.avatarUrl}
-                            className="deal-assignee-avatar"
-                          />
-                          <PresenceDot lastSeenAt={lead.assignee.lastSeenAt} />
-                        </span>
-                        <span>{lead.assignee.fullName}</span>
-                      </>
-                    ) : (
-                      <span className="deal-unassigned">{t('supplier.needsManager')}</span>
-                    )}
-                  </div>
-                </Link>
-              ))}
-              {!loading && columns[key].length === 0 ? (
-                <p className="kanban-empty">{t('supplier.kanbanEmpty')}</p>
-              ) : null}
-            </div>
-          ))}
-        </div>
+        {viewMode === 'kanban' ? (
+          <CrmKanbanBoard
+            stages={stages}
+            columns={columns}
+            loading={loading}
+            onDrop={(id, status) => void onDrop(id, status)}
+            formatDate={formatDate}
+          />
+        ) : (
+          <CrmListView
+            leads={filtered}
+            selectedIds={selectedIds}
+            onToggle={toggleSelect}
+            onToggleAll={toggleSelectAll}
+            formatDateTime={formatDateTime}
+            stageLabel={stageLabel}
+          />
+        )}
       </div>
     </SupplierLayout>
   );

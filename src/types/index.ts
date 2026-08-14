@@ -184,17 +184,72 @@ export type LeadUser = {
   lastSeenAt?: string | null;
 };
 
+export type LeadIdleState = 'idle' | 'unassigned' | 'overdue' | null;
+
 export type Lead = {
   id: string;
   score: number;
   status: string;
+  matchReason?: string | null;
   createdAt: string;
   claimedAt?: string | null;
   assigneeId?: string | null;
   lastActorId?: string | null;
+  nextStepAt?: string | null;
+  nextStepText?: string | null;
+  statusChangedAt?: string;
+  idleState?: LeadIdleState;
   assignee?: LeadUser | null;
   lastActor?: LeadUser | null;
   request: RequestItem;
+};
+
+export type LeadActivity = {
+  id: string;
+  type: string;
+  message: string;
+  createdAt: string;
+  meta?: Record<string, unknown> | null;
+  user?: LeadUser | null;
+};
+
+export type LeadNote = {
+  id: string;
+  body: string;
+  createdAt: string;
+  user: LeadUser;
+};
+
+export type CrmStage = {
+  id: string;
+  status: string;
+  label: string;
+  sortOrder: number;
+  color?: string | null;
+};
+
+export type CrmAutomationRule = {
+  id: string;
+  trigger: string;
+  action: string;
+  enabled: boolean;
+  config?: Record<string, unknown>;
+};
+
+export type CrmAnalytics = {
+  total: number;
+  byStatus: Record<string, number>;
+  conversionRate: number;
+  viewRate: number;
+  avgResponseHours: number | null;
+  idleCount: number;
+  overdueCount: number;
+  byAssignee: Array<{
+    userId: string;
+    name: string;
+    total: number;
+    offered: number;
+  }>;
 };
 
 export type AnalyzeQuestion = {

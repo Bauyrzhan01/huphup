@@ -866,6 +866,10 @@ body.mobile-nav-open{overflow:hidden}
 .kanban-crm{grid-template-columns:repeat(4,minmax(0,1fr));align-items:start;gap:8px;padding-bottom:8px}
 .kanban-crm .column{min-height:0;padding:8px;min-height:unset;border-radius:12px}
 .crm-page{padding:10px 16px 20px}
+.crm-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.crm-head-actions{display:flex;gap:8px;align-items:center}
+.lead-note-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+.lead-note-form{display:flex;flex-direction:column;gap:6px}
 .crm-filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
 .crm-filter-chips .chip{padding:4px 8px;font-size:11px}
 .crm-member-chip{display:inline-flex;align-items:center;gap:5px}
@@ -2000,3 +2004,60 @@ body.mobile-nav-open{overflow:hidden}
   font-size:13px;
 }
 .home-chat-error p{margin:0}
+
+/* CRM enhancements */
+.crm-analytics-bar{
+  display:flex;flex-wrap:wrap;gap:10px;margin:0 0 12px;padding:10px 12px;
+  background:#fafafa;border:1px solid var(--border);border-radius:12px;
+}
+.crm-analytics-bar>div{flex:1;min-width:100px}
+.crm-analytics-bar b{display:block;font-size:18px;line-height:1.2}
+.crm-analytics-bar small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.crm-view-toggle{display:flex;gap:6px;margin-left:auto}
+.crm-view-toggle button{padding:5px 10px;font-size:12px;border-radius:8px}
+.crm-view-toggle button.is-active{background:#111;color:#fff;border-color:#111}
+.crm-bulk-bar{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 0 10px;
+  background:#fff6e8;border:1px solid #f0d9a8;border-radius:10px;font-size:13px;
+}
+.kanban-dnd .deal-draggable{cursor:grab}
+.kanban-dnd .deal-draggable:active{cursor:grabbing}
+.kanban-dnd .column.crm-col.drag-over{outline:2px dashed #3b82f6;outline-offset:-2px}
+.deal-link-inner{display:block;color:inherit;text-decoration:none;padding:inherit}
+.deal-idle-badge{
+  display:inline-block;font-size:10px;font-weight:650;padding:2px 6px;border-radius:6px;margin-bottom:4px;
+}
+.deal-idle-badge.is-idle{background:#fef3c7;color:#92400e}
+.deal-idle-badge.is-overdue{background:#fee2e2;color:#991b1b}
+.deal-idle-badge.is-unassigned{background:#dbeafe;color:#1e40af}
+.deal-match-reason,.lead-match-reason{font-size:11px;color:var(--muted);margin:4px 0 0;line-height:1.35}
+.deal-next-step{font-size:11px;color:#555;margin:4px 0 0}
+.crm-list-view{overflow-x:auto;margin-top:8px}
+.crm-list-table{width:100%;border-collapse:collapse;font-size:13px}
+.crm-list-table th,.crm-list-table td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
+.crm-list-table tr.is-idle{background:#fffbeb}
+.crm-list-table tr.is-overdue{background:#fef2f2}
+.crm-list-table tr.is-unassigned{background:#eff6ff}
+.lead-crm-side{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.lead-timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.lead-timeline-item{display:flex;gap:10px;align-items:flex-start}
+.lead-timeline-dot{
+  width:8px;height:8px;border-radius:50%;background:#3b82f6;margin-top:6px;flex-shrink:0;
+}
+.lead-timeline-body{flex:1;min-width:0}
+.lead-timeline-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.lead-timeline-body p{margin:4px 0 0;font-size:13px}
+.lead-notes-panel,.lead-next-step-panel{display:flex;flex-direction:column;gap:8px}
+.lead-notes-panel h4,.lead-next-step-panel h4{margin:0 0 4px;font-size:13px}
+.lead-notes-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto}
+.lead-notes-list li{padding:8px;background:#fafafa;border-radius:8px;font-size:13px}
+.crm-stages-editor{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.crm-stage-row{display:flex;align-items:center;gap:8px}
+.crm-stage-row input[type="text"]{flex:1}
+.crm-stage-row input[type="color"]{width:40px;height:32px;padding:2px;border:none;background:none}
+.crm-automation-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.crm-automation-list label{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+@media(max-width:900px){
+  .crm-analytics-bar>div{min-width:80px}
+  .crm-view-toggle{width:100%;margin-left:0}
+}

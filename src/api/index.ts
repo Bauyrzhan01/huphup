@@ -6,9 +6,14 @@ import type {
   CompanyMember,
   CompanyProductsResponse,
   ConversationItem,
+  CrmAnalytics,
+  CrmAutomationRule,
+  CrmStage,
   InviteCreated,
   InvitePreview,
   Lead,
+  LeadActivity,
+  LeadNote,
   MessageItem,
   MessagesPageResponse,
   NotificationItem,
@@ -264,6 +269,49 @@ export const leadsApi = {
       body: JSON.stringify({ assigneeId }),
     }),
   skip: (id: string) => api<Lead>(`/leads/${id}/skip`, { method: 'POST' }),
+  updateStatus: (id: string, status: string) =>
+    api<Lead>(`/leads/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+  setNextStep: (id: string, body: { text?: string; at?: string }) =>
+    api<Lead>(`/leads/${id}/next-step`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  activities: (id: string) => api<LeadActivity[]>(`/leads/${id}/activities`),
+  notes: (id: string) => api<LeadNote[]>(`/leads/${id}/notes`),
+  addNote: (id: string, body: string) =>
+    api<LeadNote>(`/leads/${id}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+  bulk: (payload: {
+    ids: string[];
+    action: 'skip' | 'reassign' | 'status';
+    assigneeId?: string;
+    status?: string;
+  }) =>
+    api<Lead[]>('/leads/bulk', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+};
+
+export const crmApi = {
+  stages: () => api<CrmStage[]>('/crm/stages'),
+  updateStages: (stages: Array<{ status: string; label: string; sortOrder: number; color?: string }>) =>
+    api<CrmStage[]>('/crm/stages', {
+      method: 'PUT',
+      body: JSON.stringify({ stages }),
+    }),
+  automation: () => api<CrmAutomationRule[]>('/crm/automation'),
+  updateAutomation: (rules: Array<{ id: string; enabled: boolean }>) =>
+    api<CrmAutomationRule[]>('/crm/automation', {
+      method: 'PUT',
+      body: JSON.stringify({ rules }),
+    }),
+  analytics: () => api<CrmAnalytics>('/crm/analytics'),
 };
 
 export const notificationsApi = {

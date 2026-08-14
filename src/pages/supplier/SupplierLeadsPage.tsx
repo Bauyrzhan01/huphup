@@ -8,9 +8,12 @@ import { useAuth } from '../../auth/AuthContext';
 import { AppIcon } from '../../components/AppIcon';
 import { UserAvatar } from '../../components/UserAvatar';
 import { PresenceDot } from '../../components/PresenceDot';
+import { LeadActivityTimeline } from '../../components/crm/LeadActivityTimeline';
+import { LeadNotesPanel } from '../../components/crm/LeadNotesPanel';
+import { LeadNextStepPanel } from '../../components/crm/LeadNextStepPanel';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
-import type { CompanyMember, Lead } from '../../types';
+import type { CompanyMember, Lead, LeadActivity, LeadNote } from '../../types';
 
 function scoreTone(score: number) {
   if (score >= 85) return 'high';
@@ -36,6 +39,9 @@ export function SupplierLeadsPage() {
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [activities, setActivities] = useState<LeadActivity[]>([]);
+  const [notes, setNotes] = useState<LeadNote[]>([]);
+  const [crmBusy, setCrmBusy] = useState(false);
 
   async function load() {
     const [list, company] = await Promise.all([
@@ -59,6 +65,35 @@ export function SupplierLeadsPage() {
       setError(err instanceof Error ? err.message : t('supplier.loadLeadsError')),
     );
   }, [t]);
+
+  useEffect(() => {
+    if (!selected?.id) {
+      setActivities([]);
+      setNotes([]);
+      return;
+    }
+    void Promise.all([
+      leadsApi.activities(selected.id),
+      leadsApi.notes(selected.id),
+    ])
+      .then(([a, n]) => {
+        setActivities(a);
+        setNotes(n);
+      })
+      .catch(() => {
+        setActivities([]);
+        setNotes([]);
+      });
+  }, [selected?.id]);
+
+  async function reloadCrmData(leadId: string) {
+    const [a, n] = await Promise.all([
+      leadsApi.activities(leadId),
+      leadsApi.notes(leadId),
+    ]);
+    setActivities(a);
+    setNotes(n);
+  }
 
   useEffect(() => {
     if (!leadFromUrl || leads.length === 0) return;
@@ -249,6 +284,9 @@ export function SupplierLeadsPage() {
                       </div>
                       <h2>{req.title}</h2>
                       <p className="lead-hero-desc">{req.description}</p>
+                      {selected.matchReason ? (
+                        <p className="meta lead-match-reason">{selected.matchReason}</p>
+                      ) : null}
                     </div>
                     <div className={`match-meter score-${scoreTone(selected.score)}`}>
                       <div className="match-meter-value">
@@ -373,6 +411,37 @@ export function SupplierLeadsPage() {
                       </p>
                     ) : null}
                   </div>
+                </div>
+
+                <div className="panel lead-crm-side">
+                  <LeadNextStepPanel
+                    lead={selected}
+                    busy={crmBusy}
+                    onSave={async (text, at) => {
+                      setCrmBusy(true);
+                      try {
+                        await leadsApi.setNextStep(selected.id, { text, at: at || undefined });
+                        await load();
+                        await reloadCrmData(selected.id);
+                      } finally {
+                        setCrmBusy(false);
+                      }
+                    }}
+                  />
+                  <LeadNotesPanel
+                    notes={notes}
+                    busy={crmBusy}
+                    onAdd={async (body) => {
+                      setCrmBusy(true);
+                      try {
+                        await leadsApi.addNote(selected.id, body);
+                        await reloadCrmData(selected.id);
+                      } finally {
+                        setCrmBusy(false);
+                      }
+                    }}
+                  />
+                  <LeadActivityTimeline items={activities} />
                 </div>
 
                 <div className="panel offer-compose">

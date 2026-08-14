@@ -18,6 +18,7 @@ import { SuppliersPage } from './pages/buyer/SuppliersPage';
 import { ConversationsPage } from './pages/ConversationsPage';
 import { SupplierCompanyPage } from './pages/supplier/SupplierCompanyPage';
 import { SupplierCrmPage } from './pages/supplier/SupplierCrmPage';
+import { SupplierCrmSettingsPage } from './pages/supplier/SupplierCrmSettingsPage';
 import { SupplierOffersPage } from './pages/supplier/SupplierOffersPage';
 import { SupplierLeadsPage } from './pages/supplier/SupplierLeadsPage';
 import { SupplierProductsPage } from './pages/supplier/SupplierProductsPage';
@@ -119,6 +120,14 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/supplier/crm/settings"
+          element={
+            <ProtectedRoute>
+              <SupplierCrmSettingsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/supplier"
           element={
