@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { companiesApi } from '../../api';
@@ -9,18 +9,6 @@ import { useAppLocale } from '../../i18n/useAppLocale';
 import type { Company, PublicProduct } from '../../types';
 
 const PAGE_SIZE = 12;
-
-function coverTone(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  const tones = [
-    'linear-gradient(135deg,#111 0%,#2d2d2d 48%,#0f8a68 140%)',
-    'linear-gradient(135deg,#1a1a1a 0%,#334 55%,#087a5e 130%)',
-    'linear-gradient(145deg,#0c0c0c 0%,#222 50%,#145c4a 125%)',
-    'linear-gradient(135deg,#171717 0%,#2a2a2a 45%,#1b6b55 135%)',
-  ];
-  return tones[hash % tones.length];
-}
 
 export function SupplierDetailPage() {
   const { t } = useTranslation();
@@ -58,10 +46,6 @@ export function SupplierDetailPage() {
   }, [id, page, t]);
 
   const rating = company ? Number(company.rating) : 0;
-  const cover = useMemo(
-    () => (company ? coverTone(company.id || company.name) : coverTone('huphup')),
-    [company],
-  );
 
   return (
     <BuyerLayout crumb={t('suppliers.title')}>
@@ -77,9 +61,6 @@ export function SupplierDetailPage() {
         {company ? (
           <>
             <section className="supplier-profile-hero">
-              <div className="supplier-profile-cover" style={{ background: cover }} aria-hidden>
-                <div className="supplier-profile-cover-pattern" />
-              </div>
               <div className="supplier-profile-hero-body">
                 <div className="supplier-profile-identity">
                   <UserAvatar
