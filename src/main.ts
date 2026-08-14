@@ -29,7 +29,18 @@ async function bootstrap() {
     .filter(Boolean);
 
   app.enableCors({
-    origin: origins.includes('*') ? true : origins,
+    origin: (origin, callback) => {
+      if (!origin || origins.includes('*')) {
+        callback(null, true);
+        return;
+      }
+      const allowed =
+        origins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1');
+      callback(null, allowed);
+    },
     credentials: true,
   });
 

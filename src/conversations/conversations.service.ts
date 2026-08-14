@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -7,6 +8,26 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ChatEventsService } from './chat-events.service';
 import { MessagesQueryDto } from '../common/dto/pagination.dto';
+import { StorageService } from '../storage/storage.service';
+
+const MAX_CHAT_FILE_BYTES = 10 * 1024 * 1024;
+
+const EXT_MIME: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  bmp: 'image/bmp',
+  heic: 'image/heic',
+  heif: 'image/heif',
+};
+
+function guessMimeType(reported: string | undefined, fileName: string) {
+  if (reported && reported !== 'application/octet-stream') return reported;
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+  return EXT_MIME[ext] || reported || 'application/octet-stream';
+}
 
 @Injectable()
 export class ConversationsService {
@@ -14,7 +35,23 @@ export class ConversationsService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly chatEvents: ChatEventsService,
+    private readonly storage: StorageService,
   ) {}
+
+  private readonly messageInclude = {
+    sender: { select: { id: true, fullName: true, role: true, avatarUrl: true } },
+    attachments: {
+      select: {
+        id: true,
+        fileName: true,
+        fileUrl: true,
+        mimeType: true,
+        sizeBytes: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' as const },
+    },
+  } as const;
 
   async ensureForAcceptedOffer(input: {
     requestId: string;
@@ -69,6 +106,7 @@ export class ConversationsService {
                 id: true,
                 fullName: true,
                 role: true,
+                avatarUrl: true,
                 company: { select: { id: true, name: true } },
                 companyMembers: {
                   take: 1,
@@ -92,6 +130,7 @@ export class ConversationsService {
         id: m.user.id,
         fullName: m.user.fullName,
         role: m.user.role,
+        avatarUrl: m.user.avatarUrl,
         companyName:
           m.user.company?.name ??
           m.user.companyMembers[0]?.company.name ??
@@ -134,9 +173,7 @@ export class ConversationsService {
       where,
       orderBy,
       take: limit + 1,
-      include: {
-        sender: { select: { id: true, fullName: true, role: true } },
-      },
+      include: this.messageInclude,
     });
 
     const hasMore = rows.length > limit;
@@ -148,12 +185,84 @@ export class ConversationsService {
   }
 
   async sendMessage(userId: string, conversationId: string, body: string) {
+    const trimmed = body.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Message body is required');
+    }
+    return this.createMessage(userId, conversationId, {
+      body: trimmed,
+    });
+  }
+
+  async sendMessageWithFile(
+    userId: string,
+    conversationId: string,
+    file: Express.Multer.File | undefined,
+    body?: string,
+  ) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('File is required');
+    }
+    if (file.size > MAX_CHAT_FILE_BYTES) {
+      throw new BadRequestException('File exceeds 10 MB limit');
+    }
+
+    const mimeType = guessMimeType(file.mimetype, file.originalname);
+
+    const uploaded = await this.storage.upload({
+      buffer: file.buffer,
+      fileName: file.originalname,
+      mimeType,
+      folder: `chat/${conversationId}`,
+    });
+
+    return this.createMessage(userId, conversationId, {
+      body: body?.trim() ?? '',
+      attachment: {
+        fileName: file.originalname,
+        fileUrl: uploaded.url,
+        storageKey: uploaded.key,
+        mimeType,
+        sizeBytes: file.size,
+      },
+    });
+  }
+
+  private async createMessage(
+    userId: string,
+    conversationId: string,
+    input: {
+      body: string;
+      attachment?: {
+        fileName: string;
+        fileUrl: string;
+        storageKey: string;
+        mimeType?: string;
+        sizeBytes?: number;
+      };
+    },
+  ) {
     await this.requireMember(userId, conversationId);
     const message = await this.prisma.message.create({
-      data: { conversationId, senderId: userId, body },
-      include: {
-        sender: { select: { id: true, fullName: true, role: true } },
+      data: {
+        conversationId,
+        senderId: userId,
+        body: input.body,
+        ...(input.attachment
+          ? {
+              attachments: {
+                create: {
+                  fileName: input.attachment.fileName,
+                  fileUrl: input.attachment.fileUrl,
+                  storageKey: input.attachment.storageKey,
+                  mimeType: input.attachment.mimeType,
+                  sizeBytes: input.attachment.sizeBytes,
+                },
+              },
+            }
+          : {}),
       },
+      include: this.messageInclude,
     });
     await this.prisma.conversation.update({
       where: { id: conversationId },
@@ -170,12 +279,15 @@ export class ConversationsService {
       where: { id: conversationId },
       select: { request: { select: { code: true, title: true } } },
     });
+    const preview = input.attachment
+      ? `📎 ${input.attachment.fileName}`
+      : input.body.slice(0, 140);
     await this.notifications.notifyUsers(
       members.map((m) => m.userId),
       {
         type: 'NEW_MESSAGE',
         title: 'Новое сообщение',
-        body: body.slice(0, 140),
+        body: preview,
         payload: {
           conversationId,
           requestCode: conversation?.request?.code,

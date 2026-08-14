@@ -1,9 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 
 export class AnalyzeRequestDto {
@@ -12,8 +16,57 @@ export class AnalyzeRequestDto {
       'Нужно 500 м² брусчатки в Алматы с доставкой до 20 августа',
   })
   @IsString()
-  @MinLength(5)
+  @MinLength(2)
   text!: string;
+}
+
+export class ClarifyAnswerDto {
+  @ApiProperty({ example: 'q1' })
+  @IsString()
+  @MinLength(1)
+  id!: string;
+
+  @ApiProperty({ example: 'М400' })
+  @IsString()
+  @MinLength(1)
+  answer!: string;
+}
+
+export class ClarifyRequestDto {
+  @ApiProperty({
+    example: 'Нужен цемент М400 10 тонн в Алматы и шкафы для спальни 4 штуки',
+  })
+  @IsString()
+  @MinLength(2)
+  text!: string;
+
+  @ApiProperty({ type: [ClarifyAnswerDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ClarifyAnswerDto)
+  answers!: ClarifyAnswerDto[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  previous?: Record<string, unknown>;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ClarifyMessageDto)
+  messages?: ClarifyMessageDto[];
+}
+
+export class ClarifyMessageDto {
+  @ApiProperty({ example: 'user' })
+  @IsString()
+  role!: string;
+
+  @ApiProperty()
+  @IsString()
+  content!: string;
 }
 
 export class CreateRequestDto {

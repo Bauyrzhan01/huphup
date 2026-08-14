@@ -60,6 +60,8 @@ model User {
   passwordHash String
   fullName     String
   phone        String?
+  avatarUrl    String?
+  avatarKey    String?
   role         UserRole  @default(BUYER)
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
@@ -91,6 +93,8 @@ model Company {
   categories  String[] @default([])
   verified    Boolean  @default(false)
   rating      Float    @default(0)
+  logoUrl     String?
+  logoKey     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -298,11 +302,28 @@ model Message {
   body           String
   createdAt      DateTime @default(now())
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  conversation Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  attachments  MessageAttachment[]
 
   @@index([conversationId, createdAt])
   @@map("messages")
+}
+
+model MessageAttachment {
+  id         String   @id @default(cuid())
+  messageId  String
+  fileName   String
+  fileUrl    String
+  storageKey String
+  mimeType   String?
+  sizeBytes  Int?
+  createdAt  DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
 }
 
 model Attachment {
@@ -348,4 +369,14 @@ model PasswordResetToken {
 
   @@index([userId])
   @@map("password_reset_tokens")
+}
+
+model StoredFile {
+  id        String   @id @default(cuid())
+  fileName  String
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("stored_files")
 }

@@ -7,12 +7,15 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company.dto';
 import { CreateInviteDto } from './dto/invite.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { SupplierMember } from '../common/decorators/supplier-member.decorator';
 import {
   AuthUser,
@@ -69,6 +72,32 @@ export class CompaniesController {
   @Post('me/invites')
   createInvite(@CurrentUser() user: AuthUser, @Body() dto: CreateInviteDto) {
     return this.companiesService.createInvite(user.id, dto);
+  }
+
+  @Post('me/logo')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  uploadLogo(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.companiesService.uploadLogo(user.id, file);
+  }
+
+  @Delete('me/logo')
+  removeLogo(@CurrentUser() user: AuthUser) {
+    return this.companiesService.removeLogo(user.id);
   }
 
   @Public()

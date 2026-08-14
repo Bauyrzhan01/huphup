@@ -7,7 +7,15 @@ export type ChatMessageEvent = {
   conversationId: string;
   body: string;
   createdAt: string;
-  sender: { id: string; fullName: string; role: string };
+  sender: { id: string; fullName: string; role: string; avatarUrl?: string | null };
+  attachments?: Array<{
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    mimeType: string | null;
+    sizeBytes: number | null;
+    createdAt: string;
+  }>;
 };
 
 @Injectable()
@@ -23,13 +31,33 @@ export class ChatEventsService {
     return subject;
   }
 
-  publish(message: Message & { sender: { id: string; fullName: string; role: string } }) {
+  publish(
+    message: Message & {
+      sender: { id: string; fullName: string; role: string; avatarUrl?: string | null };
+      attachments?: Array<{
+        id: string;
+        fileName: string;
+        fileUrl: string;
+        mimeType: string | null;
+        sizeBytes: number | null;
+        createdAt: Date;
+      }>;
+    },
+  ) {
     const event: ChatMessageEvent = {
       id: message.id,
       conversationId: message.conversationId,
       body: message.body,
       createdAt: message.createdAt.toISOString(),
       sender: message.sender,
+      attachments: message.attachments?.map((a) => ({
+        id: a.id,
+        fileName: a.fileName,
+        fileUrl: a.fileUrl,
+        mimeType: a.mimeType,
+        sizeBytes: a.sizeBytes,
+        createdAt: a.createdAt.toISOString(),
+      })),
     };
     this.channel(message.conversationId).next(event);
   }

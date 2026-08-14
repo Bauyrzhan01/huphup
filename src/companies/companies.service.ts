@@ -11,8 +11,16 @@ import { CompanyMemberRole } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
+import { StorageService } from '../storage/storage.service';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company.dto';
 import { CreateInviteDto } from './dto/invite.dto';
+
+const IMAGE_MIME_PREFIX = 'image/';
+
+type CompanyAvatarSource = {
+  logoUrl?: string | null;
+  owner?: { avatarUrl?: string | null } | null;
+};
 
 @Injectable()
 export class CompaniesService {
@@ -20,7 +28,15 @@ export class CompaniesService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => ProductsService))
     private readonly products: ProductsService,
+    private readonly storage: StorageService,
   ) {}
+
+  private withAvatar<T extends CompanyAvatarSource>(company: T) {
+    return {
+      ...company,
+      avatarUrl: company.logoUrl || company.owner?.avatarUrl || null,
+    };
+  }
 
   /** Resolve company via membership first, then owned company (legacy). */
   async resolveCompanyForUser(userId: string) {
@@ -95,7 +111,7 @@ export class CompaniesService {
       throw new ConflictException('Company already exists for this user');
     }
 
-    return this.prisma.company.create({
+    const company = await this.prisma.company.create({
       data: {
         ownerId,
         name: dto.name,
@@ -111,7 +127,11 @@ export class CompaniesService {
           },
         },
       },
+      include: {
+        owner: { select: { avatarUrl: true } },
+      },
     });
+    return this.withAvatar(company);
   }
 
   async list(params: {
@@ -148,12 +168,15 @@ export class CompaniesService {
         orderBy: [{ verified: 'desc' }, { rating: 'desc' }],
         skip,
         take: limit,
+        include: {
+          owner: { select: { avatarUrl: true } },
+        },
       }),
       this.prisma.company.count({ where }),
     ]);
 
     return {
-      items,
+      items: items.map((c) => this.withAvatar(c)),
       page,
       limit,
       total,
@@ -165,13 +188,15 @@ export class CompaniesService {
     const company = await this.prisma.company.findUnique({
       where: { id },
       include: {
-        owner: { select: { id: true, fullName: true, email: true } },
+        owner: {
+          select: { id: true, fullName: true, email: true, avatarUrl: true },
+        },
       },
     });
     if (!company) {
       throw new NotFoundException('Company not found');
     }
-    return company;
+    return this.withAvatar(company);
   }
 
   async listPublicProducts(
@@ -227,10 +252,62 @@ export class CompaniesService {
     if (!Object.keys(dto).length) {
       throw new BadRequestException('Nothing to update');
     }
-    return this.prisma.company.update({
+    const company = await this.prisma.company.update({
       where: { id: companyId },
       data: dto,
+      include: {
+        owner: { select: { avatarUrl: true } },
+      },
     });
+    return this.withAvatar(company);
+  }
+
+  async uploadLogo(userId: string, file: Express.Multer.File | undefined) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Image file is required');
+    }
+    if (!file.mimetype?.startsWith(IMAGE_MIME_PREFIX)) {
+      throw new BadRequestException('Only image files are allowed');
+    }
+
+    const resolved = await this.requireCompanyForUser(userId);
+    const uploaded = await this.storage.upload({
+      buffer: file.buffer,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      folder: `logos/${resolved.company.id}`,
+    });
+
+    const company = await this.prisma.company.update({
+      where: { id: resolved.company.id },
+      data: {
+        logoUrl: uploaded.url,
+        logoKey: uploaded.key,
+      },
+      include: {
+        owner: { select: { avatarUrl: true } },
+      },
+    });
+
+    if (resolved.company.logoKey && resolved.company.logoKey !== uploaded.key) {
+      await this.storage.delete(resolved.company.logoKey).catch(() => undefined);
+    }
+    return this.withAvatar(company);
+  }
+
+  async removeLogo(userId: string) {
+    const resolved = await this.requireCompanyForUser(userId);
+    const company = await this.prisma.company.update({
+      where: { id: resolved.company.id },
+      data: { logoUrl: null, logoKey: null },
+      include: {
+        owner: { select: { avatarUrl: true } },
+      },
+    });
+    if (resolved.company.logoKey) {
+      await this.storage.delete(resolved.company.logoKey).catch(() => undefined);
+    }
+    return this.withAvatar(company);
   }
 
   async getMyCompany(userId: string) {
@@ -238,6 +315,7 @@ export class CompaniesService {
     const company = await this.prisma.company.findUnique({
       where: { id: resolved.company.id },
       include: {
+        owner: { select: { avatarUrl: true } },
         members: {
           include: {
             user: { select: { id: true, fullName: true, email: true } },
@@ -250,7 +328,7 @@ export class CompaniesService {
       throw new NotFoundException('Company not found');
     }
     return {
-      ...company,
+      ...this.withAvatar(company),
       myRole: resolved.isOwner
         ? CompanyMemberRole.OWNER
         : (resolved.membership?.role ?? CompanyMemberRole.MANAGER),

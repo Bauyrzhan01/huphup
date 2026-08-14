@@ -7,8 +7,12 @@ import {
   Post,
   Query,
   Sse,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { JwtService } from '@nestjs/jwt';
 import { Observable, map } from 'rxjs';
 import { ConversationsService } from './conversations.service';
@@ -80,5 +84,32 @@ export class ConversationsController {
     @Body() dto: SendMessageDto,
   ) {
     return this.conversationsService.sendMessage(user.id, id, dto.body);
+  }
+
+  @Post(':id/messages/file')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        body: { type: 'string' },
+      },
+      required: ['file'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  sendWithFile(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('body') body?: string,
+  ) {
+    return this.conversationsService.sendMessageWithFile(user.id, id, file, body);
   }
 }

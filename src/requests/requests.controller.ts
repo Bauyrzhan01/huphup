@@ -10,6 +10,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequestsService } from './requests.service';
 import {
   AnalyzeRequestDto,
+  ClarifyRequestDto,
   CreateRequestDto,
   UpdateRequestDto,
 } from './dto/request.dto';
@@ -29,6 +30,12 @@ export class RequestsController {
   @Post('analyze')
   analyze(@Body() dto: AnalyzeRequestDto) {
     return this.requestsService.analyze(dto);
+  }
+
+  @Public()
+  @Post('analyze/clarify')
+  clarify(@Body() dto: ClarifyRequestDto) {
+    return this.requestsService.clarify(dto);
   }
 
   @Post()

@@ -38,9 +38,10 @@ export class MatchingService {
       },
     });
 
-    const requestText =
-      request.rawText?.trim() ||
-      `${request.title}\n${request.description}`.trim();
+    const requestText = [request.description, request.rawText, request.title]
+      .map((v) => v?.trim())
+      .filter(Boolean)
+      .join('\n');
 
     let matches = await this.gemini.matchProducts({
       requestText,

@@ -8,8 +8,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MatchingService } from '../matching/matching.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { GeminiService } from '../gemini/gemini.service';
+import { withRequiredSpecQuestions, isNotAProduct } from './spec-questions';
 import {
   AnalyzeRequestDto,
+  ClarifyRequestDto,
   CreateRequestDto,
   UpdateRequestDto,
 } from './dto/request.dto';
@@ -25,26 +27,40 @@ export class RequestsService {
 
   async analyze(dto: AnalyzeRequestDto) {
     const geminiResult = await this.gemini.analyzeRequest(dto.text);
-    if (geminiResult) {
-      return geminiResult;
-    }
-    return this.analyzeFallback(dto.text);
+    const base = geminiResult ?? this.analyzeFallback(dto.text);
+    return withRequiredSpecQuestions(base);
+  }
+
+  async clarify(dto: ClarifyRequestDto) {
+    const extra = dto.answers.map((a) => a.answer).join(' ');
+    const asked = (dto.messages ?? [])
+      .filter((m) => m.role === 'assistant')
+      .map((m) => m.content);
+    const geminiResult = await this.gemini.clarifyRequest({
+      text: dto.text,
+      answers: dto.answers,
+      previous: dto.previous as never,
+      messages: dto.messages,
+    });
+    const base = geminiResult ?? this.clarifyFallback(dto.text, dto.answers);
+    return withRequiredSpecQuestions(base, extra, asked);
   }
 
   private analyzeFallback(text: string) {
     const lower = text.toLowerCase();
     let category = 'Товары и материалы';
-    let city = 'Алматы';
+    let city = '';
     let quantity = '—';
     let deadline = 'Уточнить';
 
     if (lower.includes('ремонт') || lower.includes('монтаж')) {
       category = 'Работы и услуги';
     }
+    if (lower.includes('алмат')) city = 'Алматы';
     if (lower.includes('астан')) city = 'Астана';
     if (lower.includes('шымкент')) city = 'Шымкент';
 
-    const qtyMatch = text.match(/(\d+[\s]?(?:м²|м2|шт|тонн|т|кг))/i);
+    const qtyMatch = text.match(/(\d+[\s]?(?:м²|м2|шт|штук|тонн|т|кг))/i);
     if (qtyMatch) quantity = qtyMatch[1];
 
     const deadlineMatch = text.match(
@@ -53,15 +69,48 @@ export class RequestsService {
     if (deadlineMatch) deadline = deadlineMatch[1];
 
     const title = text.length > 80 ? `${text.slice(0, 77)}...` : text;
+    const greeting = isNotAProduct(text);
 
     return {
-      title,
-      description: text,
+      title: greeting ? '' : title,
+      description: greeting ? '' : text,
       category,
       city,
       quantity,
       deadline,
       rawText: text,
+      understanding: greeting ? '' : title,
+      assistantMessage: greeting
+        ? 'Привет! Что нужно закупить — товар или услугу?'
+        : '',
+      items: greeting ? [] : [{ name: title, quantity, specs: '', city }],
+      questions: [],
+      ready: false,
+    };
+  }
+
+  private clarifyFallback(
+    text: string,
+    answers: Array<{ id: string; answer: string }>,
+  ) {
+    const base = this.analyzeFallback(text);
+    const byId = new Map(answers.map((a) => [a.id, a.answer.trim()]));
+    const extra = answers
+      .map((a) => a.answer.trim())
+      .filter(Boolean)
+      .join('\n');
+
+    if (byId.get('city')) base.city = byId.get('city')!;
+    if (byId.get('quantity')) base.quantity = byId.get('quantity')!;
+    if (byId.get('deadline')) base.deadline = byId.get('deadline')!;
+
+    const description = [text, extra].filter(Boolean).join('\n\n');
+    return {
+      ...base,
+      description,
+      questions: [],
+      ready: true,
+      understanding: base.understanding,
     };
   }
 
@@ -109,6 +158,8 @@ export class RequestsService {
                 city: true,
                 verified: true,
                 rating: true,
+                logoUrl: true,
+                owner: { select: { avatarUrl: true } },
               },
             },
           },
@@ -119,7 +170,14 @@ export class RequestsService {
         leads: {
           include: {
             company: {
-              select: { id: true, name: true, city: true, verified: true },
+              select: {
+                id: true,
+                name: true,
+                city: true,
+                verified: true,
+                logoUrl: true,
+                owner: { select: { avatarUrl: true } },
+              },
             },
           },
           orderBy: { score: 'desc' },
@@ -134,7 +192,25 @@ export class RequestsService {
         throw new ForbiddenException('Access denied');
       }
     }
-    return request;
+    return {
+      ...request,
+      offers: request.offers.map((offer) => ({
+        ...offer,
+        company: {
+          ...offer.company,
+          avatarUrl:
+            offer.company.logoUrl || offer.company.owner?.avatarUrl || null,
+        },
+      })),
+      leads: request.leads.map((lead) => ({
+        ...lead,
+        company: {
+          ...lead.company,
+          avatarUrl:
+            lead.company.logoUrl || lead.company.owner?.avatarUrl || null,
+        },
+      })),
+    };
   }
 
   async update(buyerId: string, id: string, dto: UpdateRequestDto) {
@@ -212,7 +288,13 @@ export class RequestsService {
     const companies = companyIds.length
       ? await this.prisma.company.findMany({
           where: { id: { in: companyIds } },
-          select: { id: true, name: true, city: true },
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            logoUrl: true,
+            owner: { select: { avatarUrl: true } },
+          },
         })
       : [];
     const companyById = new Map(companies.map((c) => [c.id, c]));
@@ -220,14 +302,18 @@ export class RequestsService {
     return {
       request: updated,
       leadsCreated: leads.length,
-      matchedSuppliers: leads.map((l) => ({
-        companyId: l.companyId,
-        companyName: companyById.get(l.companyId)?.name ?? l.companyId,
-        city: companyById.get(l.companyId)?.city ?? null,
-        score: l.score,
-        reason: l.reason,
-        productId: l.productId,
-      })),
+      matchedSuppliers: leads.map((l) => {
+        const company = companyById.get(l.companyId);
+        return {
+          companyId: l.companyId,
+          companyName: company?.name ?? l.companyId,
+          city: company?.city ?? null,
+          avatarUrl: company?.logoUrl || company?.owner?.avatarUrl || null,
+          score: l.score,
+          reason: l.reason,
+          productId: l.productId,
+        };
+      }),
     };
   }
 
