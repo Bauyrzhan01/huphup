@@ -30,7 +30,6 @@ export function SupplierProductDetailPage() {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [activeImage, setActiveImage] = useState(0);
-  const [showReviews, setShowReviews] = useState(false);
 
   async function loadProduct(productId: string) {
     const [item, list] = await Promise.all([
@@ -126,15 +125,12 @@ export function SupplierProductDetailPage() {
   const title = isNew ? t('products.addTitle') : product?.name ?? t('common.loading');
 
   return (
-    <SupplierLayout
-      crumb={isNew ? t('products.addTitle') : t('products.detailCrumb')}
-      actions={
-        <Link className="ghost" to="/supplier/products">
-          {t('products.backToCatalog')}
-        </Link>
-      }
-    >
+    <SupplierLayout crumb={isNew ? t('products.addTitle') : t('products.detailCrumb')}>
       <div className="page product-detail-page">
+        <Link className="product-detail-back" to="/supplier/products">
+          ← {t('products.backToCatalog')}
+        </Link>
+
         {error ? <p className="notice product-detail-notice is-error">{error}</p> : null}
         {msg ? <p className="notice product-detail-notice">{msg}</p> : null}
 
@@ -264,45 +260,59 @@ export function SupplierProductDetailPage() {
                     </div>
                   )}
                 </div>
-              </div>
 
-              {!isNew && product ? (
-                <div className="product-detail-meta">
-                  <span>{t('products.createdAt')}: {formatDateTime(product.createdAt)}</span>
-                  <span>{t('products.updatedAt')}: {formatDateTime(product.updatedAt)}</span>
-                  {reviews.length > 0 ? (
-                    <button
-                      type="button"
-                      className="product-detail-reviews-toggle"
-                      onClick={() => setShowReviews((v) => !v)}
-                    >
-                      {showReviews ? t('products.hideReviews') : t('products.showReviews')}
-                      {' '}({reviews.length})
-                    </button>
-                  ) : (
-                    <span className="meta">{t('products.noReviews')}</span>
-                  )}
-                </div>
-              ) : null}
-
-              {showReviews && reviews.length > 0 ? (
-                <ul className="product-review-list">
-                  {reviews.map((review) => (
-                    <li key={review.id} className="product-review-item">
-                      <div className="product-review-top">
-                        <b>{review.user.fullName}</b>
-                        <span>★ {review.rating}</span>
+                {!isNew && product ? (
+                  <aside className="product-detail-aside">
+                    <div className="product-detail-aside-block">
+                      <h4>{t('products.infoSection')}</h4>
+                      <div className="product-detail-kv">
+                        <span>{t('products.statusLabel')}</span>
+                        <b>{product.isActive ? t('products.active') : t('products.hidden')}</b>
                       </div>
-                      {review.comment ? <p>{review.comment}</p> : null}
-                      <small>{formatDateTime(review.createdAt)}</small>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+                      <div className="product-detail-kv">
+                        <span>{t('products.unit')}</span>
+                        <b>{product.unit || t('common.empty')}</b>
+                      </div>
+                      <div className="product-detail-kv">
+                        <span>{t('products.city')}</span>
+                        <b>{product.city || t('common.empty')}</b>
+                      </div>
+                      <div className="product-detail-kv">
+                        <span>{t('products.createdAt')}</span>
+                        <b>{formatDateTime(product.createdAt)}</b>
+                      </div>
+                      <div className="product-detail-kv">
+                        <span>{t('products.updatedAt')}</span>
+                        <b>{formatDateTime(product.updatedAt)}</b>
+                      </div>
+                    </div>
+
+                    <div className="product-detail-aside-block">
+                      <h4>{t('products.reviewsSection')}</h4>
+                      {reviews.length === 0 ? (
+                        <p className="meta">{t('products.noReviews')}</p>
+                      ) : (
+                        <ul className="product-review-list">
+                          {reviews.map((review) => (
+                            <li key={review.id} className="product-review-item">
+                              <div className="product-review-top">
+                                <b>{review.user.fullName}</b>
+                                <span>★ {review.rating}</span>
+                              </div>
+                              {review.comment ? <p>{review.comment}</p> : null}
+                              <small>{formatDateTime(review.createdAt)}</small>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </aside>
+                ) : null}
+              </div>
 
               <div className="product-detail-footer">
                 <Link className="ghost" to="/supplier/products">
-                  {t('common.cancel')}
+                  ← {t('products.backToCatalog')}
                 </Link>
                 <button type="submit" className="primary" disabled={saving}>
                   {saving
