@@ -26,6 +26,7 @@ export class UsersService {
     phone: true,
     avatarUrl: true,
     role: true,
+    lastSeenAt: true,
     createdAt: true,
     company: {
       select: {
@@ -81,6 +82,15 @@ export class UsersService {
       data: { passwordHash },
     });
     return { ok: true };
+  }
+
+  async heartbeat(userId: string) {
+    const now = new Date();
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastSeenAt: now },
+    });
+    return { ok: true, lastSeenAt: now.toISOString() };
   }
 
   async uploadAvatar(userId: string, file: Express.Multer.File | undefined) {

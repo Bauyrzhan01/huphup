@@ -73,6 +73,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const now = new Date();
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastSeenAt: now },
+    });
+
     const accessToken = await this.signToken(user.id, user.email, user.role);
     return {
       user: {
@@ -81,6 +87,7 @@ export class AuthService {
         fullName: user.fullName,
         phone: user.phone,
         avatarUrl: user.avatarUrl,
+        lastSeenAt: now.toISOString(),
         role: user.role,
         createdAt: user.createdAt,
       },

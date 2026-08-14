@@ -64,6 +64,7 @@ model User {
   avatarKey    String?
   role         UserRole  @default(BUYER)
   isActive     Boolean   @default(true)
+  lastSeenAt   DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

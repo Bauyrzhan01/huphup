@@ -28,6 +28,7 @@ const leadUserSelect = {
   fullName: true,
   email: true,
   avatarUrl: true,
+  lastSeenAt: true,
 } as const;
 
 const leadInclude = {

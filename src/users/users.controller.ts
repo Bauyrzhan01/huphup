@@ -37,6 +37,11 @@ export class UsersController {
     return this.usersService.changePassword(user.id, dto);
   }
 
+  @Post('me/heartbeat')
+  heartbeat(@CurrentUser() user: AuthUser) {
+    return this.usersService.heartbeat(user.id);
+  }
+
   @Post('me/avatar')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
