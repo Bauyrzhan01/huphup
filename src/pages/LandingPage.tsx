@@ -2,9 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { RequestFlowContinue } from '../components/RequestFlowContinue';
-import { RequestFlowDemo } from '../components/RequestFlowDemo';
+import { Hero } from '../landing/hero';
 
 function Reveal({
   children,
@@ -52,67 +51,12 @@ function Reveal({
 
 export function LandingPage() {
   const { t } = useTranslation();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const appHref = user ? '/app' : '/register';
 
   return (
     <div className="landing">
-      <div className="landing-bg" aria-hidden="true">
-        <span className="landing-orb landing-orb-a" />
-        <span className="landing-orb landing-orb-b" />
-        <span className="landing-grid" />
-      </div>
-
-      <header className="landing-nav">
-        <div className="landing-nav-inner">
-          <Link to="/" className="landing-brand">
-            <span className="logo">H</span>
-            <span>HupHup</span>
-          </Link>
-          <div className="landing-nav-actions">
-            <LanguageSwitcher compact />
-            {!loading && user ? (
-              <Link className="primary" to="/app">
-                {t('landing.openApp')}
-              </Link>
-            ) : (
-              <>
-                <Link className="ghost" to="/login">
-                  {t('auth.signIn')}
-                </Link>
-                <Link className="primary" to="/register">
-                  {t('landing.start')}
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <section className="landing-hero">
-        <div className="landing-hero-inner">
-          <p className="landing-kicker landing-hero-anim" style={{ animationDelay: '40ms' }}>
-            HupHup
-          </p>
-          <h1 className="landing-hero-anim" style={{ animationDelay: '120ms' }}>
-            {t('landing.heroTitle')}
-          </h1>
-          <p className="landing-lead landing-hero-anim" style={{ animationDelay: '220ms' }}>
-            {t('landing.heroText')}
-          </p>
-          <div className="landing-cta landing-hero-anim" style={{ animationDelay: '320ms' }}>
-            <Link className="primary landing-cta-main landing-pulse" to={appHref}>
-              {user ? t('landing.openApp') : t('landing.startFree')}
-            </Link>
-            <a className="ghost" href="#how">
-              {t('landing.howLink')}
-            </a>
-          </div>
-        </div>
-        <div className="landing-hero-visual landing-hero-anim" style={{ animationDelay: '200ms' }}>
-          <RequestFlowDemo />
-        </div>
-      </section>
+      <Hero />
 
       <section className="landing-section landing-section-alt" id="how">
         <div className="landing-section-inner">

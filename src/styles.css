@@ -285,7 +285,7 @@ body.mobile-nav-open{overflow:hidden}
 }
 
 /* Landing */
-.landing{position:relative;min-height:100vh;background:#fbfbfc;color:var(--text);overflow-x:clip}
+.landing{position:relative;min-height:100vh;background:#fbfbfc;color:var(--text)}
 .landing-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
 .landing-orb{
   position:absolute;border-radius:50%;filter:blur(48px);opacity:.55;
