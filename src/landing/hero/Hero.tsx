@@ -17,6 +17,30 @@ import { useHeroPointer } from './useHeroPointer';
 import { useScrollMotionProfile } from '../useScrollMotionProfile';
 import './hero.css';
 
+function PhoneBlock({
+  progress,
+  pointer,
+  mobile,
+  lite,
+}: {
+  progress: ReturnType<typeof useScroll>['scrollYProgress'];
+  pointer: ReturnType<typeof useHeroPointer>;
+  mobile: boolean;
+  lite: boolean;
+}) {
+  return (
+    <PhoneScrollAnimation progress={progress} pointer={pointer} mobile={mobile} lite={lite}>
+      <PhoneAnimation mobile={mobile}>
+        <Phone>
+          <FrontGlass>
+            <PhoneRequestPreview />
+          </FrontGlass>
+        </Phone>
+      </PhoneAnimation>
+    </PhoneScrollAnimation>
+  );
+}
+
 export function Hero() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -30,12 +54,24 @@ export function Hero() {
   const cabinetHref = user?.role === 'SUPPLIER' ? '/supplier' : '/app';
   const ctaTo = useLandingCta();
 
-  return (
-    <section ref={heroRef} className="hh-scroll">
-      <div className="hh-hero hh-sticky">
-        <HeroBackdrop progress={scrollYProgress} lite={profile.lite} />
+  const shared = {
+    progress: scrollYProgress,
+    pointer,
+    mobile: profile.mobile,
+    lite: profile.lite,
+  };
 
-        <header className="hh-hero-header">
+  return (
+    <section
+      ref={heroRef}
+      className={`hh-scroll${profile.mobile ? ' hh-scroll--mobile' : ''}`}
+    >
+      <div className="hh-hero hh-sticky">
+        <HeroBackdrop progress={scrollYProgress} mobile={profile.mobile} lite={profile.lite} />
+
+        <header
+          className={`hh-header absolute inset-x-0 top-0 z-20 flex items-center justify-between px-5 py-4 sm:px-8${profile.mobile ? ' hh-header--mobile' : ''}`}
+        >
           <Link to="/" className="hh-mark">
             HupHup
           </Link>
@@ -44,6 +80,22 @@ export function Hero() {
               <Link to={cabinetHref} className="hh-header-btn hh-header-btn--solid">
                 {t('landing.openApp')}
               </Link>
+            ) : profile.mobile ? (
+              <>
+                <Link to="/register?next=/requests/new" className="hh-header-btn hh-header-btn--solid">
+                  {t('landing.register')}
+                </Link>
+                <details className="hh-header-menu">
+                  <summary className="hh-header-menu-btn" aria-label={t('landing.footerPlatform')}>
+                    ···
+                  </summary>
+                  <div className="hh-header-menu-panel">
+                    <Link to="/login">{t('landing.signIn')}</Link>
+                    <Link to="/register?role=SUPPLIER">{t('landing.heroSupplier')}</Link>
+                    <LanguageSwitcher compact />
+                  </div>
+                </details>
+              </>
             ) : (
               <>
                 <Link to="/login" className="hh-header-btn">
@@ -52,26 +104,27 @@ export function Hero() {
                 <Link to="/register?next=/requests/new" className="hh-header-btn hh-header-btn--solid">
                   {t('landing.register')}
                 </Link>
+                <LanguageSwitcher compact />
               </>
             )}
-            <LanguageSwitcher compact />
+            {profile.mobile && user && <LanguageSwitcher compact />}
           </div>
         </header>
 
         <div className="hh-stage">
-          <Brand progress={scrollYProgress} pointer={pointer} ctaTo={ctaTo} lite={profile.lite} />
-
-          <PhoneScrollAnimation progress={scrollYProgress} pointer={pointer} lite={profile.lite}>
-            <PhoneAnimation>
-              <Phone>
-                <FrontGlass>
-                  <PhoneRequestPreview />
-                </FrontGlass>
-              </Phone>
-            </PhoneAnimation>
-          </PhoneScrollAnimation>
-
-          <Slogan progress={scrollYProgress} pointer={pointer} lite={profile.lite} />
+          {profile.mobile ? (
+            <>
+              <Slogan {...shared} />
+              <Brand {...shared} ctaTo={ctaTo} mobileLayout />
+              <PhoneBlock {...shared} />
+            </>
+          ) : (
+            <>
+              <Slogan {...shared} />
+              <PhoneBlock {...shared} />
+              <Brand {...shared} ctaTo={ctaTo} />
+            </>
+          )}
         </div>
       </div>
     </section>

@@ -12,6 +12,7 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next') || '/app';
+  const role = params.get('role') === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER';
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,8 +28,8 @@ export function RegisterPage() {
     setBusy(true);
     setError('');
     try {
-      await register({ email, password, fullName });
-      navigate(next);
+      await register({ email, password, fullName, role });
+      navigate(role === 'SUPPLIER' ? '/supplier' : next);
     } catch (err) {
       setError(mapApiError(err, t));
     } finally {

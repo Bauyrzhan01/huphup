@@ -27,17 +27,19 @@ function Node({
 
 export function HeroBackdrop({
   progress,
+  mobile,
   lite,
 }: {
   progress: MotionValue<number>;
+  mobile: boolean;
   lite: boolean;
 }) {
   const { t } = useTranslation();
 
-  const glowY = useTransform(progress, [0, 1], [0, lite ? 12 : 24]);
-  const pathY = useTransform(progress, [0, 1], [0, lite ? 28 : 56]);
-  const typeY = useTransform(progress, [0, 1], [0, lite ? -40 : -96]);
-  const ghostY = useTransform(progress, [0, 1], [0, lite ? 16 : 36]);
+  const glowY = useTransform(progress, [0, 1], [0, lite ? 8 : mobile ? 0 : 24]);
+  const pathY = useTransform(progress, [0, 1], [0, lite ? 16 : mobile ? 0 : 56]);
+  const typeY = useTransform(progress, [0, 1], [0, lite ? -24 : mobile ? 0 : -96]);
+  const ghostY = useTransform(progress, [0, 1], [0, lite ? 8 : mobile ? 0 : 36]);
 
   const pathDraw = useTransform(progress, [0, 0.35, 0.85, 1], [0.56, 0.72, 0.96, 1]);
   const spokeDraw = useTransform(progress, [0.05, 0.28, 0.62], [0.35, 0.68, 1]);
@@ -106,10 +108,6 @@ export function HeroBackdrop({
       </motion.div>
 
       <motion.div className="hh-bg-ghosts" style={{ y: ghostY }}>
-        <div className="hh-ghost hh-ghost-a">
-          <span className="hh-ghost-title">{t('landing.bgGhost')}</span>
-          <span className="hh-ghost-lines" />
-        </div>
         <div className="hh-ghost hh-ghost-b">
           <span className="hh-ghost-title">{t('landing.bg03')}</span>
           <span className="hh-ghost-lines" />
@@ -117,7 +115,6 @@ export function HeroBackdrop({
       </motion.div>
 
       <motion.div className="hh-bg-type" style={{ y: typeY, opacity: typeOpacity }}>
-        <span className="hh-bg-word hh-bg-word-request">{t('landing.bg01')}</span>
         <span className="hh-bg-word hh-bg-word-result">{t('landing.bg04')}</span>
       </motion.div>
     </div>

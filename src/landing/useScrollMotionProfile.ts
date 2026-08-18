@@ -1,27 +1,25 @@
 import { useEffect, useState } from 'react';
+import { useReducedMotion } from 'framer-motion';
+
+const MOBILE_MQ = '(max-width: 860px)';
 
 export function useScrollMotionProfile() {
-  const [lite, setLite] = useState(true);
+  const reducedMotion = useReducedMotion();
+  const [mobile, setMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_MQ).matches,
+  );
 
   useEffect(() => {
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const coarse = window.matchMedia('(pointer: coarse)');
-    const narrow = window.matchMedia('(max-width: 760px)');
-
-    function update() {
-      setLite(reduced.matches || coarse.matches || narrow.matches);
-    }
-
-    update();
-    reduced.addEventListener('change', update);
-    coarse.addEventListener('change', update);
-    narrow.addEventListener('change', update);
-    return () => {
-      reduced.removeEventListener('change', update);
-      coarse.removeEventListener('change', update);
-      narrow.removeEventListener('change', update);
-    };
+    const mq = window.matchMedia(MOBILE_MQ);
+    const onChange = () => setMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  return { lite };
+  return {
+    reducedMotion: Boolean(reducedMotion),
+    mobile,
+    /** Только prefers-reduced-motion — не отключает 3D на мобильном */
+    lite: Boolean(reducedMotion),
+  };
 }

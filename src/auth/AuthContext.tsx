@@ -20,6 +20,7 @@ type AuthContextValue = {
     email: string;
     password: string;
     fullName: string;
+    role?: 'BUYER' | 'SUPPLIER';
   }) => Promise<User>;
   logout: () => void;
   refresh: () => Promise<void>;
@@ -111,8 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (input: { email: string; password: string; fullName: string }) => {
-      const res = await authApi.register({ ...input, role: 'BUYER' });
+    async (input: { email: string; password: string; fullName: string; role?: 'BUYER' | 'SUPPLIER' }) => {
+      const res = await authApi.register({ ...input, role: input.role ?? 'BUYER' });
       localStorage.setItem('huphup_token', res.accessToken);
       setUser(res.user);
       writeCachedUser(res.user);

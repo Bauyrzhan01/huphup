@@ -13,7 +13,7 @@ export function PhoneRequestPreview() {
   if (!loading && user) {
     return (
       <div className="hh-phone-preview">
-        <h1 className="hh-phone-preview-title">{t('landing.phonePreviewTitle')}</h1>
+        <h2 className="hh-phone-preview-title">{t('home.title')}</h2>
         <p className="hh-phone-preview-lead">{t('landing.welcome')}</p>
         <form
           className="hh-phone-preview-form"
@@ -32,12 +32,15 @@ export function PhoneRequestPreview() {
 
   return (
     <div className="hh-phone-preview">
-      <h1 className="hh-phone-preview-title">{t('landing.phonePreviewTitle')}</h1>
-      <p className="hh-phone-preview-lead">{t('landing.welcome')}</p>
+      <h2 className="hh-phone-preview-title">{t('home.title')}</h2>
+      <p className="hh-phone-preview-lead">{t('home.placeholder')}</p>
 
       <div className="hh-phone-preview-body">
         <p className="hh-phone-preview-example">{t('landing.phonePreviewExample')}</p>
-        <span className="hh-phone-preview-city">{t('landing.phonePreviewCity')}</span>
+        <div className="hh-phone-preview-pills">
+          <span className="hh-phone-preview-city">{t('landing.phonePreviewCity')}</span>
+          <span className="hh-phone-preview-city">{t('home.deadline')}</span>
+        </div>
       </div>
 
       <Link to={ctaTo} className="hh-phone-preview-cta">
