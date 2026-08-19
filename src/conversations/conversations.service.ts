@@ -96,7 +96,7 @@ export class ConversationsService {
 
   async listMine(userId: string) {
     const conversations = await this.prisma.conversation.findMany({
-      where: { members: { some: { userId } } },
+      where: { members: { some: { userId, hiddenAt: null } } },
       include: {
         request: { select: { id: true, code: true, title: true } },
         members: {
@@ -124,19 +124,26 @@ export class ConversationsService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    return conversations.map(({ members, ...c }) => ({
-      ...c,
-      participants: members.map((m) => ({
-        id: m.user.id,
-        fullName: m.user.fullName,
-        role: m.user.role,
-        avatarUrl: m.user.avatarUrl,
-        companyName:
-          m.user.company?.name ??
-          m.user.companyMembers[0]?.company.name ??
-          null,
-      })),
-    }));
+    const mapped = conversations.map(({ members, ...c }) => {
+      const mine = members.find((m) => m.userId === userId);
+      return {
+        ...c,
+        isPinned: Boolean(mine?.isPinned),
+        participants: members.map((m) => ({
+          id: m.user.id,
+          fullName: m.user.fullName,
+          role: m.user.role,
+          avatarUrl: m.user.avatarUrl,
+          companyName:
+            m.user.company?.name ??
+            m.user.companyMembers[0]?.company.name ??
+            null,
+        })),
+      };
+    });
+
+    mapped.sort((a, b) => Number(b.isPinned) - Number(a.isPinned));
+    return mapped;
   }
 
   async getMessages(
@@ -299,6 +306,24 @@ export class ConversationsService {
     return message;
   }
 
+  async hideForMe(userId: string, conversationId: string) {
+    await this.requireMember(userId, conversationId);
+    await this.prisma.conversationMember.update({
+      where: { conversationId_userId: { conversationId, userId } },
+      data: { hiddenAt: new Date(), isPinned: false },
+    });
+    return { ok: true };
+  }
+
+  async setPinned(userId: string, conversationId: string, isPinned?: boolean) {
+    const member = await this.requireMember(userId, conversationId);
+    return this.prisma.conversationMember.update({
+      where: { conversationId_userId: { conversationId, userId } },
+      data: { isPinned: isPinned ?? !member.isPinned },
+      select: { conversationId: true, isPinned: true },
+    });
+  }
+
   async requireMember(userId: string, conversationId: string) {
     const member = await this.prisma.conversationMember.findUnique({
       where: {
@@ -314,6 +339,7 @@ export class ConversationsService {
       }
       throw new ForbiddenException('Not a conversation member');
     }
+    return member;
   }
 
   streamMessages(conversationId: string) {

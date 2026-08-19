@@ -383,6 +383,8 @@ model ConversationMember {
   id             String   @id @default(cuid())
   conversationId String
   userId         String
+  isPinned       Boolean  @default(false)
+  hiddenAt       DateTime?
   joinedAt       DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

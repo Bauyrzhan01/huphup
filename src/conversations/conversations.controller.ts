@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   MessageEvent,
   Param,
   Post,
@@ -16,7 +17,7 @@ import { memoryStorage } from 'multer';
 import { JwtService } from '@nestjs/jwt';
 import { Observable, map } from 'rxjs';
 import { ConversationsService } from './conversations.service';
-import { SendMessageDto } from './dto/message.dto';
+import { PinConversationDto, SendMessageDto } from './dto/message.dto';
 import { MessagesQueryDto } from '../common/dto/pagination.dto';
 import {
   AuthUser,
@@ -36,6 +37,22 @@ export class ConversationsController {
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.conversationsService.listMine(user.id);
+  }
+
+  @Post(':id/hide')
+  @HttpCode(200)
+  hide(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.conversationsService.hideForMe(user.id, id);
+  }
+
+  @Post(':id/pin')
+  @HttpCode(200)
+  pin(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: PinConversationDto,
+  ) {
+    return this.conversationsService.setPinned(user.id, id, dto?.isPinned);
   }
 
   @Public()
