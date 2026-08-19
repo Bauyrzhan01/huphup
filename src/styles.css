@@ -908,6 +908,29 @@ body.mobile-nav-open{overflow:hidden}
 }
 .lead-tasks-list li.is-done{opacity:.55}
 .lead-tasks-list li.is-overdue b,.crm-my-tasks li.is-overdue b{color:#b42318}
+.lead-tasks-actions{display:flex;gap:6px;flex-wrap:wrap}
+.task-create-form{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+  margin-bottom:12px;padding:12px;border:1px solid var(--line);border-radius:16px;background:#fff;
+}
+.task-create-form input,.task-create-form select{min-width:0}
+.task-create-form .primary{grid-column:1/-1}
+.task-drawer{
+  margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:16px;background:#fff;
+}
+.task-drawer-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.task-drawer-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.task-comments{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.task-comments p{margin:4px 0 0}
+.task-card{width:100%;text-align:left}
+.prio{font-size:11px;font-weight:600}
+.prio-CRITICAL{color:#b42318}
+.prio-HIGH{color:#b54708}
+.prio-MEDIUM{color:#175cd3}
+.prio-LOW{color:#667085}
+@media(max-width:760px){
+  .task-create-form{grid-template-columns:1fr}
+}
 .lead-tasks-list b{display:block;font-size:13px}
 .crm-head-actions{display:flex;gap:8px;align-items:center}
 .lead-note-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}

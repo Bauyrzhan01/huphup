@@ -8,6 +8,7 @@ import {
   Home,
   Inbox,
   LayoutGrid,
+  ListTodo,
   Menu,
   MessageSquare,
   Package,
@@ -337,6 +338,10 @@ export function SupplierLayout({
             <NavLink to="/supplier" end onClick={closeNav}>
               <AppIcon icon={LayoutGrid} className="ico" />
               {t('nav.crm')}
+            </NavLink>
+            <NavLink to="/supplier/tasks" onClick={closeNav}>
+              <AppIcon icon={ListTodo} className="ico" />
+              {t('nav.tasks')}
             </NavLink>
             <NavLink to="/supplier/products" onClick={closeNav}>
               <AppIcon icon={Package} className="ico" />

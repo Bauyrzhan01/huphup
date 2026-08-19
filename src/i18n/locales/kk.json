@@ -108,6 +108,7 @@
     "closeMenu": "Мәзірді жабу",
     "findLeads": "＋ Өтінім табу",
     "crm": "CRM",
+    "tasks": "Тапсырмалар",
     "newLeads": "Жаңа өтінімдер",
     "products": "Тауарлар",
     "company": "Компания",
@@ -576,6 +577,27 @@
       "MEETING": "Кездесу",
       "TASK": "Тапсырма"
     },
+    "taskStatus": {
+      "TODO": "Орындау",
+      "IN_PROGRESS": "Жұмыста",
+      "DONE": "Дайын"
+    },
+    "taskPriority": {
+      "LOW": "Төмен",
+      "MEDIUM": "Орташа",
+      "HIGH": "Жоғары",
+      "CRITICAL": "Критикалық"
+    },
+    "taskAssignMe": "Өзіме тағайындау",
+    "taskDescription": "Сипаттама",
+    "taskStart": "Жұмысқа",
+    "taskCreate": "Тапсырма құру",
+    "taskPickLead": "Өтінім",
+    "taskSearch": "Код, атау, өтінім бойынша іздеу…",
+    "taskAnyPriority": "Кез келген приоритет",
+    "taskComments": "Пікірлер",
+    "taskCommentsEmpty": "Пікір жоқ",
+    "taskCommentPlaceholder": "Пікір…",
     "crmSettings": "CRM баптаулары",
     "crmSettingsHint": "Этап атаулары, түстер және автоматты ескертулер.",
     "crmStagesTitle": "Воронка этаптары",

@@ -68,7 +68,7 @@ export function SupplierCrmPage() {
     const now = Date.now();
     return new Set(
       myTasks
-        .filter((task) => !task.doneAt && new Date(task.dueAt).getTime() < now)
+        .filter((task) => task.status !== 'DONE' && new Date(task.dueAt).getTime() < now)
         .map((task) => task.lead?.id)
         .filter((id): id is string => Boolean(id)),
     );
@@ -172,6 +172,9 @@ export function SupplierCrmPage() {
               {t('supplier.crmSettings')}
             </Link>
           ) : null}
+          <Link className="ghost" to="/supplier/tasks">
+            {t('nav.tasks')}
+          </Link>
           <Link className="ghost" to="/supplier/leads">
             {t('supplier.newLeadsAction')}
           </Link>
@@ -189,11 +192,13 @@ export function SupplierCrmPage() {
                 const overdue = new Date(task.dueAt).getTime() < Date.now();
                 return (
                   <li key={task.id} className={overdue ? 'is-overdue' : undefined}>
-                    <Link to={`/supplier/leads?leadId=${task.lead?.id ?? ''}`}>
-                      <b>{task.title}</b>
+                    <Link to={`/supplier/tasks`}>
+                      <b>
+                        {task.code} {task.title}
+                      </b>
                       <span className="meta">
-                        {t(`supplier.taskKind.${task.kind}`)} · {task.lead?.request.code} ·{' '}
-                        {formatDateTime(task.dueAt)}
+                        {t(`supplier.taskPriority.${task.priority}`)} · {t(`supplier.taskStatus.${task.status}`)} ·{' '}
+                        {task.lead?.request.code} · {formatDateTime(task.dueAt)}
                       </span>
                     </Link>
                   </li>

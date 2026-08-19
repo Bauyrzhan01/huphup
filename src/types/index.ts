@@ -248,13 +248,26 @@ export type LeadNote = {
 
 export type LeadTask = {
   id: string;
+  code: string;
   kind: 'CALL' | 'MEETING' | 'TASK';
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   title: string;
+  description?: string | null;
   dueAt: string;
   doneAt?: string | null;
   createdAt: string;
   assignee?: LeadUser | null;
+  creator?: LeadUser | null;
   lead?: { id: string; request: { code: string; title: string } };
+  _count?: { comments: number };
+};
+
+export type LeadTaskComment = {
+  id: string;
+  body: string;
+  createdAt: string;
+  user: LeadUser;
 };
 
 export type CrmStage = {

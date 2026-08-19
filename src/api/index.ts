@@ -18,6 +18,7 @@ import type {
   LeadActivity,
   LeadNote,
   LeadTask,
+  LeadTaskComment,
   MessageItem,
   MessagesPageResponse,
   NotificationItem,
@@ -330,16 +331,48 @@ export const leadsApi = {
     }),
   tasks: (id: string) => api<LeadTask[]>(`/leads/${id}/tasks`),
   myTasks: () => api<LeadTask[]>('/leads/tasks/mine'),
+  boardTasks: () => api<LeadTask[]>('/leads/tasks/board'),
   addTask: (
     id: string,
-    body: { title: string; kind: 'CALL' | 'MEETING' | 'TASK'; dueAt: string; assigneeId?: string },
+    body: {
+      title: string;
+      kind: 'CALL' | 'MEETING' | 'TASK';
+      dueAt: string;
+      assigneeId?: string;
+      description?: string;
+      priority?: LeadTask['priority'];
+    },
   ) =>
     api<LeadTask>(`/leads/${id}/tasks`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  updateTask: (
+    id: string,
+    taskId: string,
+    body: {
+      title?: string;
+      kind?: LeadTask['kind'];
+      dueAt?: string;
+      assigneeId?: string;
+      description?: string;
+      status?: LeadTask['status'];
+      priority?: LeadTask['priority'];
+    },
+  ) =>
+    api<LeadTask>(`/leads/${id}/tasks/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   completeTask: (id: string, taskId: string) =>
     api<LeadTask>(`/leads/${id}/tasks/${taskId}/complete`, { method: 'POST' }),
+  taskComments: (id: string, taskId: string) =>
+    api<LeadTaskComment[]>(`/leads/${id}/tasks/${taskId}/comments`),
+  addTaskComment: (id: string, taskId: string, body: string) =>
+    api<LeadTaskComment>(`/leads/${id}/tasks/${taskId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
   bulk: (payload: {
     ids: string[];
     action: 'skip' | 'reassign' | 'status';

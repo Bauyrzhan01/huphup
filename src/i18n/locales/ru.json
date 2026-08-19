@@ -110,6 +110,7 @@
     "closeMenu": "Закрыть меню",
     "findLeads": "＋ Найти заявки",
     "crm": "CRM",
+    "tasks": "Задачи",
     "newLeads": "Новые заявки",
     "products": "Товары",
     "company": "Компания",
@@ -578,6 +579,27 @@
       "MEETING": "Встреча",
       "TASK": "Задача"
     },
+    "taskStatus": {
+      "TODO": "К выполнению",
+      "IN_PROGRESS": "В работе",
+      "DONE": "Готово"
+    },
+    "taskPriority": {
+      "LOW": "Низкий",
+      "MEDIUM": "Средний",
+      "HIGH": "Высокий",
+      "CRITICAL": "Критичный"
+    },
+    "taskAssignMe": "Назначить себе",
+    "taskDescription": "Описание",
+    "taskStart": "В работу",
+    "taskCreate": "Создать задачу",
+    "taskPickLead": "Заявка",
+    "taskSearch": "Поиск по коду, названию, заявке…",
+    "taskAnyPriority": "Любой приоритет",
+    "taskComments": "Комментарии",
+    "taskCommentsEmpty": "Комментариев пока нет",
+    "taskCommentPlaceholder": "Комментарий…",
     "crmSettings": "Настройки CRM",
     "crmSettingsHint": "Названия этапов, цвета и автоматические напоминания.",
     "crmStagesTitle": "Этапы воронки",

@@ -1,20 +1,31 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppLocale } from '../../i18n/useAppLocale';
-import type { LeadTask } from '../../types';
+import type { CompanyMember, LeadTask } from '../../types';
 
 type Props = {
   tasks: LeadTask[];
+  members?: CompanyMember[];
   busy?: boolean;
-  onAdd: (input: { title: string; kind: LeadTask['kind']; dueAt: string }) => Promise<void>;
-  onDone: (taskId: string) => Promise<void>;
+  onAdd: (input: {
+    title: string;
+    kind: LeadTask['kind'];
+    dueAt: string;
+    priority: LeadTask['priority'];
+    assigneeId?: string;
+    description?: string;
+  }) => Promise<void>;
+  onUpdate: (taskId: string, body: { status?: LeadTask['status']; priority?: LeadTask['priority'] }) => Promise<void>;
 };
 
-export function LeadTasksPanel({ tasks, busy, onAdd, onDone }: Props) {
+export function LeadTasksPanel({ tasks, members, busy, onAdd, onUpdate }: Props) {
   const { t } = useTranslation();
   const { formatDateTime } = useAppLocale();
   const [title, setTitle] = useState('');
   const [kind, setKind] = useState<LeadTask['kind']>('TASK');
+  const [priority, setPriority] = useState<LeadTask['priority']>('MEDIUM');
+  const [assigneeId, setAssigneeId] = useState('');
+  const [description, setDescription] = useState('');
   const [dueAt, setDueAt] = useState('');
 
   async function submit(e: FormEvent) {
@@ -24,12 +35,16 @@ export function LeadTasksPanel({ tasks, busy, onAdd, onDone }: Props) {
       title: title.trim(),
       kind,
       dueAt: new Date(dueAt).toISOString(),
+      priority,
+      assigneeId: assigneeId || undefined,
+      description: description.trim() || undefined,
     });
     setTitle('');
+    setDescription('');
   }
 
-  const open = tasks.filter((x) => !x.doneAt);
-  const done = tasks.filter((x) => x.doneAt);
+  const open = tasks.filter((x) => x.status !== 'DONE');
+  const done = tasks.filter((x) => x.status === 'DONE');
 
   return (
     <section className="lead-tasks-panel">
@@ -40,11 +55,36 @@ export function LeadTasksPanel({ tasks, busy, onAdd, onDone }: Props) {
           <option value="MEETING">{t('supplier.taskMeeting')}</option>
           <option value="TASK">{t('supplier.taskTodo')}</option>
         </select>
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as LeadTask['priority'])}
+        >
+          <option value="LOW">{t('supplier.taskPriority.LOW')}</option>
+          <option value="MEDIUM">{t('supplier.taskPriority.MEDIUM')}</option>
+          <option value="HIGH">{t('supplier.taskPriority.HIGH')}</option>
+          <option value="CRITICAL">{t('supplier.taskPriority.CRITICAL')}</option>
+        </select>
+        {members?.length ? (
+          <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
+            <option value="">{t('supplier.taskAssignMe')}</option>
+            {members.map((m) => (
+              <option key={m.user.id} value={m.user.id}>
+                {m.user.fullName}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={t('supplier.taskPlaceholder')}
           required
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={t('supplier.taskDescription')}
+          rows={2}
         />
         <input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} required />
         <button type="submit" className="ghost" disabled={busy}>
@@ -58,21 +98,43 @@ export function LeadTasksPanel({ tasks, busy, onAdd, onDone }: Props) {
             className={new Date(task.dueAt).getTime() < Date.now() ? 'is-overdue' : undefined}
           >
             <div>
-              <b>{task.title}</b>
+              <b>
+                <span className="lead-code">{task.code}</span> {task.title}
+              </b>
               <p className="meta">
-                {t(`supplier.taskKind.${task.kind}`)} · {formatDateTime(task.dueAt)}
+                {t(`supplier.taskKind.${task.kind}`)} · {t(`supplier.taskPriority.${task.priority}`)} ·{' '}
+                {t(`supplier.taskStatus.${task.status}`)} · {formatDateTime(task.dueAt)}
                 {task.assignee?.fullName ? ` · ${task.assignee.fullName}` : ''}
               </p>
             </div>
-            <button type="button" className="ghost" disabled={busy} onClick={() => void onDone(task.id)}>
-              {t('supplier.taskDone')}
-            </button>
+            <div className="lead-tasks-actions">
+              {task.status === 'TODO' ? (
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={busy}
+                  onClick={() => void onUpdate(task.id, { status: 'IN_PROGRESS' })}
+                >
+                  {t('supplier.taskStart')}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="ghost"
+                disabled={busy}
+                onClick={() => void onUpdate(task.id, { status: 'DONE' })}
+              >
+                {t('supplier.taskDone')}
+              </button>
+            </div>
           </li>
         ))}
         {done.slice(0, 3).map((task) => (
           <li key={task.id} className="is-done">
             <div>
-              <b>{task.title}</b>
+              <b>
+                <span className="lead-code">{task.code}</span> {task.title}
+              </b>
               <p className="meta">{t('supplier.taskClosed')}</p>
             </div>
           </li>

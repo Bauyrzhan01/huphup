@@ -22,6 +22,7 @@ import { SupplierCrmPage } from './pages/supplier/SupplierCrmPage';
 import { SupplierCrmSettingsPage } from './pages/supplier/SupplierCrmSettingsPage';
 import { SupplierOffersPage } from './pages/supplier/SupplierOffersPage';
 import { SupplierLeadsPage } from './pages/supplier/SupplierLeadsPage';
+import { SupplierTasksPage } from './pages/supplier/SupplierTasksPage';
 import { SupplierProductsPage } from './pages/supplier/SupplierProductsPage';
 import { SupplierProductDetailPage } from './pages/supplier/SupplierProductDetailPage';
 import { SupplierTeamPage } from './pages/supplier/SupplierTeamPage';
@@ -150,6 +151,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <SupplierOffersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supplier/tasks"
+          element={
+            <ProtectedRoute>
+              <SupplierTasksPage />
             </ProtectedRoute>
           }
         />

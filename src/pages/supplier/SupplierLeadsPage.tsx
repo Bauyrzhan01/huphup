@@ -438,6 +438,7 @@ export function SupplierLeadsPage() {
                   />
                   <LeadTasksPanel
                     tasks={tasks}
+                    members={members}
                     busy={crmBusy}
                     onAdd={async (input) => {
                       setCrmBusy(true);
@@ -448,10 +449,10 @@ export function SupplierLeadsPage() {
                         setCrmBusy(false);
                       }
                     }}
-                    onDone={async (taskId) => {
+                    onUpdate={async (taskId, body) => {
                       setCrmBusy(true);
                       try {
-                        await leadsApi.completeTask(selected.id, taskId);
+                        await leadsApi.updateTask(selected.id, taskId, body);
                         await reloadCrmData(selected.id);
                       } finally {
                         setCrmBusy(false);
