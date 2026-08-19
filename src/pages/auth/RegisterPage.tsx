@@ -2,9 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
-import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { PasswordInput } from '../../components/PasswordInput';
 import { mapApiError } from '../../utils/apiErrors';
+import { AuthLayout } from './AuthLayout';
 
 export function RegisterPage() {
   const { t } = useTranslation();
@@ -12,7 +12,9 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next') || '/app';
-  const role = params.get('role') === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER';
+  const [role, setRole] = useState<'BUYER' | 'SUPPLIER'>(
+    params.get('role') === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER',
+  );
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +22,7 @@ export function RegisterPage() {
   const [busy, setBusy] = useState(false);
 
   if (!loading && user) {
-    return <Navigate to={next} replace />;
+    return <Navigate to={user.role === 'SUPPLIER' ? '/supplier' : next} replace />;
   }
 
   async function onSubmit(e: FormEvent) {
@@ -38,59 +40,67 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="home-shell auth-shell">
-      <div className="auth-lang">
-        <LanguageSwitcher compact />
-      </div>
-      <div className="home-center" style={{ maxWidth: 480 }}>
-        <div className="brand" style={{ justifyContent: 'center', marginBottom: 18 }}>
-          <div className="logo">H</div>HupHup
+    <AuthLayout mode="register" title={t('auth.register')} lead={t('auth.registerLead')}>
+      <form className="hh-auth-form" onSubmit={onSubmit}>
+        <div className="hh-auth-roles" role="tablist" aria-label={t('auth.roleLabel')}>
+          <button
+            type="button"
+            className={`hh-auth-role${role === 'BUYER' ? ' is-on' : ''}`}
+            onClick={() => setRole('BUYER')}
+          >
+            {t('auth.roleBuyer')}
+          </button>
+          <button
+            type="button"
+            className={`hh-auth-role${role === 'SUPPLIER' ? ' is-on' : ''}`}
+            onClick={() => setRole('SUPPLIER')}
+          >
+            {t('auth.roleSupplier')}
+          </button>
         </div>
-        <h1 style={{ fontSize: 28 }}>{t('auth.register')}</h1>
-        <form className="panel" onSubmit={onSubmit}>
-          <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
-            <div className="field">
-              <label>{t('auth.nameOrCompany')}</label>
-              <input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-            </div>
-            <div className="field">
-              <label>{t('auth.email')}</label>
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-                required
-              />
-            </div>
-            <div className="field">
-              <label>{t('auth.password')}</label>
-              <PasswordInput
-                value={password}
-                onChange={setPassword}
-                autoComplete="new-password"
-                minLength={8}
-                required
-              />
-            </div>
-          </div>
-          <p className="assist-note" style={{ textAlign: 'left', marginTop: 12 }}>
-            {t('auth.registerHint')}
-          </p>
-          {error ? (
-            <p className="notice" style={{ marginTop: 12, color: '#b45309' }}>
-              {error}
-            </p>
-          ) : null}
-          <div className="actions">
-            <Link className="ghost" to={`/login${next !== '/app' ? `?next=${encodeURIComponent(next)}` : ''}`}>
-              {t('auth.hasAccount')}
-            </Link>
-            <button className="primary" disabled={busy}>
-              {busy ? '...' : t('auth.signUp')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="hh-auth-field">
+          <label htmlFor="auth-name">{t('auth.nameOrCompany')}</label>
+          <input
+            id="auth-name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+            autoComplete="name"
+          />
+        </div>
+        <div className="hh-auth-field">
+          <label htmlFor="auth-email">{t('auth.email')}</label>
+          <input
+            id="auth-email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            required
+            autoComplete="email"
+          />
+        </div>
+        <div className="hh-auth-field">
+          <label htmlFor="auth-password">{t('auth.password')}</label>
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+        </div>
+        <p className="hh-auth-hint">{t('auth.registerHint')}</p>
+        {error ? <p className="hh-auth-error">{error}</p> : null}
+        <button className="hh-auth-submit" disabled={busy}>
+          {busy ? '…' : t('auth.signUp')}
+        </button>
+      </form>
+      <p className="hh-auth-foot">
+        {t('auth.hasAccount')}
+        <Link to={`/login${next !== '/app' ? `?next=${encodeURIComponent(next)}` : ''}`}>
+          {t('auth.signIn')}
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }
