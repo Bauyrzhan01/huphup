@@ -219,6 +219,13 @@ export const requestsApi = {
     api<RequestItem>(`/requests/${id}/cancel`, { method: 'POST' }),
   close: (id: string) =>
     api<RequestItem>(`/requests/${id}/close`, { method: 'POST' }),
+  favorite: (id: string, isFavorite?: boolean) =>
+    api<RequestItem>(`/requests/${id}/favorite`, {
+      method: 'POST',
+      body: JSON.stringify(isFavorite === undefined ? {} : { isFavorite }),
+    }),
+  hide: (id: string) =>
+    api<RequestItem>(`/requests/${id}`, { method: 'DELETE' }),
 };
 
 export const attachmentsApi = {

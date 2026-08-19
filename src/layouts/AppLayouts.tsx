@@ -21,6 +21,7 @@ import { AppIcon } from '../components/AppIcon';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { NotificationsBell } from '../components/NotificationsBell';
 import { PresenceDot } from '../components/PresenceDot';
+import { RecentRequestRow } from '../components/RecentRequestRow';
 import { UserAvatar } from '../components/UserAvatar';
 import { useMobileNav } from '../hooks/useMobileNav';
 import type { CompanyMember, NotificationItem, RequestItem } from '../types';
@@ -93,11 +94,15 @@ export function BuyerLayout({
   const [recent, setRecent] = useState<RequestItem[]>([]);
   const [unread, setUnread] = useState(0);
 
-  useEffect(() => {
+  function loadRecent() {
     void requestsApi
       .list()
-      .then((list) => setRecent(list.slice(0, 5)))
+      .then((list) => setRecent(list.slice(0, 8)))
       .catch(() => setRecent([]));
+  }
+
+  useEffect(() => {
+    loadRecent();
     void notificationsApi
       .list()
       .then((list) => setUnread(list.filter((n) => !n.isRead).length))
@@ -162,9 +167,12 @@ export function BuyerLayout({
               </span>
             ) : (
               recent.map((r) => (
-                <Link key={r.id} to={`/requests/${r.id}`} onClick={closeNav}>
-                  {r.title}
-                </Link>
+                <RecentRequestRow
+                  key={r.id}
+                  request={r}
+                  onCloseNav={closeNav}
+                  onChanged={loadRecent}
+                />
               ))
             )}
           </div>

@@ -152,6 +152,8 @@ export type RequestItem = {
   status: string;
   createdAt: string;
   rawText?: string | null;
+  isFavorite?: boolean;
+  hiddenAt?: string | null;
   _count?: { offers: number; leads: number };
   offers?: Offer[];
   leads?: Array<{

@@ -2057,7 +2057,74 @@ body.mobile-nav-open{overflow:hidden}
 .crm-stage-row input[type="color"]{width:40px;height:32px;padding:2px;border:none;background:none}
 .crm-automation-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
 .crm-automation-list label{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
-@media(max-width:900px){
-  .crm-analytics-bar>div{min-width:80px}
-  .crm-view-toggle{width:100%;margin-left:0}
+.recent-row{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  min-width:0;
+}
+.recent-row-link{
+  flex:1;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  overflow:hidden;
+}
+.recent-row-link span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.recent-star{
+  flex-shrink:0;
+  color:#111;
+}
+.recent-row-more{
+  flex-shrink:0;
+  width:28px;
+  height:28px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:#8a8a8a;
+  display:grid;
+  place-items:center;
+  padding:0;
+}
+.recent-row-more:hover,
+.recent-row.is-fav .recent-row-more{
+  color:#111;
+  background:#ececee;
+}
+.recent-menu{
+  position:fixed;
+  z-index:80;
+  width:188px;
+  padding:6px;
+  border-radius:12px;
+  background:#fff;
+  border:1px solid #ececee;
+  box-shadow:0 10px 30px rgba(17,17,17,.12);
+  display:grid;
+  gap:2px;
+}
+.recent-menu button{
+  width:100%;
+  text-align:left;
+  border:0;
+  background:transparent;
+  border-radius:8px;
+  padding:9px 10px;
+  font-size:13px;
+  color:#111;
+}
+.recent-menu button:hover{
+  background:#f4f4f5;
+}
+.recent-menu button.is-danger{
+  color:#b45309;
+}
+.recent-menu button:disabled{
+  opacity:.55;
 }
