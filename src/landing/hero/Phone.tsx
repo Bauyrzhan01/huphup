@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 
-const RINGS = 8;
-const RING_Z0 = -5;
-const RING_STEP = 1.25;
+const RINGS = 2;
 
 export function Body() {
   return <div className="hh-body" aria-hidden="true" />;
@@ -15,7 +13,6 @@ export function MetalFrame() {
         <div
           key={i}
           className={`hh-ring${i === 1 || i === RINGS - 2 ? ' hh-ring-highlight' : ''}`}
-          style={{ transform: `translateZ(${RING_Z0 + i * RING_STEP}px)` }}
           aria-hidden="true"
         />
       ))}

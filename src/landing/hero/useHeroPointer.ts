@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useMotionValue, useSpring, type MotionValue } from 'framer-motion';
 
-const SPRING = { stiffness: 48, damping: 22, mass: 0.45 };
+const SPRING = { stiffness: 120, damping: 28, mass: 0.8 };
 
 export type HeroPointer = {
   nx: MotionValue<number>;
