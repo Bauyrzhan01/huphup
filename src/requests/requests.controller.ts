@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -86,6 +87,12 @@ export class RequestsController {
     @Body() dto: FavoriteRequestDto,
   ) {
     return this.requestsService.setFavorite(user.id, id, dto?.isFavorite);
+  }
+
+  @Post(':id/hide')
+  @HttpCode(200)
+  hidePost(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requestsService.hide(user.id, id);
   }
 
   @Delete(':id')

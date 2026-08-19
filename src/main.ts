@@ -42,6 +42,8 @@ async function bootstrap() {
       callback(null, allowed);
     },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   const swagger = new DocumentBuilder()
