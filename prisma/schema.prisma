@@ -200,20 +200,24 @@ model CompanyMember {
 }
 
 model CompanyInvite {
-  id          String    @id @default(cuid())
-  token       String    @unique
+  id          String             @id @default(cuid())
+  token       String             @unique
   companyId   String
   createdById String
+  email       String
+  role        CompanyMemberRole  @default(MANAGER)
+  title       String?
   expiresAt   DateTime
   usedAt      DateTime?
   usedById    String?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime           @default(now())
 
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdBy User    @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
   usedBy    User?   @relation("InviteUser", fields: [usedById], references: [id], onDelete: SetNull)
 
   @@index([companyId])
+  @@index([email])
   @@map("company_invites")
 }
 

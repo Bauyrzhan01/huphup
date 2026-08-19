@@ -7,7 +7,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { CompanyMemberRole } from '@prisma/client';
+import { CompanyMemberRole, NotificationType, UserRole } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
@@ -387,26 +387,124 @@ export class CompaniesService {
 
   async createInvite(userId: string, dto: CreateInviteDto) {
     const resolved = await this.requireOwner(userId);
+    const email = dto.email.trim().toLowerCase();
+    if (!email) {
+      throw new BadRequestException('Employee email is required');
+    }
+    if (dto.role && dto.role !== CompanyMemberRole.MANAGER) {
+      throw new BadRequestException('Only manager role can be invited');
+    }
     const hours = dto.expiresInHours ?? 72;
     if (hours < 1 || hours > 720) {
       throw new BadRequestException('expiresInHours must be between 1 and 720');
     }
+
+    const owner = await this.prisma.user.findUnique({
+      where: { id: resolved.company.ownerId },
+      select: { email: true },
+    });
+    if (owner?.email.toLowerCase() === email) {
+      throw new BadRequestException('Owner is already in the company');
+    }
+
+    const existingMember = await this.prisma.companyMember.findFirst({
+      where: {
+        companyId: resolved.company.id,
+        user: { email: { equals: email, mode: 'insensitive' } },
+      },
+    });
+    if (existingMember) {
+      throw new ConflictException('This person is already in the company');
+    }
+
+    const pending = await this.prisma.companyInvite.findFirst({
+      where: {
+        companyId: resolved.company.id,
+        email,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+    if (pending) {
+      throw new ConflictException('An active invite already exists for this email');
+    }
+
     const token = randomBytes(24).toString('hex');
     const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
+    const title = dto.title?.trim() || null;
     const invite = await this.prisma.companyInvite.create({
       data: {
         token,
         companyId: resolved.company.id,
         createdById: userId,
+        email,
+        role: CompanyMemberRole.MANAGER,
+        title,
         expiresAt,
       },
     });
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (existingUser) {
+      await this.prisma.notification.create({
+        data: {
+          userId: existingUser.id,
+          type: NotificationType.SYSTEM,
+          title: resolved.company.name,
+          body: email,
+          payload: {
+            inviteToken: token,
+            path: `/invite/${token}`,
+          },
+        },
+      });
+    }
+
     return {
       id: invite.id,
       token: invite.token,
+      email: invite.email,
+      role: invite.role,
+      title: invite.title,
       expiresAt: invite.expiresAt,
       urlPath: `/invite/${invite.token}`,
     };
+  }
+
+  async listInvites(userId: string) {
+    const resolved = await this.requireOwner(userId);
+    return this.prisma.companyInvite.findMany({
+      where: {
+        companyId: resolved.company.id,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        title: true,
+        expiresAt: true,
+        createdAt: true,
+        token: true,
+      },
+    });
+  }
+
+  async revokeInvite(userId: string, inviteId: string) {
+    const resolved = await this.requireOwner(userId);
+    const invite = await this.prisma.companyInvite.findFirst({
+      where: { id: inviteId, companyId: resolved.company.id, usedAt: null },
+    });
+    if (!invite) {
+      throw new NotFoundException('Invite not found');
+    }
+    await this.prisma.companyInvite.delete({ where: { id: invite.id } });
+    return { ok: true };
   }
 
   async getInvitePublic(token: string) {
@@ -423,6 +521,9 @@ export class CompaniesService {
     const used = Boolean(invite.usedAt);
     return {
       company: invite.company,
+      email: invite.email || null,
+      role: invite.role,
+      title: invite.title,
       expiresAt: invite.expiresAt,
       valid: !expired && !used,
       expired,
@@ -445,6 +546,17 @@ export class CompaniesService {
       throw new BadRequestException('Invite expired');
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (invite.email && user.email.toLowerCase() !== invite.email.toLowerCase()) {
+      throw new ForbiddenException('Sign in with the invited email');
+    }
+
     const existingMembership = await this.prisma.companyMember.findUnique({
       where: { userId },
     });
@@ -459,14 +571,23 @@ export class CompaniesService {
       throw new BadRequestException('Owner is already in the company');
     }
 
+    const role =
+      invite.role === CompanyMemberRole.OWNER
+        ? CompanyMemberRole.MANAGER
+        : invite.role;
+
     await this.prisma.$transaction([
       this.prisma.companyMember.create({
         data: {
           companyId: invite.companyId,
           userId,
-          role: CompanyMemberRole.MANAGER,
-          title: 'Manager',
+          role,
+          title: invite.title,
         },
+      }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { role: UserRole.SUPPLIER },
       }),
       this.prisma.companyInvite.update({
         where: { id: invite.id },

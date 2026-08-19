@@ -73,6 +73,19 @@ export class CompaniesController {
     return this.companiesService.createInvite(user.id, dto);
   }
 
+  @Get('me/invites')
+  listInvites(@CurrentUser() user: AuthUser) {
+    return this.companiesService.listInvites(user.id);
+  }
+
+  @Delete('me/invites/:inviteId')
+  revokeInvite(
+    @CurrentUser() user: AuthUser,
+    @Param('inviteId') inviteId: string,
+  ) {
+    return this.companiesService.revokeInvite(user.id, inviteId);
+  }
+
   @Post('me/logo')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
