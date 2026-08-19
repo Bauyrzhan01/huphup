@@ -45,7 +45,32 @@ function LogoutButton() {
   );
 }
 
-function MobileNavButton({ onOpen }: { onOpen: () => void }) {
+function SessionUserChip({
+  roleLabel,
+  extra,
+}: {
+  roleLabel: string;
+  extra?: string;
+}) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const name = user?.fullName?.trim() || user?.email || t('common.empty');
+  const line = extra ? `${roleLabel} · ${extra}` : roleLabel;
+
+  return (
+    <Link className="top-user" to="/profile" title={name}>
+      <UserAvatar
+        name={name}
+        avatarUrl={user?.avatarUrl}
+        className="top-user-avatar"
+      />
+      <span className="top-user-copy">
+        <span className="top-user-name">{name}</span>
+        <span className="top-user-role">{line}</span>
+      </span>
+    </Link>
+  );
+}
   const { t } = useTranslation();
   return (
     <button
@@ -215,6 +240,7 @@ export function BuyerLayout({
                 <span className="mode-long">{t('nav.supplierMode')}</span>
                 <span className="mode-short">{t('nav.supplierShort')}</span>
               </Link>
+              <SessionUserChip roleLabel={t('nav.buyer')} />
             </div>
           </div>
           {children}
@@ -405,6 +431,10 @@ export function SupplierLayout({
                 <span className="mode-long">{t('nav.buyerMode')}</span>
                 <span className="mode-short">{t('nav.buyerShort')}</span>
               </Link>
+              <SessionUserChip
+                roleLabel={t('nav.supplier')}
+                extra={companyName !== user?.fullName ? companyName : undefined}
+              />
             </div>
           </div>
           {children}
