@@ -12,9 +12,7 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next') || '/app';
-  const [role, setRole] = useState<'BUYER' | 'SUPPLIER'>(
-    params.get('role') === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER',
-  );
+  const startInSupplier = params.get('role') === 'SUPPLIER';
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,8 +28,8 @@ export function RegisterPage() {
     setBusy(true);
     setError('');
     try {
-      await register({ email, password, fullName, role });
-      navigate(role === 'SUPPLIER' ? '/supplier' : next);
+      await register({ email, password, fullName });
+      navigate(startInSupplier ? '/supplier' : next);
     } catch (err) {
       setError(mapApiError(err, t));
     } finally {
@@ -42,28 +40,6 @@ export function RegisterPage() {
   return (
     <AuthLayout mode="register" title={t('auth.register')} lead={t('auth.registerLead')}>
       <form className="hh-auth-form" onSubmit={onSubmit}>
-        <div className="hh-auth-roles" role="radiogroup" aria-label={t('auth.roleLabel')}>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={role === 'BUYER'}
-            className={`hh-auth-role-card${role === 'BUYER' ? ' is-on' : ''}`}
-            onClick={() => setRole('BUYER')}
-          >
-            <b>{t('auth.roleBuyer')}</b>
-            <span>{t('auth.roleBuyerHint')}</span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={role === 'SUPPLIER'}
-            className={`hh-auth-role-card${role === 'SUPPLIER' ? ' is-on' : ''}`}
-            onClick={() => setRole('SUPPLIER')}
-          >
-            <b>{t('auth.roleSupplier')}</b>
-            <span>{t('auth.roleSupplierHint')}</span>
-          </button>
-        </div>
         <div className="hh-auth-row">
           <div className="hh-auth-field">
             <label htmlFor="auth-name">{t('auth.nameOrCompany')}</label>

@@ -275,48 +275,10 @@
   letter-spacing: 0.12em;
 }
 
-.hh-auth-roles,
 .hh-auth-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-}
-
-.hh-auth-role-card {
-  display: grid;
-  gap: 4px;
-  text-align: left;
-  min-height: 84px;
-  padding: 14px 16px;
-  border: 1px solid #e6e6e8;
-  border-radius: 16px;
-  background: #fafafa;
-  color: #555;
-}
-
-.hh-auth-role-card b {
-  font-size: 14px;
-  color: #111;
-}
-
-.hh-auth-role-card span {
-  font-size: 12px;
-  line-height: 1.4;
-  color: #737373;
-}
-
-.hh-auth-role-card.is-on {
-  background: #111;
-  border-color: #111;
-}
-
-.hh-auth-role-card.is-on b,
-.hh-auth-role-card.is-on span {
-  color: #fff;
-}
-
-.hh-auth-role-card.is-on span {
-  color: #c4c4c4;
 }
 
 .hh-auth-error {
@@ -411,7 +373,6 @@
     display: none;
   }
 
-  .hh-auth-roles,
   .hh-auth-row {
     grid-template-columns: 1fr;
   }
