@@ -114,7 +114,9 @@ export function BuyerLayout({
       <div className="mobile-top">
         <div className="mobile-top-start">
           <MobileNavButton onOpen={openNav} />
-          <b className="mobile-brand">HupHup</b>
+          <Link className="mobile-brand" to="/app" aria-label={t('nav.home')}>
+            HupHup
+          </Link>
         </div>
         <Link className="mobile-top-link" to="/app">
           {t('nav.newShort')}
@@ -129,9 +131,9 @@ export function BuyerLayout({
         />
         <aside className="sidebar">
           <div className="sidebar-head">
-            <div className="brand">
+            <Link className="brand" to="/app" aria-label={t('nav.home')} onClick={closeNav}>
               <div className="logo">H</div>HupHup
-            </div>
+            </Link>
             <MobileNavClose onClose={closeNav} />
           </div>
           <Link className="side-action" to="/app" onClick={closeNav}>
@@ -278,7 +280,9 @@ export function SupplierLayout({
       <div className="mobile-top">
         <div className="mobile-top-start">
           <MobileNavButton onOpen={openNav} />
-          <b className="mobile-brand">HupHup</b>
+          <Link className="mobile-brand" to="/supplier" aria-label={t('nav.home')}>
+            HupHup
+          </Link>
         </div>
         <Link className="mobile-top-link" to="/supplier/leads">
           {t('nav.newLeads')}
@@ -293,9 +297,9 @@ export function SupplierLayout({
         />
         <aside className="sidebar">
           <div className="sidebar-head">
-            <div className="brand">
+            <Link className="brand" to="/supplier" aria-label={t('nav.home')} onClick={closeNav}>
               <div className="logo">H</div>HupHup
-            </div>
+            </Link>
             <MobileNavClose onClose={closeNav} />
           </div>
           <Link className="side-action" to="/supplier/leads" onClick={closeNav}>
