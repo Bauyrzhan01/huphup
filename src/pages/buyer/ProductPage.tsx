@@ -11,6 +11,7 @@ import { UserAvatar } from '../../components/UserAvatar';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import { mapApiError } from '../../utils/apiErrors';
+import { formatProductPrice } from '../../utils/productPrice';
 import type { Product } from '../../types';
 
 export function ProductPage() {
@@ -100,11 +101,14 @@ export function ProductPage() {
                     {product.description || t('common.empty')}
                   </p>
                   <p className="meta">
-                    {[product.unit, product.city ? `г. ${product.city}` : null]
+                    {[product.unit, product.city || company?.city]
                       .filter(Boolean)
                       .join(' · ')}
                   </p>
-                  <p className="meta product-price-contact">{t('products.priceOnContact')}</p>
+                  <p className="meta product-price-contact">
+                    {formatProductPrice(product.priceFrom, product.currency) ??
+                      t('products.priceOnContact')}
+                  </p>
                   <div className="product-card-rating">
                     {product.reviewCount && product.avgRating != null ? (
                       <>
@@ -149,7 +153,7 @@ export function ProductPage() {
                           <input
                             value={quantity}
                             onChange={(e) => setQuantity(e.target.value)}
-                            placeholder={t('products.quantityPlaceholder')}
+                            placeholder={product.unit || t('products.quantityPlaceholder')}
                             required
                           />
                         </span>
@@ -205,10 +209,19 @@ export function ProductPage() {
                       <b>{company.name}</b>
                     </p>
                   )}
+                  {company.description?.trim() ? (
+                    <p className="product-page-desc">{company.description.trim()}</p>
+                  ) : null}
                   <dl className="supplier-profile-dl">
+                    {company.bin ? (
+                      <div>
+                        <dt>{t('suppliers.bin')}</dt>
+                        <dd>{company.bin}</dd>
+                      </div>
+                    ) : null}
                     <div>
                       <dt>{t('suppliers.statCity')}</dt>
-                      <dd>{company.city || t('common.empty')}</dd>
+                      <dd>{company.city || product.city || t('common.empty')}</dd>
                     </div>
                     <div>
                       <dt>{t('suppliers.statRating')}</dt>
@@ -220,6 +233,12 @@ export function ProductPage() {
                       <div>
                         <dt>{t('suppliers.owner')}</dt>
                         <dd>{company.owner.fullName}</dd>
+                      </div>
+                    ) : null}
+                    {company.categories?.length ? (
+                      <div>
+                        <dt>{t('suppliers.statCategories')}</dt>
+                        <dd>{company.categories.join(', ')}</dd>
                       </div>
                     ) : null}
                     {company.createdAt ? (

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { PublicProduct } from '../types';
+import { formatProductPrice } from '../utils/productPrice';
 import { ProductImageGallery } from './ProductImageGallery';
 import { ProductStars } from './ProductReviews';
 
@@ -25,7 +26,10 @@ export function ProductCatalogCard({
               <div className="meta">
                 {[product.unit, product.city].filter(Boolean).join(' · ')}
               </div>
-              <p className="meta product-price-contact">{t('products.priceOnContact')}</p>
+              <p className="meta product-price-contact">
+                {formatProductPrice(product.priceFrom, product.currency) ??
+                  t('products.priceOnContact')}
+              </p>
               <div className="product-card-rating">
                 {product.reviewCount && product.avgRating != null ? (
                   <>
