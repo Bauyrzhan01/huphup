@@ -210,6 +210,11 @@ export const requestsApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  createDirect: (body: { productId: string; quantity: string; deadline: string }) =>
+    api<{ request: RequestItem; companyId: string; productId: string }>('/requests/direct', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   update: (id: string, body: Record<string, unknown>) =>
     api<RequestItem>(`/requests/${id}`, {
       method: 'PATCH',

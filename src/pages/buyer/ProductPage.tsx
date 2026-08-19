@@ -1,22 +1,28 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { productsApi } from '../../api';
+import { productsApi, requestsApi } from '../../api';
 import { ProductImageGallery } from '../../components/ProductImageGallery';
 import { ProductReviews, ProductStars } from '../../components/ProductReviews';
 import { RatingStar, VerifiedMark } from '../../components/RatingIcons';
 import { UserAvatar } from '../../components/UserAvatar';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
+import { mapApiError } from '../../utils/apiErrors';
 import type { Product } from '../../types';
 
 export function ProductPage() {
   const { t } = useTranslation();
   const { formatDate } = useAppLocale();
+  const navigate = useNavigate();
   const { id = '' } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [sending, setSending] = useState(false);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -30,6 +36,25 @@ export function ProductPage() {
 
   const company = product?.company;
   const rating = company ? Number(company.rating) : 0;
+
+  async function onDirectRequest(e: FormEvent) {
+    e.preventDefault();
+    if (!product) return;
+    setSending(true);
+    setFormError('');
+    try {
+      const res = await requestsApi.createDirect({
+        productId: product.id,
+        quantity: quantity.trim(),
+        deadline: deadline.trim(),
+      });
+      navigate(`/requests/${res.request.id}`);
+    } catch (err) {
+      setFormError(mapApiError(err, t));
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <BuyerLayout crumb={t('products.detailCrumb')}>
@@ -94,15 +119,43 @@ export function ProductPage() {
                     )}
                   </div>
                   <div className="product-page-actions">
-                    <Link className="primary" to="/app">
-                      {t('suppliers.createRequest')}
-                    </Link>
                     {company ? (
                       <Link className="ghost" to={`/suppliers/${company.id}`}>
                         {company.name}
                       </Link>
                     ) : null}
                   </div>
+                  <form className="product-direct-form" onSubmit={(e) => void onDirectRequest(e)}>
+                    <p className="meta">{t('products.directHint')}</p>
+                    <div className="product-direct-fields">
+                      <label>
+                        {t('requests.quantity')}
+                        <input
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value)}
+                          placeholder={t('products.quantityPlaceholder')}
+                          required
+                        />
+                      </label>
+                      <label>
+                        {t('requests.deadline')}
+                        <input
+                          value={deadline}
+                          onChange={(e) => setDeadline(e.target.value)}
+                          placeholder={t('products.deadlinePlaceholder')}
+                          required
+                        />
+                      </label>
+                    </div>
+                    {formError ? (
+                      <p className="notice" style={{ color: '#b45309' }}>
+                        {formError}
+                      </p>
+                    ) : null}
+                    <button className="primary" type="submit" disabled={sending}>
+                      {sending ? t('common.loading') : t('products.sendDirect')}
+                    </button>
+                  </form>
                 </div>
               </section>
 

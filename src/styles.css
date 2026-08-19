@@ -2190,7 +2190,19 @@ body.mobile-nav-open{overflow:hidden}
 .product-page-company{display:flex;align-items:center;gap:10px}
 .product-page-company b{display:block;margin-bottom:4px}
 .product-page-reviews{margin-top:0}
+.product-direct-form{
+  width:100%;margin-top:8px;display:grid;gap:10px;
+  padding:14px;border:1px solid var(--line);border-radius:16px;background:#fafafa;
+}
+.product-direct-form .meta{margin:0}
+.product-direct-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.product-direct-fields label{display:grid;gap:6px;font-size:12px;font-weight:650;color:#555}
+.product-direct-fields input{
+  border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#fff;outline:0;
+}
+.product-direct-form .primary{justify-self:start}
 @media(max-width:960px){
   .product-page-layout{grid-template-columns:1fr}
   .product-page-hero{grid-template-columns:1fr}
+  .product-direct-fields{grid-template-columns:1fr}
 }
