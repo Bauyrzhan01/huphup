@@ -12,6 +12,7 @@ import { EditRequestPage } from './pages/buyer/EditRequestPage';
 import { SupplierDetailPage } from './pages/buyer/SupplierDetailPage';
 import { OffersPage } from './pages/buyer/OffersPage';
 import { ProfilePage } from './pages/buyer/ProfilePage';
+import { ProductPage } from './pages/buyer/ProductPage';
 import { RequestDetailPage } from './pages/buyer/RequestDetailPage';
 import { RequestsPage } from './pages/buyer/RequestsPage';
 import { SuppliersPage } from './pages/buyer/SuppliersPage';
@@ -100,6 +101,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <SupplierDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/products/:id"
+          element={
+            <ProtectedRoute>
+              <ProductPage />
             </ProtectedRoute>
           }
         />

@@ -181,7 +181,7 @@ export function SupplierDetailPage() {
                 {loading ? <p className="assist-note">{t('common.loading')}</p> : null}
                 <div className="supplier-profile-products">
                   {products.map((p) => (
-                    <ProductCatalogCard key={p.id} product={p} />
+                    <ProductCatalogCard key={p.id} product={p} href={`/products/${p.id}`} />
                   ))}
                 </div>
                 {products.length === 0 && !loading ? (

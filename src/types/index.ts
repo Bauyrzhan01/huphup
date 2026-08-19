@@ -136,6 +136,12 @@ export type Product = {
   images?: ProductImage[];
   avgRating?: number | null;
   reviewCount?: number;
+  company?: Pick<
+    Company,
+    'id' | 'name' | 'city' | 'verified' | 'rating' | 'bin' | 'description' | 'categories' | 'logoUrl' | 'createdAt'
+  > & {
+    owner?: { fullName: string; avatarUrl?: string | null };
+  };
 };
 
 export type RequestItem = {
