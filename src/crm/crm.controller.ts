@@ -89,6 +89,16 @@ export class CrmController {
         idleCount: 0,
         overdueCount: 0,
         byAssignee: [],
+        openTasks: 0,
+        currency: 'KZT',
+        leadDeltaPct: null,
+        acceptedDeltaPct: null,
+        currentLeads: 0,
+        previousLeads: 0,
+        acceptedAmount: 0,
+        pendingAmount: 0,
+        currentAcceptedAmount: 0,
+        series: [],
       };
     }
     return this.crm.getAnalytics(companyId);

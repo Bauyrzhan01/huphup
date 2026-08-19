@@ -6,6 +6,7 @@ import {
   LeadTaskPriority,
   LeadTaskStatus,
   NotificationType,
+  OfferStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -462,6 +463,61 @@ export class LeadCrmService {
     const offered = byStatus.OFFERED;
     const viewedOrMore = byStatus.VIEWED + offered + byStatus.SKIPPED;
 
+    const days = 14;
+    const dayKeys = this.lastUtcDays(days);
+    const prevKeys = this.lastUtcDays(days * 2).slice(0, days);
+    const leadByDay = new Map(dayKeys.map((d) => [d, 0]));
+    const prevLeadCount = { n: 0 };
+    const currentLeadCount = { n: 0 };
+
+    for (const lead of leads) {
+      const key = this.utcDay(lead.createdAt);
+      if (leadByDay.has(key)) {
+        leadByDay.set(key, (leadByDay.get(key) ?? 0) + 1);
+        currentLeadCount.n += 1;
+      } else if (prevKeys.includes(key)) {
+        prevLeadCount.n += 1;
+      }
+    }
+
+    const since = new Date(`${prevKeys[0] ?? dayKeys[0]}T00:00:00.000Z`);
+    const offers = await this.prisma.offer.findMany({
+      where: { companyId, createdAt: { gte: since } },
+      select: { price: true, status: true, createdAt: true, currency: true },
+    });
+
+    const offerCountByDay = new Map(dayKeys.map((d) => [d, 0]));
+    const acceptedSumByDay = new Map(dayKeys.map((d) => [d, 0]));
+    const offerSumByDay = new Map(dayKeys.map((d) => [d, 0]));
+    let currentAccepted = 0;
+    let previousAccepted = 0;
+    let pendingSum = 0;
+    let acceptedSumAll = 0;
+    let currency = 'KZT';
+
+    for (const offer of offers) {
+      const key = this.utcDay(offer.createdAt);
+      const price = Number(offer.price);
+      if (offer.currency) currency = offer.currency;
+      if (offer.status === OfferStatus.PENDING) pendingSum += price;
+      if (offer.status === OfferStatus.ACCEPTED) acceptedSumAll += price;
+
+      if (offerCountByDay.has(key)) {
+        offerCountByDay.set(key, (offerCountByDay.get(key) ?? 0) + 1);
+        offerSumByDay.set(key, (offerSumByDay.get(key) ?? 0) + price);
+        if (offer.status === OfferStatus.ACCEPTED) {
+          acceptedSumByDay.set(key, (acceptedSumByDay.get(key) ?? 0) + price);
+          currentAccepted += price;
+        }
+      } else if (prevKeys.includes(key) && offer.status === OfferStatus.ACCEPTED) {
+        previousAccepted += price;
+      }
+    }
+
+    const openTasks = await this.prisma.leadTask.count({
+      where: { companyId, status: { not: LeadTaskStatus.DONE } },
+    });
+
     return {
       total,
       byStatus,
@@ -476,7 +532,44 @@ export class LeadCrmService {
         userId,
         ...row,
       })),
+      openTasks,
+      currency,
+      leadDeltaPct: this.deltaPct(currentLeadCount.n, prevLeadCount.n),
+      acceptedDeltaPct: this.deltaPct(currentAccepted, previousAccepted),
+      currentLeads: currentLeadCount.n,
+      previousLeads: prevLeadCount.n,
+      acceptedAmount: Math.round(acceptedSumAll),
+      pendingAmount: Math.round(pendingSum),
+      currentAcceptedAmount: Math.round(currentAccepted),
+      series: dayKeys.map((date) => ({
+        date,
+        leads: leadByDay.get(date) ?? 0,
+        offers: offerCountByDay.get(date) ?? 0,
+        offerAmount: Math.round(offerSumByDay.get(date) ?? 0),
+        acceptedAmount: Math.round(acceptedSumByDay.get(date) ?? 0),
+      })),
     };
+  }
+
+  private utcDay(value: Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  private lastUtcDays(count: number) {
+    const days: string[] = [];
+    const now = new Date();
+    for (let i = count - 1; i >= 0; i -= 1) {
+      const d = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i),
+      );
+      days.push(d.toISOString().slice(0, 10));
+    }
+    return days;
+  }
+
+  private deltaPct(current: number, previous: number) {
+    if (previous <= 0) return current > 0 ? null : 0;
+    return Math.round(((current - previous) / previous) * 100);
   }
 
   async runAutomations(companyId: string, ownerId: string) {
