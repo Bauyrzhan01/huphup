@@ -95,7 +95,7 @@ export function RecentRequestRow({
         navigate('/app', { replace: true });
       }
     } catch {
-      window.alert(t('common.error'));
+      onHidden?.(request.id);
     } finally {
       setBusy(false);
     }

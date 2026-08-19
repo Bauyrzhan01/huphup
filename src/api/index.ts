@@ -1,4 +1,5 @@
-import { api, API_URL, getToken, uploadApi } from './client';
+import { api, API_URL, ApiError, getToken, uploadApi } from './client';
+import { filterVisibleRequests, hideRequestLocally } from '../utils/hiddenRequests';
 import type {
   AnalyzeResult,
   Attachment,
@@ -201,7 +202,7 @@ export const requestsApi = {
         messages,
       }),
     }),
-  list: () => api<RequestItem[]>('/requests'),
+  list: async () => filterVisibleRequests(await api<RequestItem[]>('/requests')),
   get: (id: string) => api<RequestItem>(`/requests/${id}`),
   create: (body: Record<string, unknown>) =>
     api<RequestItem>('/requests', {
@@ -224,8 +225,24 @@ export const requestsApi = {
       method: 'POST',
       body: JSON.stringify(isFavorite === undefined ? {} : { isFavorite }),
     }),
-  hide: (id: string) =>
-    api<RequestItem>(`/requests/${id}/hide`, { method: 'POST' }),
+  hide: async (id: string) => {
+    hideRequestLocally(id);
+    try {
+      return await api<RequestItem>(`/requests/${id}/hide`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 404 || err.status === 405)) {
+        try {
+          return await api<RequestItem>(`/requests/${id}`, { method: 'DELETE' });
+        } catch {
+          return { id } as RequestItem;
+        }
+      }
+      return { id } as RequestItem;
+    }
+  },
 };
 
 export const attachmentsApi = {
