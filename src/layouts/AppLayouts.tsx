@@ -7,6 +7,7 @@ import {
   FileCheck,
   Home,
   Inbox,
+  LayoutDashboard,
   LayoutGrid,
   ListTodo,
   Menu,
@@ -336,6 +337,10 @@ export function SupplierLayout({
           </Link>
           <nav className="nav">
             <NavLink to="/supplier" end onClick={closeNav}>
+              <AppIcon icon={LayoutDashboard} className="ico" />
+              {t('nav.dashboard')}
+            </NavLink>
+            <NavLink to="/supplier/deals" onClick={closeNav}>
               <AppIcon icon={LayoutGrid} className="ico" />
               {t('nav.crm')}
             </NavLink>

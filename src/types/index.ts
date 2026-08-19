@@ -300,6 +300,22 @@ export type CrmAnalytics = {
     total: number;
     offered: number;
   }>;
+  openTasks?: number;
+  currency?: string;
+  leadDeltaPct?: number | null;
+  acceptedDeltaPct?: number | null;
+  currentLeads?: number;
+  previousLeads?: number;
+  acceptedAmount?: number;
+  pendingAmount?: number;
+  currentAcceptedAmount?: number;
+  series?: Array<{
+    date: string;
+    leads: number;
+    offers: number;
+    offerAmount: number;
+    acceptedAmount: number;
+  }>;
 };
 
 export type AnalyzeQuestion = {

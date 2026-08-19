@@ -20,6 +20,7 @@ import { ConversationsPage } from './pages/ConversationsPage';
 import { SupplierCompanyPage } from './pages/supplier/SupplierCompanyPage';
 import { SupplierCrmPage } from './pages/supplier/SupplierCrmPage';
 import { SupplierCrmSettingsPage } from './pages/supplier/SupplierCrmSettingsPage';
+import { SupplierDashboardPage } from './pages/supplier/SupplierDashboardPage';
 import { SupplierOffersPage } from './pages/supplier/SupplierOffersPage';
 import { SupplierLeadsPage } from './pages/supplier/SupplierLeadsPage';
 import { SupplierTasksPage } from './pages/supplier/SupplierTasksPage';
@@ -140,6 +141,14 @@ export default function App() {
         />
         <Route
           path="/supplier"
+          element={
+            <ProtectedRoute>
+              <SupplierDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supplier/deals"
           element={
             <ProtectedRoute>
               <SupplierCrmPage />

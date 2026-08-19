@@ -56,7 +56,7 @@ export function SupplierCrmSettingsPage() {
   return (
     <SupplierLayout crumb={t('supplier.crmSettings')}>
       <div className="page">
-        <Link className="ghost" to="/supplier" style={{ marginBottom: 16, display: 'inline-block' }}>
+        <Link className="ghost" to="/supplier/deals" style={{ marginBottom: 16, display: 'inline-block' }}>
           ← {t('supplier.dealsTitle')}
         </Link>
         <div className="page-head">
