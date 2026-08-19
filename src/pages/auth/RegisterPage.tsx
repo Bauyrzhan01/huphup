@@ -14,7 +14,7 @@ export function RegisterPage() {
   const next = params.get('next') || '/app';
   const startInSupplier = params.get('role') === 'SUPPLIER';
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => params.get('email') || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);

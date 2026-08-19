@@ -9,7 +9,7 @@ import type { InvitePreview } from '../types';
 export function InviteAcceptPage() {
   const { t } = useTranslation();
   const { token = '' } = useParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refresh, logout } = useAuth();
   const navigate = useNavigate();
   const [invite, setInvite] = useState<InvitePreview | null>(null);
   const [error, setError] = useState('');
@@ -34,6 +34,7 @@ export function InviteAcceptPage() {
     setError('');
     try {
       await invitesApi.accept(token);
+      await refresh();
       setDone(true);
       navigate('/supplier', { replace: true });
     } catch (err) {
@@ -64,6 +65,18 @@ export function InviteAcceptPage() {
                   <span>{t('team.inviteCompany')}</span>
                   <b>{invite.company.name}</b>
                 </div>
+                {invite.email ? (
+                  <div className="kv">
+                    <span>{t('team.inviteEmail')}</span>
+                    <b>{invite.email}</b>
+                  </div>
+                ) : null}
+                {invite.title ? (
+                  <div className="kv">
+                    <span>{t('team.inviteJobTitle')}</span>
+                    <b>{invite.title}</b>
+                  </div>
+                ) : null}
                 {invite.company.city ? (
                   <div className="kv">
                     <span>{t('supplier.companyCity')}</span>
@@ -91,6 +104,11 @@ export function InviteAcceptPage() {
                 {error}
               </p>
             ) : null}
+            {user && invite?.email && user.email.toLowerCase() !== invite.email.toLowerCase() ? (
+              <p className="notice" style={{ marginTop: 12, color: '#b45309' }}>
+                {t('team.inviteWrongEmail', { email: invite.email })}
+              </p>
+            ) : null}
 
             <div className="actions">
               {!user ? (
@@ -103,12 +121,16 @@ export function InviteAcceptPage() {
                   </Link>
                   <Link
                     className="primary"
-                    to={`/register?next=${encodeURIComponent(`/invite/${token}`)}`}
+                    to={`/register?next=${encodeURIComponent(`/invite/${token}`)}${
+                      invite?.email ? `&email=${encodeURIComponent(invite.email)}` : ''
+                    }`}
                   >
                     {t('auth.signUp')}
                   </Link>
                 </>
-              ) : invite?.valid && !done ? (
+              ) : invite?.valid &&
+                !done &&
+                (!invite.email || user.email.toLowerCase() === invite.email.toLowerCase()) ? (
                 <button
                   type="button"
                   className="primary"
@@ -116,6 +138,12 @@ export function InviteAcceptPage() {
                   onClick={() => void accept()}
                 >
                   {busy ? t('common.loading') : t('team.acceptInvite')}
+                </button>
+              ) : user &&
+                invite?.email &&
+                user.email.toLowerCase() !== invite.email.toLowerCase() ? (
+                <button type="button" className="ghost" onClick={() => logout()}>
+                  {t('common.logout')}
                 </button>
               ) : user ? (
                 <Link className="primary" to="/supplier">

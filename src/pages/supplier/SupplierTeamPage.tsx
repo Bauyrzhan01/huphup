@@ -8,7 +8,7 @@ import { PresenceDot } from '../../components/PresenceDot';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import { isUserOnline } from '../../utils/presence';
-import type { Company, CompanyMember, CompanyMemberRole } from '../../types';
+import type { Company, CompanyMember, CompanyMemberRole, PendingInvite } from '../../types';
 
 export function SupplierTeamPage() {
   const { t } = useTranslation();
@@ -19,8 +19,10 @@ export function SupplierTeamPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
-  const [inviteUrl, setInviteUrl] = useState('');
-  const [inviteExpiresAt, setInviteExpiresAt] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteTitle, setInviteTitle] = useState('');
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+  const [lastInviteUrl, setLastInviteUrl] = useState('');
   const [busy, setBusy] = useState(false);
 
   const isOwner = Boolean(company?.isOwner);
@@ -42,9 +44,13 @@ export function SupplierTeamPage() {
     if (!silent) setLoading(true);
     setError('');
     try {
-      const c = await companiesApi.me();
+      const [c, invites] = await Promise.all([
+        companiesApi.me(),
+        companiesApi.listInvites().catch(() => [] as PendingInvite[]),
+      ]);
       setCompany(c);
       setMembers(c.members ?? (await companiesApi.members()));
+      setPendingInvites(invites);
     } catch {
       if (!silent) {
         setCompany(null);
@@ -67,15 +73,23 @@ export function SupplierTeamPage() {
   );
 
   async function createInvite() {
+    const email = inviteEmail.trim();
+    if (!email) return;
     setBusy(true);
     setError('');
     setMsg('');
     try {
-      const invite = await companiesApi.createInvite({ expiresInHours: 72 });
+      const invite = await companiesApi.createInvite({
+        email,
+        title: inviteTitle.trim() || undefined,
+        expiresInHours: 72,
+      });
       const url = `${window.location.origin}${invite.urlPath}`;
-      setInviteUrl(url);
-      setInviteExpiresAt(invite.expiresAt);
+      setLastInviteUrl(url);
+      setInviteEmail('');
+      setInviteTitle('');
       setMsg(t('team.inviteCreated'));
+      await load(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
@@ -83,13 +97,23 @@ export function SupplierTeamPage() {
     }
   }
 
-  async function copyInvite() {
-    if (!inviteUrl) return;
+  async function copyInvite(url: string) {
     try {
-      await navigator.clipboard.writeText(inviteUrl);
+      await navigator.clipboard.writeText(url);
       setMsg(t('team.copied'));
     } catch {
       setMsg(t('team.copyManual'));
+    }
+  }
+
+  async function revokeInvite(id: string) {
+    setError('');
+    try {
+      await companiesApi.revokeInvite(id);
+      setMsg(t('team.inviteRevoked'));
+      await load(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.error'));
     }
   }
 
@@ -178,52 +202,95 @@ export function SupplierTeamPage() {
                         <div className="section-title">{t('team.inviteTitle')}</div>
                         <p className="meta team-invite-lead">{t('team.inviteHint')}</p>
                       </div>
-                      <button
-                        type="button"
-                        className="primary"
-                        disabled={busy}
-                        onClick={() => void createInvite()}
-                      >
-                        {busy ? t('common.loading') : t('team.createInvite')}
-                      </button>
                     </div>
 
-                    <ol className="team-invite-steps">
-                      <li>{t('team.inviteStep1')}</li>
-                      <li>{t('team.inviteStep2')}</li>
-                      <li>{t('team.inviteStep3')}</li>
-                    </ol>
+                    <form
+                      className="team-invite-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void createInvite();
+                      }}
+                    >
+                      <label>
+                        {t('team.inviteEmail')}
+                        <input
+                          type="email"
+                          required
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          autoComplete="off"
+                        />
+                      </label>
+                      <label>
+                        {t('team.inviteJobTitle')}
+                        <input
+                          value={inviteTitle}
+                          onChange={(e) => setInviteTitle(e.target.value)}
+                          placeholder={t('team.inviteJobPlaceholder')}
+                        />
+                      </label>
+                      <button className="primary" type="submit" disabled={busy}>
+                        {busy ? t('common.loading') : t('team.addEmployee')}
+                      </button>
+                    </form>
 
-                    {inviteUrl ? (
+                    {lastInviteUrl ? (
                       <div className="team-invite-result">
                         <div className="team-invite-meta">
                           <span className="chip soft">{t('team.inviteActive')}</span>
-                          {inviteExpiresAt ? (
-                            <span className="meta">
-                              {t('team.inviteExpiresAt', {
-                                date: formatDateTime(inviteExpiresAt),
-                              })}
-                            </span>
-                          ) : null}
                         </div>
-                        <div className="team-invite-link">{inviteUrl}</div>
+                        <div className="team-invite-link">{lastInviteUrl}</div>
                         <div className="actions" style={{ marginTop: 12 }}>
                           <button
                             type="button"
                             className="ghost"
-                            onClick={() => void copyInvite()}
+                            onClick={() => void copyInvite(lastInviteUrl)}
                           >
                             {t('team.copyLink')}
                           </button>
-                          <button
-                            type="button"
-                            className="ghost"
-                            disabled={busy}
-                            onClick={() => void createInvite()}
-                          >
-                            {t('team.createAnother')}
-                          </button>
                         </div>
+                      </div>
+                    ) : null}
+
+                    {pendingInvites.length ? (
+                      <div className="team-pending">
+                        <div className="section-title">{t('team.pendingTitle')}</div>
+                        {pendingInvites.map((inv) => {
+                          const url = `${window.location.origin}/invite/${inv.token}`;
+                          return (
+                            <div key={inv.id} className="team-pending-row">
+                              <div>
+                                <b>{inv.email}</b>
+                                <p className="meta">
+                                  {[inv.title, t('team.roleManager')]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                                  {inv.expiresAt
+                                    ? ` · ${t('team.inviteExpiresAt', {
+                                        date: formatDateTime(inv.expiresAt),
+                                      })}`
+                                    : ''}
+                                </p>
+                              </div>
+                              <div className="actions">
+                                <button
+                                  type="button"
+                                  className="ghost"
+                                  onClick={() => void copyInvite(url)}
+                                >
+                                  {t('team.copyLink')}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="ghost"
+                                  onClick={() => void revokeInvite(inv.id)}
+                                >
+                                  {t('team.revokeInvite')}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="meta team-invite-empty">{t('team.inviteEmpty')}</p>

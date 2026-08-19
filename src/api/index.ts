@@ -13,6 +13,7 @@ import type {
   CrmStage,
   InviteCreated,
   InvitePreview,
+  PendingInvite,
   Lead,
   LeadActivity,
   LeadNote,
@@ -95,10 +96,16 @@ export const companiesApi = {
     api<{ ok: boolean }>(`/companies/me/members/${userId}`, {
       method: 'DELETE',
     }),
-  createInvite: (body?: { expiresInHours?: number }) =>
+  createInvite: (body: { email: string; title?: string; expiresInHours?: number }) =>
     api<InviteCreated>('/companies/me/invites', {
       method: 'POST',
-      body: JSON.stringify(body ?? {}),
+      body: JSON.stringify(body),
+    }),
+  listInvites: () =>
+    api<PendingInvite[]>('/companies/me/invites'),
+  revokeInvite: (inviteId: string) =>
+    api<{ ok: boolean }>(`/companies/me/invites/${inviteId}`, {
+      method: 'DELETE',
     }),
   create: (body: {
     name: string;

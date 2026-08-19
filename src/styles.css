@@ -1674,7 +1674,24 @@ body.mobile-nav-open{overflow:hidden}
 .team-invite-steps{
   margin:16px 0 0;padding-left:18px;display:grid;gap:8px;color:#555;font-size:13px;line-height:1.45;
 }
-.team-invite-empty{margin:14px 0 0}
+.team-invite-form{
+  margin-top:14px;display:grid;grid-template-columns:1.2fr 1fr auto;gap:10px;align-items:end;
+}
+.team-invite-form label{display:grid;gap:6px;font-size:12px;font-weight:650;color:#555}
+.team-invite-form input{
+  border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#fff;outline:0;
+}
+.team-pending{margin-top:16px;display:grid;gap:10px}
+.team-pending .section-title{margin:0}
+.team-pending-row{
+  display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;
+  padding:12px 0;border-top:1px solid var(--line);
+}
+.team-pending-row b{display:block}
+.team-pending-row .meta{margin:4px 0 0}
+@media(max-width:800px){
+  .team-invite-form{grid-template-columns:1fr}
+}
 .team-invite-result{
   margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fafafa;
 }

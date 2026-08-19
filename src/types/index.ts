@@ -93,6 +93,9 @@ export type Company = {
 
 export type InvitePreview = {
   company: { id: string; name: string; city?: string | null };
+  email?: string | null;
+  role?: CompanyMemberRole;
+  title?: string | null;
   expiresAt: string;
   valid: boolean;
   expired: boolean;
@@ -102,8 +105,21 @@ export type InvitePreview = {
 export type InviteCreated = {
   id: string;
   token: string;
+  email: string;
+  role: CompanyMemberRole;
+  title?: string | null;
   expiresAt: string;
   urlPath: string;
+};
+
+export type PendingInvite = {
+  id: string;
+  email: string;
+  role: CompanyMemberRole;
+  title?: string | null;
+  expiresAt: string;
+  createdAt: string;
+  token: string;
 };
 
 export type ProductImage = {
