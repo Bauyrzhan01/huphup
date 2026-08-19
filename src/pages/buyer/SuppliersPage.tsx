@@ -95,29 +95,24 @@ export function SuppliersPage() {
           </p>
         ) : null}
 
-        <div className="supplier-directory-grid">
+        <div className="supplier-directory-list">
           {items.map((c) => (
             <Link
               key={c.id}
               to={`/suppliers/${c.id}`}
-              className="supplier-directory-card"
+              className="supplier-directory-row"
             >
               <div
-                className="supplier-directory-cover"
+                className="supplier-directory-accent"
                 style={{ background: coverTone(c.id || c.name) }}
                 aria-hidden
               />
-              <div className="supplier-directory-body">
-                <div className="supplier-directory-top">
-                  <UserAvatar
-                    name={c.name}
-                    avatarUrl={c.avatarUrl || c.logoUrl || c.owner?.avatarUrl}
-                    className="supplier-directory-avatar"
-                  />
-                  <div className="supplier-directory-rating">
-                    <span className="inline-rating"><RatingStar size={13} /> {Number(c.rating).toFixed(1)}</span>
-                  </div>
-                </div>
+              <UserAvatar
+                name={c.name}
+                avatarUrl={c.avatarUrl || c.logoUrl || c.owner?.avatarUrl}
+                className="supplier-directory-avatar"
+              />
+              <div className="supplier-directory-copy">
                 <h3>
                   {c.name}
                   {c.verified ? <span className="verified"><VerifiedMark size={14} /></span> : null}
@@ -125,19 +120,22 @@ export function SuppliersPage() {
                 <p className="supplier-directory-desc">
                   {c.description || t('suppliers.noDescription')}
                 </p>
-                <div className="supplier-directory-meta">
-                  <span>{c.city || t('common.empty')}</span>
-                  <span className="supplier-directory-open">{t('suppliers.openProfile')}</span>
-                </div>
                 {c.categories.length > 0 ? (
                   <div className="chips">
-                    {c.categories.slice(0, 3).map((cat) => (
+                    {c.categories.slice(0, 4).map((cat) => (
                       <span key={cat} className="chip">
                         {cat}
                       </span>
                     ))}
                   </div>
                 ) : null}
+              </div>
+              <div className="supplier-directory-side">
+                <span className="supplier-directory-rating">
+                  <span className="inline-rating"><RatingStar size={13} /> {Number(c.rating).toFixed(1)}</span>
+                </span>
+                <span className="supplier-directory-city">{c.city || t('common.empty')}</span>
+                <span className="supplier-directory-open">{t('suppliers.openProfile')}</span>
               </div>
             </Link>
           ))}
