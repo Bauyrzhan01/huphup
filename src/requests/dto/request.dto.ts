@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsNumber,
   IsObject,
   IsOptional,
@@ -158,4 +159,11 @@ export class UpdateRequestDto {
   @IsOptional()
   @IsNumber()
   budgetMax?: number;
+}
+
+export class FavoriteRequestDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isFavorite?: boolean;
 }

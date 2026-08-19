@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -12,6 +13,7 @@ import {
   AnalyzeRequestDto,
   ClarifyRequestDto,
   CreateRequestDto,
+  FavoriteRequestDto,
   UpdateRequestDto,
 } from './dto/request.dto';
 import {
@@ -75,5 +77,19 @@ export class RequestsController {
   @Post(':id/close')
   close(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.requestsService.close(user.id, id);
+  }
+
+  @Post(':id/favorite')
+  favorite(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: FavoriteRequestDto,
+  ) {
+    return this.requestsService.setFavorite(user.id, id, dto?.isFavorite);
+  }
+
+  @Delete(':id')
+  hide(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requestsService.hide(user.id, id);
   }
 }

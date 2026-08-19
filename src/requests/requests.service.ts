@@ -159,8 +159,8 @@ export class RequestsService {
 
   async listMine(buyerId: string) {
     return this.prisma.request.findMany({
-      where: { buyerId },
-      orderBy: { createdAt: 'desc' },
+      where: { buyerId, hiddenAt: null },
+      orderBy: [{ isFavorite: 'desc' }, { createdAt: 'desc' }],
       include: {
         _count: { select: { offers: true, leads: true } },
       },
@@ -208,6 +208,9 @@ export class RequestsService {
       },
     });
     if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+    if (request.hiddenAt && request.buyerId === userId) {
       throw new NotFoundException('Request not found');
     }
     if (request.buyerId !== userId && role !== 'ADMIN') {
@@ -280,6 +283,22 @@ export class RequestsService {
     });
   }
 
+  async setFavorite(buyerId: string, id: string, isFavorite?: boolean) {
+    const request = await this.requireOwned(buyerId, id);
+    return this.prisma.request.update({
+      where: { id },
+      data: { isFavorite: isFavorite ?? !request.isFavorite },
+    });
+  }
+
+  async hide(buyerId: string, id: string) {
+    await this.requireOwned(buyerId, id);
+    return this.prisma.request.update({
+      where: { id },
+      data: { hiddenAt: new Date(), isFavorite: false },
+    });
+  }
+
   async publish(buyerId: string, id: string) {
     const request = await this.requireOwned(buyerId, id);
     if (
@@ -342,7 +361,7 @@ export class RequestsService {
 
   private async requireOwned(buyerId: string, id: string) {
     const request = await this.prisma.request.findUnique({ where: { id } });
-    if (!request) {
+    if (!request || request.hiddenAt) {
       throw new NotFoundException('Request not found');
     }
     if (request.buyerId !== buyerId) {

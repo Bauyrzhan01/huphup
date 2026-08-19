@@ -231,6 +231,8 @@ model Request {
   budgetMax   Decimal?      @db.Decimal(14, 2)
   status      RequestStatus @default(DRAFT)
   rawText     String?
+  isFavorite  Boolean       @default(false)
+  hiddenAt    DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
