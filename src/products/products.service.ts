@@ -72,9 +72,13 @@ export class ProductsService {
     images?: { id: string; url: string; sortOrder: number }[],
   ) {
     const s = stats.get(product.id) ?? { avgRating: null, reviewCount: 0 };
-    const { priceFrom: _p, currency: _c, ...rest } = product;
+    const { priceFrom, currency, images: _images, ...rest } = product as T & {
+      images?: unknown;
+    };
     return {
       ...rest,
+      priceFrom: priceFrom == null ? null : String(priceFrom),
+      currency: currency == null ? 'KZT' : String(currency),
       images: images ?? [],
       avgRating: s.avgRating,
       reviewCount: s.reviewCount,

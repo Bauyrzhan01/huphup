@@ -169,14 +169,14 @@ export class RequestsService {
 
     const quantity = dto.quantity.trim();
     const deadline = dto.deadline.trim();
-    const title = `${product.name} — ${product.company.name}`;
+    const title = product.name;
     const description = [
-      product.description?.trim() || product.name,
-      `Товар: ${product.name}`,
-      product.unit ? `Единица: ${product.unit}` : '',
-      `Поставщик: ${product.company.name}`,
-      `Количество: ${quantity}`,
-      `Срок: ${deadline}`,
+      product.description?.trim(),
+      product.name,
+      product.unit,
+      product.company.name,
+      quantity,
+      deadline,
     ]
       .filter(Boolean)
       .join('\n');
@@ -195,18 +195,17 @@ export class RequestsService {
       data: { status: RequestStatus.PUBLISHED },
     });
 
-    const reason = `Прямая заявка на товар «${product.name}»`;
     const lead = await this.matching.createDirectLead(
       published.id,
       product.companyId,
       product.id,
-      reason,
+      product.name,
     );
 
     await this.notifications.notifyUsers(lead.memberUserIds, {
       type: 'NEW_LEAD',
-      title: 'Прямая заявка на ваш товар',
-      body: `${published.title} · ${quantity} · ${deadline}`,
+      title: product.name,
+      body: [product.company.name, quantity, deadline].filter(Boolean).join(' · '),
       payload: {
         requestId: published.id,
         code: published.code,
