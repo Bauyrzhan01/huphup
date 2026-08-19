@@ -28,12 +28,14 @@ export class RequestsService {
   ) {}
 
   async analyze(dto: AnalyzeRequestDto) {
+    const cities = await this.directoryCities();
     const geminiResult = await this.gemini.analyzeRequest(dto.text);
-    const base = geminiResult ?? this.analyzeFallback(dto.text);
-    return withRequiredSpecQuestions(base);
+    const base = geminiResult ?? this.analyzeFallback(dto.text, cities);
+    return withRequiredSpecQuestions(base, '', [], cities);
   }
 
   async clarify(dto: ClarifyRequestDto) {
+    const cities = await this.directoryCities();
     const extra = dto.answers.map((a) => a.answer).join(' ');
     const asked = (dto.messages ?? [])
       .filter((m) => m.role === 'assistant')
@@ -45,31 +47,37 @@ export class RequestsService {
       messages: dto.messages,
     });
     const base =
-      geminiResult ?? this.clarifyFallback(dto.text, dto.answers, dto.previous);
-    return withRequiredSpecQuestions(base, extra, asked);
+      geminiResult ?? this.clarifyFallback(dto.text, dto.answers, dto.previous, cities);
+    return withRequiredSpecQuestions(base, extra, asked, cities);
   }
 
-  private analyzeFallback(text: string) {
+  private async directoryCities() {
+    const [companies, products] = await Promise.all([
+      this.prisma.company.findMany({ select: { city: true } }),
+      this.prisma.product.findMany({
+        where: { isActive: true },
+        select: { city: true },
+      }),
+    ]);
+    return [
+      ...new Set(
+        [...companies, ...products]
+          .map((row) => row.city?.trim())
+          .filter(Boolean) as string[],
+      ),
+    ];
+  }
+
+  private analyzeFallback(text: string, cities: string[]) {
     const lower = text.toLowerCase();
-    let category = 'Товары и материалы';
-    let city = '';
-    let quantity = '—';
-    let deadline = 'Уточнить';
-
-    if (lower.includes('ремонт') || lower.includes('монтаж')) {
-      category = 'Работы и услуги';
-    }
-    if (lower.includes('алмат')) city = 'Алматы';
-    if (lower.includes('астан')) city = 'Астана';
-    if (lower.includes('шымкент')) city = 'Шымкент';
-
+    const city =
+      cities.find((c) => lower.includes(c.toLowerCase())) ?? '';
     const qtyMatch = text.match(/(\d+[\s]?(?:м²|м2|шт|штук|тонн|т|кг))/i);
-    if (qtyMatch) quantity = qtyMatch[1];
-
+    const quantity = qtyMatch?.[1] ?? '';
     const deadlineMatch = text.match(
       /до\s+(\d{1,2}\s+\S+|\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?)/i,
     );
-    if (deadlineMatch) deadline = deadlineMatch[1];
+    const deadline = deadlineMatch?.[1] ?? '';
 
     const title = text.length > 80 ? `${text.slice(0, 77)}...` : text;
     const greeting = isNotAProduct(text);
@@ -77,7 +85,7 @@ export class RequestsService {
     return {
       title: greeting ? '' : title,
       description: greeting ? '' : text,
-      category,
+      category: '',
       city,
       quantity,
       deadline,
@@ -95,7 +103,8 @@ export class RequestsService {
   private clarifyFallback(
     text: string,
     answers: Array<{ id: string; answer: string }>,
-    previous?: Record<string, unknown> | null,
+    previous: Record<string, unknown> | null | undefined,
+    cities: string[],
   ) {
     if (previous?.ready === true) {
       const lastAnswer = answers.at(-1)?.answer?.trim() || text.trim();
@@ -110,7 +119,7 @@ export class RequestsService {
       } as never;
     }
 
-    const base = this.analyzeFallback(text);
+    const base = this.analyzeFallback(text, cities);
     const byId = new Map(answers.map((a) => [a.id, a.answer.trim()]));
     const extra = answers
       .map((a) => a.answer.trim())

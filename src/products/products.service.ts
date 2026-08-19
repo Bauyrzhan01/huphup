@@ -15,6 +15,12 @@ import { CreateProductReviewDto } from './dto/review.dto';
 const MAX_IMAGES_PER_PRODUCT = 10;
 const IMAGE_MIME_PREFIX = 'image/';
 
+function uniqueSorted(values: Array<string | null | undefined>) {
+  return [...new Set(values.map((v) => v?.trim()).filter(Boolean) as string[])].sort(
+    (a, b) => a.localeCompare(b, 'ru'),
+  );
+}
+
 type ReviewStats = {
   avgRating: number | null;
   reviewCount: number;
@@ -32,6 +38,26 @@ export class ProductsService {
   private async getMemberCompany(userId: string) {
     const resolved = await this.companies.requireCompanyForUser(userId);
     return resolved.company;
+  }
+
+  async directoryMeta() {
+    const [companies, products] = await Promise.all([
+      this.prisma.company.findMany({
+        select: { city: true, categories: true },
+      }),
+      this.prisma.product.findMany({
+        where: { isActive: true },
+        select: { city: true, unit: true },
+      }),
+    ]);
+    return {
+      cities: uniqueSorted([
+        ...companies.map((c) => c.city),
+        ...products.map((p) => p.city),
+      ]),
+      categories: uniqueSorted(companies.flatMap((c) => c.categories)),
+      units: uniqueSorted(products.map((p) => p.unit)),
+    };
   }
 
   private async getOwnedProduct(userId: string, productId: string) {

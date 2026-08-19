@@ -37,6 +37,12 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Public()
+  @Get('catalog/meta')
+  catalogMeta() {
+    return this.productsService.directoryMeta();
+  }
+
+  @Public()
   @Get('catalog')
   catalog(
     @Query('q') q?: string,

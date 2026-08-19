@@ -230,13 +230,17 @@ function alreadyAsked(askedTexts: string[], question: string) {
 function nextContextQuestion(
   result: GeminiAnalyzeResult,
   corpus: string,
+  cities: string[],
 ): GeminiClarifyQuestion | null {
-  if (!result.city && !/(алматы|астана|шымкент)/.test(corpus)) {
+  const cityKnown =
+    Boolean(result.city) ||
+    cities.some((c) => c && corpus.toLowerCase().includes(c.toLowerCase()));
+  if (!cityKnown) {
     return {
       id: 'city',
       field: 'city',
       question: 'В какой город нужна доставка?',
-      options: ['Алматы', 'Астана', 'Шымкент'],
+      ...(cities.length ? { options: cities } : {}),
     };
   }
   const hasQty =
@@ -268,6 +272,7 @@ export function withRequiredSpecQuestions(
   result: GeminiAnalyzeResult,
   extraAnswers = '',
   askedTexts: string[] = [],
+  cities: string[] = [],
 ): GeminiAnalyzeResult {
   const corpus = corpusOf(result, extraAnswers);
   const productKnown = hasProductSignal(corpus);
@@ -291,7 +296,7 @@ export function withRequiredSpecQuestions(
       placeholder: 'Например: цемент М400 10 тонн, шкафы 4 шт',
     });
   } else if (!questions.length) {
-    const follow = nextContextQuestion(result, corpus);
+    const follow = nextContextQuestion(result, corpus, cities);
     if (follow && !alreadyAsked(askedTexts, follow.question)) {
       questions.push(follow);
     }
