@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { CalendarClock, Lock, Package, Send } from 'lucide-react';
 import { productsApi, requestsApi } from '../../api';
+import { AppIcon } from '../../components/AppIcon';
 import { ProductImageGallery } from '../../components/ProductImageGallery';
 import { ProductReviews, ProductStars } from '../../components/ProductReviews';
 import { RatingStar, VerifiedMark } from '../../components/RatingIcons';
@@ -118,33 +120,51 @@ export function ProductPage() {
                       <span className="meta">{t('products.noReviews')}</span>
                     )}
                   </div>
-                  <div className="product-page-actions">
-                    {company ? (
-                      <Link className="ghost" to={`/suppliers/${company.id}`}>
-                        {company.name}
-                      </Link>
-                    ) : null}
-                  </div>
                   <form className="product-direct-form" onSubmit={(e) => void onDirectRequest(e)}>
-                    <p className="meta">{t('products.directHint')}</p>
+                    <div className="product-direct-head">
+                      <span className="product-direct-mark">
+                        <AppIcon icon={Lock} size={16} />
+                      </span>
+                      <div>
+                        <h2>{t('products.directTitle')}</h2>
+                        <p>{t('products.directHint')}</p>
+                      </div>
+                    </div>
+                    <div className="product-direct-locks">
+                      <span>
+                        <AppIcon icon={Package} size={14} />
+                        {product.name}
+                      </span>
+                      {company ? (
+                        <Link to={`/suppliers/${company.id}`}>
+                          {company.name}
+                        </Link>
+                      ) : null}
+                    </div>
                     <div className="product-direct-fields">
                       <label>
                         {t('requests.quantity')}
-                        <input
-                          value={quantity}
-                          onChange={(e) => setQuantity(e.target.value)}
-                          placeholder={t('products.quantityPlaceholder')}
-                          required
-                        />
+                        <span className="product-direct-input">
+                          <AppIcon icon={Package} size={16} />
+                          <input
+                            value={quantity}
+                            onChange={(e) => setQuantity(e.target.value)}
+                            placeholder={t('products.quantityPlaceholder')}
+                            required
+                          />
+                        </span>
                       </label>
                       <label>
                         {t('requests.deadline')}
-                        <input
-                          value={deadline}
-                          onChange={(e) => setDeadline(e.target.value)}
-                          placeholder={t('products.deadlinePlaceholder')}
-                          required
-                        />
+                        <span className="product-direct-input">
+                          <AppIcon icon={CalendarClock} size={16} />
+                          <input
+                            value={deadline}
+                            onChange={(e) => setDeadline(e.target.value)}
+                            placeholder={t('products.deadlinePlaceholder')}
+                            required
+                          />
+                        </span>
                       </label>
                     </div>
                     {formError ? (
@@ -152,9 +172,11 @@ export function ProductPage() {
                         {formError}
                       </p>
                     ) : null}
-                    <button className="primary" type="submit" disabled={sending}>
+                    <button className="primary product-direct-send" type="submit" disabled={sending}>
                       {sending ? t('common.loading') : t('products.sendDirect')}
+                      <AppIcon icon={Send} size={16} className="send-icon" />
                     </button>
+                    <p className="product-direct-foot">{t('products.directFoot')}</p>
                   </form>
                 </div>
               </section>
