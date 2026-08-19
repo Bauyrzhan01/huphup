@@ -65,6 +65,72 @@ export class CompaniesService {
     };
   }
 
+  async ensureSupplierCompany(userId: string) {
+    const existing = await this.resolveCompanyForUser(userId);
+    if (existing) {
+      if (!existing.membership && existing.isOwner) {
+        await this.prisma.companyMember.upsert({
+          where: { userId },
+          create: {
+            userId,
+            companyId: existing.company.id,
+            title: 'Owner',
+            role: CompanyMemberRole.OWNER,
+          },
+          update: {},
+        });
+      }
+      await this.prisma.user.updateMany({
+        where: { id: userId, role: { not: UserRole.ADMIN } },
+        data: { role: UserRole.SUPPLIER },
+      });
+      return (await this.resolveCompanyForUser(userId)) ?? existing;
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fullName: true, email: true, role: true },
+    });
+    if (!user || user.role === UserRole.ADMIN) {
+      return null;
+    }
+
+    const name = user.fullName.trim() || user.email.split('@')[0];
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.company.create({
+          data: {
+            ownerId: userId,
+            name,
+            members: {
+              create: {
+                userId,
+                title: 'Owner',
+                role: CompanyMemberRole.OWNER,
+              },
+            },
+          },
+        });
+        await tx.user.update({
+          where: { id: userId },
+          data: { role: UserRole.SUPPLIER },
+        });
+      });
+    } catch {
+      const raced = await this.resolveCompanyForUser(userId);
+      if (raced) {
+        await this.prisma.user.updateMany({
+          where: { id: userId, role: { not: UserRole.ADMIN } },
+          data: { role: UserRole.SUPPLIER },
+        });
+        return raced;
+      }
+      throw new ForbiddenException('Supplier company membership required');
+    }
+
+    return this.resolveCompanyForUser(userId);
+  }
+
   async requireCompanyForUser(userId: string) {
     const resolved = await this.resolveCompanyForUser(userId);
     if (!resolved) {
@@ -130,6 +196,10 @@ export class CompaniesService {
       include: {
         owner: { select: { avatarUrl: true } },
       },
+    });
+    await this.prisma.user.updateMany({
+      where: { id: ownerId, role: { not: UserRole.ADMIN } },
+      data: { role: UserRole.SUPPLIER },
     });
     return this.withAvatar(company);
   }
@@ -311,7 +381,10 @@ export class CompaniesService {
   }
 
   async getMyCompany(userId: string) {
-    const resolved = await this.requireCompanyForUser(userId);
+    const resolved = await this.ensureSupplierCompany(userId);
+    if (!resolved) {
+      throw new NotFoundException('Company not found');
+    }
     const company = await this.prisma.company.findUnique({
       where: { id: resolved.company.id },
       include: {

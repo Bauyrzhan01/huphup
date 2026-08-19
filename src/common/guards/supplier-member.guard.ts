@@ -27,11 +27,11 @@ export class SupplierMemberGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest<{ user: AuthUser }>();
-    if (user.role === UserRole.ADMIN || user.role === UserRole.SUPPLIER) {
+    if (user.role === UserRole.ADMIN) {
       return true;
     }
 
-    const resolved = await this.companies.resolveCompanyForUser(user.id);
+    const resolved = await this.companies.ensureSupplierCompany(user.id);
     if (resolved) {
       return true;
     }
