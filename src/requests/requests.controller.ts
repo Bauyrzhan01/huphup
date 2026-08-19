@@ -14,6 +14,7 @@ import {
   AnalyzeRequestDto,
   ClarifyRequestDto,
   CreateRequestDto,
+  DirectRequestDto,
   FavoriteRequestDto,
   UpdateRequestDto,
 } from './dto/request.dto';
@@ -44,6 +45,11 @@ export class RequestsController {
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateRequestDto) {
     return this.requestsService.create(user.id, dto);
+  }
+
+  @Post('direct')
+  createDirect(@CurrentUser() user: AuthUser, @Body() dto: DirectRequestDto) {
+    return this.requestsService.createDirectFromProduct(user.id, dto);
   }
 
   @Get()

@@ -14,6 +14,7 @@ import {
   AnalyzeRequestDto,
   ClarifyRequestDto,
   CreateRequestDto,
+  DirectRequestDto,
   UpdateRequestDto,
 } from './dto/request.dto';
 
@@ -155,6 +156,69 @@ export class RequestsService {
         status: RequestStatus.DRAFT,
       },
     });
+  }
+
+  async createDirectFromProduct(buyerId: string, dto: DirectRequestDto) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: dto.productId, isActive: true },
+      include: { company: { select: { id: true, name: true, city: true } } },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const quantity = dto.quantity.trim();
+    const deadline = dto.deadline.trim();
+    const title = `${product.name} — ${product.company.name}`;
+    const description = [
+      product.description?.trim() || product.name,
+      `Товар: ${product.name}`,
+      product.unit ? `Единица: ${product.unit}` : '',
+      `Поставщик: ${product.company.name}`,
+      `Количество: ${quantity}`,
+      `Срок: ${deadline}`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const created = await this.create(buyerId, {
+      title,
+      description,
+      city: product.city ?? product.company.city ?? undefined,
+      quantity,
+      deadline,
+      rawText: description,
+    });
+
+    const published = await this.prisma.request.update({
+      where: { id: created.id },
+      data: { status: RequestStatus.PUBLISHED },
+    });
+
+    const reason = `Прямая заявка на товар «${product.name}»`;
+    const lead = await this.matching.createDirectLead(
+      published.id,
+      product.companyId,
+      product.id,
+      reason,
+    );
+
+    await this.notifications.notifyUsers(lead.memberUserIds, {
+      type: 'NEW_LEAD',
+      title: 'Прямая заявка на ваш товар',
+      body: `${published.title} · ${quantity} · ${deadline}`,
+      payload: {
+        requestId: published.id,
+        code: published.code,
+        productId: product.id,
+      },
+    });
+
+    return {
+      request: published,
+      companyId: product.companyId,
+      productId: product.id,
+    };
   }
 
   async listMine(buyerId: string) {

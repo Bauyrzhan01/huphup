@@ -155,6 +155,44 @@ export class MatchingService {
     return created;
   }
 
+  async createDirectLead(
+    requestId: string,
+    companyId: string,
+    productId: string,
+    reason: string,
+  ) {
+    const lead = await this.prisma.lead.upsert({
+      where: {
+        requestId_companyId: { requestId, companyId },
+      },
+      create: {
+        requestId,
+        companyId,
+        score: 100,
+        matchReason: reason.slice(0, 500),
+      },
+      update: {
+        score: 100,
+        matchReason: reason.slice(0, 500),
+      },
+    });
+    await this.crm.logActivity({
+      leadId: lead.id,
+      type: LeadActivityType.CREATED,
+      message: 'Direct product request',
+      meta: { productId, reason },
+    });
+    const memberUserIds = await this.companies.listMemberUserIds(companyId);
+    return {
+      leadId: lead.id,
+      companyId,
+      memberUserIds,
+      score: 100,
+      productId,
+      reason,
+    };
+  }
+
   private keywordMatch(
     requestText: string,
     request: {

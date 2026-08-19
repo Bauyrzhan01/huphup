@@ -167,3 +167,20 @@ export class FavoriteRequestDto {
   @IsBoolean()
   isFavorite?: boolean;
 }
+
+export class DirectRequestDto {
+  @ApiProperty({ example: 'clxyz...' })
+  @IsString()
+  @MinLength(1)
+  productId!: string;
+
+  @ApiProperty({ example: '20 т' })
+  @IsString()
+  @MinLength(1)
+  quantity!: string;
+
+  @ApiProperty({ example: 'до 10 дней' })
+  @IsString()
+  @MinLength(1)
+  deadline!: string;
+}
