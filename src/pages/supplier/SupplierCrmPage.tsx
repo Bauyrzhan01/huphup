@@ -14,19 +14,12 @@ import type { CompanyMember, CrmAnalytics, CrmStage, Lead } from '../../types';
 type AssigneeFilter = 'all' | 'inbox' | 'mine' | string;
 type ViewMode = 'kanban' | 'list';
 
-const DEFAULT_STAGES: CrmStage[] = [
-  { id: 'NEW', status: 'NEW', label: 'Входящие', sortOrder: 0, color: '#3b82f6' },
-  { id: 'VIEWED', status: 'VIEWED', label: 'В работе', sortOrder: 1, color: '#8b5cf6' },
-  { id: 'OFFERED', status: 'OFFERED', label: 'КП отправлено', sortOrder: 2, color: '#f59e0b' },
-  { id: 'SKIPPED', status: 'SKIPPED', label: 'Пропущено', sortOrder: 3, color: '#9ca3af' },
-];
-
 export function SupplierCrmPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { formatDate, formatDateTime } = useAppLocale();
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [stages, setStages] = useState<CrmStage[]>(DEFAULT_STAGES);
+  const [stages, setStages] = useState<CrmStage[]>([]);
   const [analytics, setAnalytics] = useState<CrmAnalytics | null>(null);
   const [members, setMembers] = useState<CompanyMember[]>([]);
   const [isOwner, setIsOwner] = useState(false);
@@ -40,11 +33,11 @@ export function SupplierCrmPage() {
     const [list, company, stageList, stats] = await Promise.all([
       leadsApi.list(),
       companiesApi.me().catch(() => null),
-      crmApi.stages().catch(() => DEFAULT_STAGES),
+      crmApi.stages().catch(() => [] as CrmStage[]),
       crmApi.analytics().catch(() => null),
     ]);
     setLeads(list);
-    setStages(stageList.length ? stageList : DEFAULT_STAGES);
+    setStages(stageList);
     setAnalytics(stats);
     if (company) {
       setIsOwner(Boolean(company.isOwner));

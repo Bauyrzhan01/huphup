@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { requestsApi } from '../../api';
 import { RequestAttachments } from '../../components/RequestAttachments';
 import { BuyerLayout } from '../../layouts/AppLayouts';
+import { useDirectoryMeta } from '../../hooks/useDirectoryMeta';
 import type { RequestItem } from '../../types';
 
 export function EditRequestPage() {
   const { t } = useTranslation();
+  const { cities, categories } = useDirectoryMeta();
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const [request, setRequest] = useState<RequestItem | null>(null);
@@ -106,16 +108,29 @@ export function EditRequestPage() {
               </div>
               <div className="field">
                 <label>{t('requests.city')}</label>
-                <select value={city} onChange={(e) => setCity(e.target.value)}>
-                  <option value="">—</option>
-                  <option>Алматы</option>
-                  <option>Астана</option>
-                  <option>Шымкент</option>
-                </select>
+                <input
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  list="request-cities"
+                />
+                <datalist id="request-cities">
+                  {cities.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
               <div className="field">
                 <label>{t('requests.category')}</label>
-                <input value={category} onChange={(e) => setCategory(e.target.value)} />
+                <input
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  list="request-categories"
+                />
+                <datalist id="request-categories">
+                  {categories.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
               <div className="field">
                 <label>{t('requests.quantity')}</label>

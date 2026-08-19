@@ -15,7 +15,7 @@ export function useMyRequests() {
       setItems(list);
     } catch (err) {
       setItems([]);
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки');
+      setError(err instanceof Error ? err.message : '');
     } finally {
       setLoading(false);
     }

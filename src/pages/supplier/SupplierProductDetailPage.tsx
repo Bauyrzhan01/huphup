@@ -9,6 +9,7 @@ import { RatingStar } from '../../components/RatingIcons';
 import { ProductImagesEditor } from '../../components/ProductImagesEditor';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
+import { useDirectoryMeta } from '../../hooks/useDirectoryMeta';
 import { mapApiError } from '../../utils/apiErrors';
 import type { Product, ProductReview } from '../../types';
 
@@ -35,6 +36,8 @@ export function SupplierProductDetailPage() {
   const [msg, setMsg] = useState('');
   const [activeImage, setActiveImage] = useState(0);
   const [hasCompany, setHasCompany] = useState(!isNew);
+  const [companyCity, setCompanyCity] = useState('');
+  const { cities, units } = useDirectoryMeta();
 
   async function loadProduct(productId: string) {
     const [item, list] = await Promise.all([
@@ -56,7 +59,11 @@ export function SupplierProductDetailPage() {
     if (isNew) {
       void companiesApi
         .me()
-        .then(() => setHasCompany(true))
+        .then((company) => {
+          setHasCompany(true);
+          setCompanyCity(company.city ?? '');
+          setForm((f) => ({ ...f, city: f.city || company.city || '' }));
+        })
         .catch((err) => {
           setHasCompany(false);
           setError(mapApiError(err, t));
@@ -250,12 +257,9 @@ export function SupplierProductDetailPage() {
                         list="product-units"
                       />
                       <datalist id="product-units">
-                        <option value="шт" />
-                        <option value="м²" />
-                        <option value="м" />
-                        <option value="кг" />
-                        <option value="т" />
-                        <option value="компл." />
+                        {units.map((u) => (
+                          <option key={u} value={u} />
+                        ))}
                       </datalist>
                     </div>
                     <div className="field">
@@ -263,8 +267,14 @@ export function SupplierProductDetailPage() {
                       <input
                         value={form.city}
                         onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                        placeholder="Алматы"
+                        placeholder={companyCity || t('products.city')}
+                        list="product-cities"
                       />
+                      <datalist id="product-cities">
+                        {cities.map((c) => (
+                          <option key={c} value={c} />
+                        ))}
+                      </datalist>
                     </div>
                   </div>
                   <p className="meta product-detail-price-note">{t('products.priceOnContact')}</p>

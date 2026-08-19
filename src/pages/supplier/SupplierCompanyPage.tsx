@@ -4,22 +4,15 @@ import { companiesApi } from '../../api';
 import { useAuth } from '../../auth/AuthContext';
 import { UserAvatar } from '../../components/UserAvatar';
 import { SupplierLayout } from '../../layouts/AppLayouts';
+import { useDirectoryMeta } from '../../hooks/useDirectoryMeta';
 import { mapApiError } from '../../utils/apiErrors';
 import type { Company } from '../../types';
-
-const CATEGORY_OPTIONS = [
-  'Стройматериалы',
-  'Отделочные материалы',
-  'Металлопрокат',
-  'Электрика',
-  'Сантехника',
-  'Инструменты',
-  'Логистика',
-];
 
 export function SupplierCompanyPage() {
   const { t } = useTranslation();
   const { refresh } = useAuth();
+  const { cities, categories: catalogCategories } = useDirectoryMeta();
+  const [categoryDraft, setCategoryDraft] = useState('');
   const [company, setCompany] = useState<Company | null>(null);
   const [name, setName] = useState('');
   const [bin, setBin] = useState('');
@@ -85,6 +78,13 @@ export function SupplierCompanyPage() {
     setCategories((prev) =>
       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
     );
+  }
+
+  function addCategory() {
+    const next = categoryDraft.trim();
+    if (!next) return;
+    setCategories((prev) => (prev.includes(next) ? prev : [...prev, next]));
+    setCategoryDraft('');
   }
 
   async function onSubmit(e: FormEvent) {
@@ -185,18 +185,21 @@ export function SupplierCompanyPage() {
                 <input
                   value={bin}
                   onChange={(e) => setBin(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder="123456789012"
                   inputMode="numeric"
                 />
               </div>
               <div className="field">
                 <label>{t('supplier.companyCity')}</label>
-                <select value={city} onChange={(e) => setCity(e.target.value)}>
-                  <option value="">{t('common.empty')}</option>
-                  <option value="Алматы">Алматы</option>
-                  <option value="Астана">Астана</option>
-                  <option value="Шымкент">Шымкент</option>
-                </select>
+                <input
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  list="company-cities"
+                />
+                <datalist id="company-cities">
+                  {cities.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
               <div className="field full">
                 <label>{t('supplier.companyCategories')}</label>
@@ -204,7 +207,7 @@ export function SupplierCompanyPage() {
                   {t('supplier.companyCategoriesHint')}
                 </p>
                 <div className="category-picks">
-                  {CATEGORY_OPTIONS.map((cat) => (
+                  {[...new Set([...catalogCategories, ...categories])].map((cat) => (
                     <button
                       key={cat}
                       type="button"
@@ -214,6 +217,22 @@ export function SupplierCompanyPage() {
                       {cat}
                     </button>
                   ))}
+                </div>
+                <div className="toolbar" style={{ marginTop: 10 }}>
+                  <input
+                    className="search"
+                    value={categoryDraft}
+                    onChange={(e) => setCategoryDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCategory();
+                      }
+                    }}
+                  />
+                  <button type="button" className="ghost" onClick={addCategory}>
+                    {t('common.create')}
+                  </button>
                 </div>
               </div>
               <div className="field full">

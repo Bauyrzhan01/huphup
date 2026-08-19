@@ -171,6 +171,10 @@ export const productsApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  directoryMeta: () =>
+    api<{ cities: string[]; categories: string[]; units: string[] }>(
+      '/products/catalog/meta',
+    ),
 };
 
 export const invitesApi = {

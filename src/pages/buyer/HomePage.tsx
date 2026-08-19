@@ -30,7 +30,7 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [originalText, setOriginalText] = useState('');
   const [analyzed, setAnalyzed] = useState<AnalyzeResult | null>(null);
-  const [city, setCity] = useState('Алматы');
+  const [city, setCity] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [chat, setChat] = useState<ChatTurn[]>([]);
@@ -70,7 +70,7 @@ export function HomePage() {
         setCollectedAnswers([]);
         setTitle('');
         setDescription('');
-        setCity('Алматы');
+        setCity('');
         setPublishResult(null);
         return;
       }
@@ -91,7 +91,7 @@ export function HomePage() {
         setCollectedAnswers(saved.answers ?? []);
         setTitle(saved.title ?? '');
         setDescription(saved.description ?? '');
-        setCity(saved.city || 'Алматы');
+        setCity(saved.city || '');
       }
     } catch {
       sessionStorage.removeItem(homeChatKey(user.id));
@@ -148,7 +148,7 @@ export function HomePage() {
       const res = await requestsApi.analyze(trimmed);
       setAnalyzed(res);
       setTitle(res.title);
-      setCity(res.city || 'Алматы');
+      setCity(res.city || '');
       setDescription(res.description || trimmed);
       const ask = res.questions?.[0];
       setChat([
@@ -201,7 +201,7 @@ export function HomePage() {
       );
       setAnalyzed(res);
       setTitle(res.title);
-      setCity(res.city || city || 'Алматы');
+      setCity(res.city || city || '');
       setDescription(res.description || originalText);
       const ask = res.questions?.[0];
       const done = res.ready === true || !ask;

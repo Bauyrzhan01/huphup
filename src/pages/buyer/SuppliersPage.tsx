@@ -6,9 +6,9 @@ import { UserAvatar } from '../../components/UserAvatar';
 import { RatingStar, VerifiedMark } from '../../components/RatingIcons';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { useDirectoryMeta } from '../../hooks/useDirectoryMeta';
 import type { Company } from '../../types';
 
-const CITIES = ['', 'Алматы', 'Астана', 'Шымкент'];
 const PAGE_SIZE = 12;
 
 function coverTone(seed: string) {
@@ -25,6 +25,7 @@ function coverTone(seed: string) {
 
 export function SuppliersPage() {
   const { t } = useTranslation();
+  const { cities } = useDirectoryMeta();
   const [items, setItems] = useState<Company[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -75,7 +76,7 @@ export function SuppliersPage() {
             onChange={(e) => setCity(e.target.value)}
             aria-label={t('suppliers.cityFilter')}
           >
-            {CITIES.map((c) => (
+            {['', ...cities].map((c) => (
               <option key={c || 'all'} value={c}>
                 {c || t('suppliers.allCities')}
               </option>
