@@ -11,9 +11,10 @@ import { PresenceDot } from '../../components/PresenceDot';
 import { LeadActivityTimeline } from '../../components/crm/LeadActivityTimeline';
 import { LeadNotesPanel } from '../../components/crm/LeadNotesPanel';
 import { LeadNextStepPanel } from '../../components/crm/LeadNextStepPanel';
+import { LeadTasksPanel } from '../../components/crm/LeadTasksPanel';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
-import type { CompanyMember, Lead, LeadActivity, LeadNote } from '../../types';
+import type { CompanyMember, Lead, LeadActivity, LeadNote, LeadTask } from '../../types';
 
 function scoreTone(score: number) {
   if (score >= 85) return 'high';
@@ -41,6 +42,7 @@ export function SupplierLeadsPage() {
   const [busy, setBusy] = useState(false);
   const [activities, setActivities] = useState<LeadActivity[]>([]);
   const [notes, setNotes] = useState<LeadNote[]>([]);
+  const [tasks, setTasks] = useState<LeadTask[]>([]);
   const [crmBusy, setCrmBusy] = useState(false);
 
   async function load() {
@@ -70,29 +72,35 @@ export function SupplierLeadsPage() {
     if (!selected?.id) {
       setActivities([]);
       setNotes([]);
+      setTasks([]);
       return;
     }
     void Promise.all([
       leadsApi.activities(selected.id),
       leadsApi.notes(selected.id),
+      leadsApi.tasks(selected.id).catch(() => [] as LeadTask[]),
     ])
-      .then(([a, n]) => {
+      .then(([a, n, taskList]) => {
         setActivities(a);
         setNotes(n);
+        setTasks(taskList);
       })
       .catch(() => {
         setActivities([]);
         setNotes([]);
+        setTasks([]);
       });
   }, [selected?.id]);
 
   async function reloadCrmData(leadId: string) {
-    const [a, n] = await Promise.all([
+    const [a, n, taskList] = await Promise.all([
       leadsApi.activities(leadId),
       leadsApi.notes(leadId),
+      leadsApi.tasks(leadId).catch(() => [] as LeadTask[]),
     ]);
     setActivities(a);
     setNotes(n);
+    setTasks(taskList);
   }
 
   useEffect(() => {
@@ -422,6 +430,28 @@ export function SupplierLeadsPage() {
                       try {
                         await leadsApi.setNextStep(selected.id, { text, at: at || undefined });
                         await load();
+                        await reloadCrmData(selected.id);
+                      } finally {
+                        setCrmBusy(false);
+                      }
+                    }}
+                  />
+                  <LeadTasksPanel
+                    tasks={tasks}
+                    busy={crmBusy}
+                    onAdd={async (input) => {
+                      setCrmBusy(true);
+                      try {
+                        await leadsApi.addTask(selected.id, input);
+                        await reloadCrmData(selected.id);
+                      } finally {
+                        setCrmBusy(false);
+                      }
+                    }}
+                    onDone={async (taskId) => {
+                      setCrmBusy(true);
+                      try {
+                        await leadsApi.completeTask(selected.id, taskId);
                         await reloadCrmData(selected.id);
                       } finally {
                         setCrmBusy(false);

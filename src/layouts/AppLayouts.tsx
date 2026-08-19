@@ -71,6 +71,8 @@ function SessionUserChip({
     </Link>
   );
 }
+
+function MobileNavButton({ onOpen }: { onOpen: () => void }) {
   const { t } = useTranslation();
   return (
     <button

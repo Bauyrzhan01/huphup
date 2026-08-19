@@ -246,6 +246,17 @@ export type LeadNote = {
   user: LeadUser;
 };
 
+export type LeadTask = {
+  id: string;
+  kind: 'CALL' | 'MEETING' | 'TASK';
+  title: string;
+  dueAt: string;
+  doneAt?: string | null;
+  createdAt: string;
+  assignee?: LeadUser | null;
+  lead?: { id: string; request: { code: string; title: string } };
+};
+
 export type CrmStage = {
   id: string;
   status: string;

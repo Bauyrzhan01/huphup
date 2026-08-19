@@ -891,6 +891,24 @@ body.mobile-nav-open{overflow:hidden}
 .kanban-crm .column{min-height:0;padding:8px;min-height:unset;border-radius:12px}
 .crm-page{padding:10px 16px 20px}
 .crm-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.crm-toolbar .search{flex:1;min-width:220px}
+.crm-my-tasks{
+  border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px;background:#fff;
+}
+.crm-my-tasks h3{margin:0 0 10px;font-size:14px}
+.crm-my-tasks ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.crm-my-tasks a{display:flex;flex-direction:column;gap:2px;color:inherit}
+.lead-tasks-panel{display:flex;flex-direction:column;gap:8px}
+.lead-tasks-panel h4{margin:0 0 4px;font-size:13px}
+.lead-tasks-form{display:grid;gap:8px}
+.lead-tasks-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lead-tasks-list li{
+  display:flex;justify-content:space-between;gap:10px;align-items:center;
+  padding:8px 0;border-top:1px solid var(--line);
+}
+.lead-tasks-list li.is-done{opacity:.55}
+.lead-tasks-list li.is-overdue b,.crm-my-tasks li.is-overdue b{color:#b42318}
+.lead-tasks-list b{display:block;font-size:13px}
 .crm-head-actions{display:flex;gap:8px;align-items:center}
 .lead-note-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
 .lead-note-form{display:flex;flex-direction:column;gap:6px}

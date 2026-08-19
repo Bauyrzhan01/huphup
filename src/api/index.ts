@@ -17,6 +17,7 @@ import type {
   Lead,
   LeadActivity,
   LeadNote,
+  LeadTask,
   MessageItem,
   MessagesPageResponse,
   NotificationItem,
@@ -327,6 +328,18 @@ export const leadsApi = {
       method: 'POST',
       body: JSON.stringify({ body }),
     }),
+  tasks: (id: string) => api<LeadTask[]>(`/leads/${id}/tasks`),
+  myTasks: () => api<LeadTask[]>('/leads/tasks/mine'),
+  addTask: (
+    id: string,
+    body: { title: string; kind: 'CALL' | 'MEETING' | 'TASK'; dueAt: string; assigneeId?: string },
+  ) =>
+    api<LeadTask>(`/leads/${id}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  completeTask: (id: string, taskId: string) =>
+    api<LeadTask>(`/leads/${id}/tasks/${taskId}/complete`, { method: 'POST' }),
   bulk: (payload: {
     ids: string[];
     action: 'skip' | 'reassign' | 'status';
