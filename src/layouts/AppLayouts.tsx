@@ -172,6 +172,7 @@ export function BuyerLayout({
                   request={r}
                   onCloseNav={closeNav}
                   onChanged={loadRecent}
+                  onHidden={(id) => setRecent((prev) => prev.filter((item) => item.id !== id))}
                 />
               ))
             )}

@@ -7,33 +7,46 @@ import { requestsApi } from '../api';
 import type { RequestItem } from '../types';
 import { AppIcon } from './AppIcon';
 
+function eventElement(e: Event): Element | null {
+  const node = e.target;
+  if (node instanceof Element) return node;
+  if (node instanceof Node) return node.parentElement;
+  return null;
+}
+
 export function RecentRequestRow({
   request,
   onCloseNav,
   onChanged,
+  onHidden,
 }: {
   request: RequestItem;
   onCloseNav?: () => void;
   onChanged: () => void;
+  onHidden?: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    function onDocClick(e: Event) {
-      const target = e.target as Node;
-      if (rootRef.current?.contains(target)) return;
-      if ((target as HTMLElement).closest?.('.recent-menu')) return;
+    function onDocDown(e: Event) {
+      const el = eventElement(e);
+      if (!el) return;
+      if (rootRef.current?.contains(el)) return;
+      if (menuRef.current?.contains(el) || el.closest('.recent-menu')) return;
       setOpen(false);
     }
-    if (open) document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
+    if (open) {
+      document.addEventListener('pointerdown', onDocDown);
+    }
+    return () => document.removeEventListener('pointerdown', onDocDown);
   }, [open]);
 
   function toggleMenu(e: ReactMouseEvent) {
@@ -50,7 +63,10 @@ export function RecentRequestRow({
     setOpen((v) => !v);
   }
 
-  async function toggleFavorite() {
+  async function toggleFavorite(e: ReactMouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busy) return;
     setBusy(true);
     try {
       await requestsApi.favorite(request.id, !request.isFavorite);
@@ -63,19 +79,23 @@ export function RecentRequestRow({
     }
   }
 
-  async function hideChat() {
+  async function hideChat(e: ReactMouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busy) return;
+    setOpen(false);
     if (!window.confirm(t('nav.deleteChatConfirm'))) return;
     setBusy(true);
     try {
       await requestsApi.hide(request.id);
-      setOpen(false);
+      onHidden?.(request.id);
       onChanged();
       onCloseNav?.();
       if (location.pathname.includes(request.id)) {
         navigate('/app', { replace: true });
       }
     } catch {
-      setOpen(false);
+      window.alert(t('common.error'));
     } finally {
       setBusy(false);
     }
@@ -101,8 +121,15 @@ export function RecentRequestRow({
       </button>
       {open
         ? createPortal(
-            <div className="recent-menu" style={{ top: pos.top, left: pos.left }} role="menu">
-              <button type="button" role="menuitem" disabled={busy} onClick={() => void toggleFavorite()}>
+            <div
+              ref={menuRef}
+              className="recent-menu"
+              style={{ top: pos.top, left: pos.left }}
+              role="menu"
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <button type="button" role="menuitem" disabled={busy} onClick={(e) => void toggleFavorite(e)}>
                 {request.isFavorite ? t('nav.unfavorite') : t('nav.favorite')}
               </button>
               <button
@@ -110,7 +137,7 @@ export function RecentRequestRow({
                 role="menuitem"
                 className="is-danger"
                 disabled={busy}
-                onClick={() => void hideChat()}
+                onClick={(e) => void hideChat(e)}
               >
                 {t('nav.deleteChat')}
               </button>

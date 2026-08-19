@@ -225,7 +225,7 @@ export const requestsApi = {
       body: JSON.stringify(isFavorite === undefined ? {} : { isFavorite }),
     }),
   hide: (id: string) =>
-    api<RequestItem>(`/requests/${id}`, { method: 'DELETE' }),
+    api<RequestItem>(`/requests/${id}/hide`, { method: 'POST' }),
 };
 
 export const attachmentsApi = {
