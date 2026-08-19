@@ -8,6 +8,7 @@ import { CrmListView } from '../../components/crm/CrmListView';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAuth } from '../../auth/AuthContext';
 import { useAppLocale } from '../../i18n/useAppLocale';
+import { mapApiError } from '../../utils/apiErrors';
 import { isUserOnline } from '../../utils/presence';
 import type { CompanyMember, CrmAnalytics, CrmStage, Lead, LeadTask } from '../../types';
 
@@ -51,7 +52,7 @@ export function SupplierCrmPage() {
 
   useEffect(() => {
     void refresh()
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
+      .catch((err) => setError(mapApiError(err, t)))
       .finally(() => setLoading(false));
     const timer = window.setInterval(() => {
       void refresh().catch(() => undefined);
@@ -289,7 +290,14 @@ export function SupplierCrmPage() {
           </div>
         ) : null}
 
-        {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
+        {error ? (
+          <p className="notice" style={{ color: '#b45309' }}>
+            {error}{' '}
+            {error === t('products.noCompany') ? (
+              <Link to="/supplier/company">{t('supplier.createCompany')}</Link>
+            ) : null}
+          </p>
+        ) : null}
 
         {viewMode === 'kanban' ? (
           <CrmKanbanBoard
