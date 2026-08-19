@@ -808,7 +808,11 @@ body.mobile-nav-open{overflow:hidden}
 }
 .chat-item{
   width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;
-  display:flex;gap:12px;padding:14px 16px;text-align:left;cursor:pointer;
+  display:flex;gap:4px;padding:14px 10px 14px 16px;text-align:left;align-items:flex-start;
+}
+.chat-item-main{
+  flex:1;min-width:0;display:flex;gap:12px;border:0;background:transparent;
+  padding:0;text-align:left;cursor:pointer;color:inherit;
 }
 .chat-item:hover{background:#fafafa}
 .chat-item.is-active{background:#f7f7f8;box-shadow:inset 3px 0 0 #111}
@@ -818,7 +822,9 @@ body.mobile-nav-open{overflow:hidden}
 }
 .chat-item-body{min-width:0;flex:1}
 .chat-item-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
-.chat-item-top b{font-size:13px;line-height:1.3}
+.chat-item-top b{font-size:13px;line-height:1.3;display:flex;align-items:center;gap:6px;min-width:0}
+.chat-pin{flex-shrink:0;color:#111}
+.item-overflow{flex-shrink:0;margin-top:2px}
 .chat-item-top small{font-size:10px;color:#999;white-space:nowrap}
 .chat-item-meta{display:flex;gap:8px;align-items:center;margin-top:6px}
 .chat-preview{

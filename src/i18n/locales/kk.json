@@ -717,7 +717,12 @@
     "selectDialog": "Сол жақтан диалог таңдаңыз",
     "attachFile": "Файл қосу",
     "removeFile": "Алып тастау",
-    "fileTooLarge": "Файл 10 МБ-тан үлкен"
+    "fileTooLarge": "Файл 10 МБ-тан үлкен",
+    "chatActions": "Чат әрекеттері",
+    "pin": "Бекіту",
+    "unpin": "Бекітуден алу",
+    "deleteChat": "Чатты жою",
+    "deleteConfirm": "Бұл чатты тізімнен жоясыз ба?"
   },
   "role": {
     "BUYER": "Тапсырыс беруші",

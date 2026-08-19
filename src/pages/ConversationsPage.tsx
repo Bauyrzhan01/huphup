@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ImageIcon, MessageSquare, Paperclip } from 'lucide-react';
+import { ImageIcon, MessageSquare, Paperclip, Pin } from 'lucide-react';
 import { conversationsApi } from '../api';
 import { resolveMediaUrl } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
+import { ItemOverflowMenu } from '../components/ItemOverflowMenu';
 import { UserAvatar } from '../components/UserAvatar';
 import { useWorkspaceMode } from '../hooks/useWorkspaceMode';
 import { BuyerLayout, SupplierLayout } from '../layouts/AppLayouts';
@@ -379,39 +380,78 @@ export function ConversationsPage() {
                   null;
                 const other = others[0];
                 return (
-                  <button
+                  <div
                     key={c.id}
-                    type="button"
-                    className={`chat-item${active ? ' is-active' : ''}`}
-                    onClick={() => setSelectedId(c.id)}
+                    className={`chat-item${active ? ' is-active' : ''}${c.isPinned ? ' is-pinned' : ''}`}
                   >
-                    <UserAvatar
-                      name={other?.fullName ?? withLabel ?? c.request?.title ?? 'HH'}
-                      avatarUrl={other?.avatarUrl}
-                      className="chat-avatar"
-                    />
-                    <div className="chat-item-body">
-                      <div className="chat-item-top">
-                        <b>{c.request?.title ?? t('conversations.dialog')}</b>
-                        <small>
-                          {c.messages[0]
-                            ? formatDateTime(c.messages[0].createdAt)
-                            : ''}
-                        </small>
-                      </div>
-                      <div className="chat-item-meta">
-                        <span className="lead-code">
-                          {c.request?.code ?? c.id.slice(0, 8)}
-                        </span>
-                        {withLabel ? (
-                          <span className="chip soft" style={{ marginLeft: 6 }}>
-                            {withLabel}
+                    <button
+                      type="button"
+                      className="chat-item-main"
+                      onClick={() => setSelectedId(c.id)}
+                    >
+                      <UserAvatar
+                        name={other?.fullName ?? withLabel ?? c.request?.title ?? 'HH'}
+                        avatarUrl={other?.avatarUrl}
+                        className="chat-avatar"
+                      />
+                      <div className="chat-item-body">
+                        <div className="chat-item-top">
+                          <b>
+                            {c.isPinned ? <AppIcon icon={Pin} size={12} className="chat-pin" /> : null}
+                            {c.request?.title ?? t('conversations.dialog')}
+                          </b>
+                          <small>
+                            {c.messages[0]
+                              ? formatDateTime(c.messages[0].createdAt)
+                              : ''}
+                          </small>
+                        </div>
+                        <div className="chat-item-meta">
+                          <span className="lead-code">
+                            {c.request?.code ?? c.id.slice(0, 8)}
                           </span>
-                        ) : null}
+                          {withLabel ? (
+                            <span className="chip soft" style={{ marginLeft: 6 }}>
+                              {withLabel}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="chat-preview">{preview}</p>
                       </div>
-                      <p className="chat-preview">{preview}</p>
-                    </div>
-                  </button>
+                    </button>
+                    <ItemOverflowMenu ariaLabel={t('conversations.chatActions')}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          void conversationsApi.pin(c.id, !c.isPinned).then(() =>
+                            conversationsApi.list().then(setItems),
+                          );
+                        }}
+                      >
+                        {c.isPinned ? t('conversations.unpin') : t('conversations.pin')}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="is-danger"
+                        onClick={() => {
+                          if (!window.confirm(t('conversations.deleteConfirm'))) return;
+                          void conversationsApi.hide(c.id).then(() => {
+                            setItems((prev) => {
+                              const next = prev.filter((item) => item.id !== c.id);
+                              setSelectedId((current) =>
+                                current === c.id ? next[0]?.id || '' : current,
+                              );
+                              return next;
+                            });
+                          });
+                        }}
+                      >
+                        {t('conversations.deleteChat')}
+                      </button>
+                    </ItemOverflowMenu>
+                  </div>
                 );
               })}
             </aside>

@@ -719,7 +719,12 @@
     "selectDialog": "Выберите диалог слева",
     "attachFile": "Прикрепить файл",
     "removeFile": "Убрать",
-    "fileTooLarge": "Файл больше 10 МБ"
+    "fileTooLarge": "Файл больше 10 МБ",
+    "chatActions": "Действия с чатом",
+    "pin": "Закрепить",
+    "unpin": "Открепить",
+    "deleteChat": "Удалить чат",
+    "deleteConfirm": "Удалить этот чат из списка?"
   },
   "role": {
     "BUYER": "Заказчик",

@@ -321,6 +321,7 @@ export type PublishResult = {
 export type ConversationItem = {
   id: string;
   updatedAt: string;
+  isPinned?: boolean;
   request?: { id: string; code: string; title: string } | null;
   messages: { id: string; body: string; createdAt: string }[];
   participants?: Array<{

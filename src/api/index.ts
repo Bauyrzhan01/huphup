@@ -1,4 +1,5 @@
 import { api, API_URL, ApiError, getToken, uploadApi } from './client';
+import { applyConversationPrefs, hideConversationLocally, pinConversationLocally } from '../utils/conversationPrefs';
 import { filterVisibleRequests, hideRequestLocally } from '../utils/hiddenRequests';
 import type {
   AnalyzeResult,
@@ -345,7 +346,32 @@ export const notificationsApi = {
 };
 
 export const conversationsApi = {
-  list: () => api<ConversationItem[]>('/conversations'),
+  list: async () => applyConversationPrefs(await api<ConversationItem[]>('/conversations')),
+  hide: async (id: string) => {
+    hideConversationLocally(id);
+    try {
+      return await api<{ ok: boolean }>(`/conversations/${id}/hide`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+    } catch (err) {
+      if (!(err instanceof ApiError && (err.status === 404 || err.status === 405))) {
+        /* still hidden locally */
+      }
+      return { ok: true };
+    }
+  },
+  pin: async (id: string, isPinned: boolean) => {
+    pinConversationLocally(id, isPinned);
+    try {
+      return await api<{ conversationId: string; isPinned: boolean }>(`/conversations/${id}/pin`, {
+        method: 'POST',
+        body: JSON.stringify({ isPinned }),
+      });
+    } catch {
+      return { conversationId: id, isPinned };
+    }
+  },
   messages: (
     id: string,
     params?: { after?: string; before?: string; limit?: number },
