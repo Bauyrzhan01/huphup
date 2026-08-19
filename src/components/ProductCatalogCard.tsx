@@ -89,34 +89,41 @@ export function ProductCatalogCard({ product }: { product: PublicProduct }) {
   }
 
   return (
-    <article className="supplier-card product-catalog-card">
-      <ProductImageGallery images={product.images} alt={product.name} className="product-card-gallery" />
-      <div className="product-card-body">
-        <h3>{product.name}</h3>
-        <p>{product.description || t('common.empty')}</p>
-        <div className="meta">
-          {[product.unit, product.city].filter(Boolean).join(' · ')}
+    <article className={`supplier-card product-catalog-card${open ? ' is-open' : ''}`}>
+      <div className="product-catalog-main">
+        <ProductImageGallery images={product.images} alt={product.name} className="product-card-gallery" />
+        <div className="product-card-body">
+          <h3>{product.name}</h3>
+          <p>{product.description || t('common.empty')}</p>
+          <div className="product-catalog-foot">
+            <div>
+              <div className="meta">
+                {[product.unit, product.city].filter(Boolean).join(' · ')}
+              </div>
+              <p className="meta product-price-contact">{t('products.priceOnContact')}</p>
+              <div className="product-card-rating">
+                {product.reviewCount && product.avgRating != null ? (
+                  <>
+                    <Stars value={product.avgRating} size="sm" />
+                    <span className="meta">
+                      {t('products.ratingSummary', {
+                        rating: product.avgRating.toFixed(1),
+                        count: product.reviewCount,
+                      })}
+                    </span>
+                  </>
+                ) : (
+                  <span className="meta">{t('products.noReviews')}</span>
+                )}
+              </div>
+            </div>
+            <button type="button" className="ghost product-reviews-toggle" onClick={() => setOpen((v) => !v)}>
+              {open ? t('products.hideReviews') : t('products.showReviews')}
+            </button>
+          </div>
         </div>
-        <p className="meta product-price-contact">{t('products.priceOnContact')}</p>
-        <div className="product-card-rating">
-          {product.reviewCount && product.avgRating != null ? (
-            <>
-              <Stars value={product.avgRating} size="sm" />
-              <span className="meta">
-                {t('products.ratingSummary', {
-                  rating: product.avgRating.toFixed(1),
-                  count: product.reviewCount,
-                })}
-              </span>
-            </>
-          ) : (
-            <span className="meta">{t('products.noReviews')}</span>
-          )}
-        </div>
-        <button type="button" className="ghost product-reviews-toggle" onClick={() => setOpen((v) => !v)}>
-          {open ? t('products.hideReviews') : t('products.showReviews')}
-        </button>
-        {open ? (
+      </div>
+      {open ? (
           <div className="product-reviews-panel">
             {loadingReviews ? (
               <p className="meta">{t('common.loading')}</p>
@@ -159,8 +166,7 @@ export function ProductCatalogCard({ product }: { product: PublicProduct }) {
               <p className="meta">{t('products.reviewBuyerOnly')}</p>
             )}
           </div>
-        ) : null}
-      </div>
+      ) : null}
     </article>
   );
 }

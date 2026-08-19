@@ -102,7 +102,7 @@ export function SupplierDetailPage() {
                   <Link className="ghost" to="/suppliers">
                     {t('common.back')}
                   </Link>
-                  <Link className="primary" to="/requests/new">
+                  <Link className="primary" to="/app">
                     {t('suppliers.createRequest')}
                   </Link>
                 </div>
@@ -141,10 +141,12 @@ export function SupplierDetailPage() {
                 <div className="panel supplier-profile-meta">
                   <h2 className="section-title">{t('suppliers.details')}</h2>
                   <dl className="supplier-profile-dl">
-                    <div>
-                      <dt>{t('suppliers.bin')}</dt>
-                      <dd>{company.bin || t('common.empty')}</dd>
-                    </div>
+                    {company.bin ? (
+                      <div>
+                        <dt>{t('suppliers.bin')}</dt>
+                        <dd>{company.bin}</dd>
+                      </div>
+                    ) : null}
                     <div>
                       <dt>{t('suppliers.statCity')}</dt>
                       <dd>{company.city || t('common.empty')}</dd>
