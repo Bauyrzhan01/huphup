@@ -10,6 +10,7 @@ import { ReassignLeadDto } from './dto/reassign-lead.dto';
 import {
   AddLeadNoteDto,
   BulkLeadsDto,
+  CreateLeadTaskDto,
   SetNextStepDto,
   UpdateLeadStatusDto,
 } from '../crm/dto/crm.dto';
@@ -20,6 +21,11 @@ import {
 @Controller('leads')
 export class MatchingController {
   constructor(private readonly matchingService: MatchingService) {}
+
+  @Get('tasks/mine')
+  myTasks(@CurrentUser() user: AuthUser) {
+    return this.matchingService.listMyTasks(user.id);
+  }
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
@@ -48,6 +54,29 @@ export class MatchingController {
     @Body() dto: AddLeadNoteDto,
   ) {
     return this.matchingService.addNote(user.id, id, dto.body);
+  }
+
+  @Get(':id/tasks')
+  tasks(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.matchingService.listTasks(user.id, id);
+  }
+
+  @Post(':id/tasks')
+  createTask(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: CreateLeadTaskDto,
+  ) {
+    return this.matchingService.createTask(user.id, id, dto);
+  }
+
+  @Post(':id/tasks/:taskId/complete')
+  completeTask(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+  ) {
+    return this.matchingService.completeTask(user.id, id, taskId);
   }
 
   @Patch(':id/status')

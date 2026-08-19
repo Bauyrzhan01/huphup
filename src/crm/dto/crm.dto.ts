@@ -25,6 +25,26 @@ export class AddLeadNoteDto {
   body!: string;
 }
 
+export class CreateLeadTaskDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(2)
+  title!: string;
+
+  @ApiProperty({ example: 'CALL' })
+  @IsString()
+  kind!: 'CALL' | 'MEETING' | 'TASK';
+
+  @ApiProperty()
+  @IsDateString()
+  dueAt!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  assigneeId?: string;
+}
+
 export class SetNextStepDto {
   @ApiPropertyOptional()
   @IsOptional()

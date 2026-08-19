@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   LeadActivityType,
   LeadStatus,
+  LeadTaskKind,
   NotificationType,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -105,6 +106,99 @@ export class LeadCrmService {
       include: {
         user: {
           select: { id: true, fullName: true, avatarUrl: true },
+        },
+      },
+    });
+  }
+
+  async listTasks(leadId: string) {
+    return this.prisma.leadTask.findMany({
+      where: { leadId },
+      orderBy: [{ doneAt: 'asc' }, { dueAt: 'asc' }],
+      include: {
+        assignee: {
+          select: { id: true, fullName: true, avatarUrl: true },
+        },
+      },
+    });
+  }
+
+  async createTask(
+    leadId: string,
+    userId: string,
+    input: {
+      title: string;
+      kind: LeadTaskKind;
+      dueAt: Date;
+      assigneeId: string;
+    },
+  ) {
+    const task = await this.prisma.leadTask.create({
+      data: {
+        leadId,
+        creatorId: userId,
+        assigneeId: input.assigneeId,
+        kind: input.kind,
+        title: input.title.trim(),
+        dueAt: input.dueAt,
+      },
+      include: {
+        assignee: {
+          select: { id: true, fullName: true, avatarUrl: true },
+        },
+      },
+    });
+    await this.logActivity({
+      leadId,
+      userId,
+      type: LeadActivityType.NEXT_STEP_SET,
+      message: input.title.trim(),
+      meta: { taskId: task.id, kind: input.kind },
+    });
+    return task;
+  }
+
+  async completeTask(taskId: string, companyId: string, userId: string) {
+    const task = await this.prisma.leadTask.findFirst({
+      where: { id: taskId, lead: { companyId } },
+    });
+    if (!task || task.doneAt) {
+      return task;
+    }
+    const updated = await this.prisma.leadTask.update({
+      where: { id: task.id },
+      data: { doneAt: new Date() },
+      include: {
+        assignee: {
+          select: { id: true, fullName: true, avatarUrl: true },
+        },
+      },
+    });
+    await this.logActivity({
+      leadId: task.leadId,
+      userId,
+      type: LeadActivityType.NOTE_ADDED,
+      message: task.title,
+      meta: { taskId: task.id, done: true },
+    });
+    return updated;
+  }
+
+  async listMyOpenTasks(companyId: string, userId: string) {
+    return this.prisma.leadTask.findMany({
+      where: {
+        assigneeId: userId,
+        doneAt: null,
+        lead: { companyId },
+      },
+      orderBy: { dueAt: 'asc' },
+      take: 20,
+      include: {
+        lead: {
+          select: {
+            id: true,
+            request: { select: { code: true, title: true } },
+          },
         },
       },
     });

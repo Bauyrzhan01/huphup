@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { LeadActivityType, LeadStatus } from '@prisma/client';
+import { LeadActivityType, LeadStatus, LeadTaskKind } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
 import { GeminiService } from '../gemini/gemini.service';
@@ -559,6 +559,46 @@ export class MatchingService {
   async addNote(userId: string, leadId: string, body: string) {
     await this.requireCompanyLead(userId, leadId);
     return this.crm.addNote(leadId, userId, body);
+  }
+
+  async listTasks(userId: string, leadId: string) {
+    await this.requireCompanyLead(userId, leadId);
+    return this.crm.listTasks(leadId);
+  }
+
+  async createTask(
+    userId: string,
+    leadId: string,
+    dto: { title: string; kind: string; dueAt: string; assigneeId?: string },
+  ) {
+    const { lead } = await this.requireCompanyLead(userId, leadId);
+    const kind = (['CALL', 'MEETING', 'TASK'] as const).includes(
+      dto.kind as LeadTaskKind,
+    )
+      ? (dto.kind as LeadTaskKind)
+      : LeadTaskKind.TASK;
+    const assigneeId = dto.assigneeId || lead.assigneeId || userId;
+    return this.crm.createTask(leadId, userId, {
+      title: dto.title,
+      kind,
+      dueAt: new Date(dto.dueAt),
+      assigneeId,
+    });
+  }
+
+  async completeTask(userId: string, leadId: string, taskId: string) {
+    const { lead } = await this.requireCompanyLead(userId, leadId);
+    const updated = await this.crm.completeTask(taskId, lead.companyId, userId);
+    if (!updated) {
+      throw new NotFoundException('Task not found');
+    }
+    return updated;
+  }
+
+  async listMyTasks(userId: string) {
+    const resolved = await this.companies.resolveCompanyForUser(userId);
+    if (!resolved) return [];
+    return this.crm.listMyOpenTasks(resolved.company.id, userId);
   }
 
   async bulkUpdate(userId: string, dto: BulkLeadsDto) {
