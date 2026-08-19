@@ -6,13 +6,6 @@ import './auth.css';
 
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 
-const POINTS: Record<AuthMode, [string, string, string]> = {
-  login: ['auth.point1', 'auth.point2', 'auth.point3'],
-  register: ['auth.point1', 'auth.point2', 'auth.point3'],
-  forgot: ['auth.point1', 'auth.point2', 'auth.point3'],
-  reset: ['auth.point1', 'auth.point2', 'auth.point3'],
-};
-
 export function AuthLayout({
   mode,
   title,
@@ -25,31 +18,34 @@ export function AuthLayout({
   children: ReactNode;
 }) {
   const { t } = useTranslation();
+  const isRegister = mode === 'register';
 
   return (
     <div className={`hh-auth hh-auth--${mode}`}>
-      <aside className="hh-auth-visual" aria-hidden="true">
-        <div className="hh-auth-visual-glow" />
-        <svg className="hh-auth-path" viewBox="0 0 720 900" preserveAspectRatio="xMidYMid slice">
-          <path d="M-40 520 C80 490 160 560 240 530 C360 480 460 360 560 300 C640 250 700 420 640 560 C580 700 500 780 420 860" />
-          <path d="M240 530 L80 620" />
-          <path d="M560 300 L680 180" />
-        </svg>
-        <span className="hh-auth-watermark">{t('landing.bg01')}</span>
-        <div className="hh-auth-visual-copy">
-          <p className="hh-auth-kicker">HupHup</p>
-          <p className="hh-auth-slogan">
-            <span>{t('landing.sloganL1')}</span>
-            <span>{t('landing.sloganL2')}</span>
-            <em>{t('landing.sloganAccent')}</em>
-          </p>
-          <ul className="hh-auth-points">
-            {POINTS[mode].map((key) => (
-              <li key={key}>{t(key)}</li>
-            ))}
-          </ul>
-        </div>
-      </aside>
+      {!isRegister ? (
+        <aside className="hh-auth-visual" aria-hidden="true">
+          <div className="hh-auth-visual-glow" />
+          <svg className="hh-auth-path" viewBox="0 0 720 900" preserveAspectRatio="xMidYMid slice">
+            <path d="M-40 520 C80 490 160 560 240 530 C360 480 460 360 560 300 C640 250 700 420 640 560 C580 700 500 780 420 860" />
+            <path d="M240 530 L80 620" />
+            <path d="M560 300 L680 180" />
+          </svg>
+          <span className="hh-auth-watermark">{t('landing.bg01')}</span>
+          <div className="hh-auth-visual-copy">
+            <p className="hh-auth-kicker">HupHup</p>
+            <p className="hh-auth-slogan">
+              <span>{t('landing.sloganL1')}</span>
+              <span>{t('landing.sloganL2')}</span>
+              <em>{t('landing.sloganAccent')}</em>
+            </p>
+            <ul className="hh-auth-points">
+              <li>{t('auth.point1')}</li>
+              <li>{t('auth.point2')}</li>
+              <li>{t('auth.point3')}</li>
+            </ul>
+          </div>
+        </aside>
+      ) : null}
 
       <div className="hh-auth-panel">
         <header className="hh-auth-header">
@@ -70,6 +66,36 @@ export function AuthLayout({
           </div>
         </div>
       </div>
+
+      {isRegister ? (
+        <aside className="hh-auth-visual hh-auth-visual--dark" aria-hidden="true">
+          <span className="hh-auth-watermark">{t('auth.registerWatermark')}</span>
+          <div className="hh-auth-visual-copy">
+            <p className="hh-auth-kicker">{t('auth.registerSideKicker')}</p>
+            <p className="hh-auth-slogan">
+              <span>{t('landing.finalL1')}</span>
+              <span>
+                {t('landing.finalL2')}
+                <em>{t('landing.finalL2Em')}</em>
+              </span>
+            </p>
+            <ol className="hh-auth-steps">
+              <li>
+                <span>01</span>
+                {t('auth.registerStep1')}
+              </li>
+              <li>
+                <span>02</span>
+                {t('auth.registerStep2')}
+              </li>
+              <li>
+                <span>03</span>
+                {t('auth.registerStep3')}
+              </li>
+            </ol>
+          </div>
+        </aside>
+      ) : null}
     </div>
   );
 }

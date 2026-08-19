@@ -42,42 +42,50 @@ export function RegisterPage() {
   return (
     <AuthLayout mode="register" title={t('auth.register')} lead={t('auth.registerLead')}>
       <form className="hh-auth-form" onSubmit={onSubmit}>
-        <div className="hh-auth-roles" role="tablist" aria-label={t('auth.roleLabel')}>
+        <div className="hh-auth-roles" role="radiogroup" aria-label={t('auth.roleLabel')}>
           <button
             type="button"
-            className={`hh-auth-role${role === 'BUYER' ? ' is-on' : ''}`}
+            role="radio"
+            aria-checked={role === 'BUYER'}
+            className={`hh-auth-role-card${role === 'BUYER' ? ' is-on' : ''}`}
             onClick={() => setRole('BUYER')}
           >
-            {t('auth.roleBuyer')}
+            <b>{t('auth.roleBuyer')}</b>
+            <span>{t('auth.roleBuyerHint')}</span>
           </button>
           <button
             type="button"
-            className={`hh-auth-role${role === 'SUPPLIER' ? ' is-on' : ''}`}
+            role="radio"
+            aria-checked={role === 'SUPPLIER'}
+            className={`hh-auth-role-card${role === 'SUPPLIER' ? ' is-on' : ''}`}
             onClick={() => setRole('SUPPLIER')}
           >
-            {t('auth.roleSupplier')}
+            <b>{t('auth.roleSupplier')}</b>
+            <span>{t('auth.roleSupplierHint')}</span>
           </button>
         </div>
-        <div className="hh-auth-field">
-          <label htmlFor="auth-name">{t('auth.nameOrCompany')}</label>
-          <input
-            id="auth-name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            required
-            autoComplete="name"
-          />
-        </div>
-        <div className="hh-auth-field">
-          <label htmlFor="auth-email">{t('auth.email')}</label>
-          <input
-            id="auth-email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            type="email"
-            required
-            autoComplete="email"
-          />
+        <div className="hh-auth-row">
+          <div className="hh-auth-field">
+            <label htmlFor="auth-name">{t('auth.nameOrCompany')}</label>
+            <input
+              id="auth-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              autoComplete="name"
+            />
+          </div>
+          <div className="hh-auth-field">
+            <label htmlFor="auth-email">{t('auth.email')}</label>
+            <input
+              id="auth-email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              required
+              autoComplete="email"
+            />
+          </div>
         </div>
         <div className="hh-auth-field">
           <label htmlFor="auth-password">{t('auth.password')}</label>
