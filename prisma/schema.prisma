@@ -97,6 +97,7 @@ model User {
   leadNotes        LeadNote[]
   createdLeadTasks LeadTask[] @relation("LeadTaskCreator")
   assignedLeadTasks LeadTask[] @relation("LeadTaskAssignee")
+  leadTaskComments LeadTaskComment[]
 
   @@index([role])
   @@map("users")
@@ -114,6 +115,7 @@ model Company {
   rating      Float    @default(0)
   logoUrl     String?
   logoKey     String?
+  taskSeq     Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -125,6 +127,7 @@ model Company {
   invites CompanyInvite[]
   crmStages CrmStageConfig[]
   crmAutomationRules CrmAutomationRule[]
+  leadTasks LeadTask[]
 
   @@index([city])
   @@index([verified])
@@ -331,24 +334,61 @@ enum LeadTaskKind {
   TASK
 }
 
+enum LeadTaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum LeadTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 model LeadTask {
-  id         String       @id @default(cuid())
-  leadId     String
-  creatorId  String
-  assigneeId String
-  kind       LeadTaskKind @default(TASK)
-  title      String
-  dueAt      DateTime
-  doneAt     DateTime?
-  createdAt  DateTime     @default(now())
+  id          String           @id @default(cuid())
+  companyId   String
+  leadId      String
+  creatorId   String
+  assigneeId  String
+  code        String
+  kind        LeadTaskKind     @default(TASK)
+  status      LeadTaskStatus   @default(TODO)
+  priority    LeadTaskPriority @default(MEDIUM)
+  title       String
+  description String?
+  dueAt       DateTime
+  doneAt      DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
-  lead     Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  creator  User @relation("LeadTaskCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  assignee User @relation("LeadTaskAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+  company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead     Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  creator  User              @relation("LeadTaskCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  assignee User              @relation("LeadTaskAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+  comments LeadTaskComment[]
 
+  @@unique([companyId, code])
   @@index([leadId, dueAt])
-  @@index([assigneeId, doneAt])
+  @@index([assigneeId, status])
+  @@index([companyId, status])
   @@map("lead_tasks")
+}
+
+model LeadTaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  body      String
+  createdAt DateTime @default(now())
+
+  task LeadTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+  @@map("lead_task_comments")
 }
 
 model LeadNote {

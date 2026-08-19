@@ -9,10 +9,12 @@ import {
 import { ReassignLeadDto } from './dto/reassign-lead.dto';
 import {
   AddLeadNoteDto,
+  AddLeadTaskCommentDto,
   BulkLeadsDto,
   CreateLeadTaskDto,
   SetNextStepDto,
   UpdateLeadStatusDto,
+  UpdateLeadTaskDto,
 } from '../crm/dto/crm.dto';
 
 @ApiTags('leads')
@@ -25,6 +27,11 @@ export class MatchingController {
   @Get('tasks/mine')
   myTasks(@CurrentUser() user: AuthUser) {
     return this.matchingService.listMyTasks(user.id);
+  }
+
+  @Get('tasks/board')
+  boardTasks(@CurrentUser() user: AuthUser) {
+    return this.matchingService.listBoardTasks(user.id);
   }
 
   @Get()
@@ -77,6 +84,35 @@ export class MatchingController {
     @Param('taskId') taskId: string,
   ) {
     return this.matchingService.completeTask(user.id, id, taskId);
+  }
+
+  @Patch(':id/tasks/:taskId')
+  updateTask(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+    @Body() dto: UpdateLeadTaskDto,
+  ) {
+    return this.matchingService.updateTask(user.id, id, taskId, dto);
+  }
+
+  @Get(':id/tasks/:taskId/comments')
+  taskComments(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+  ) {
+    return this.matchingService.listTaskComments(user.id, id, taskId);
+  }
+
+  @Post(':id/tasks/:taskId/comments')
+  addTaskComment(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+    @Body() dto: AddLeadTaskCommentDto,
+  ) {
+    return this.matchingService.addTaskComment(user.id, id, taskId, dto.body);
   }
 
   @Patch(':id/status')

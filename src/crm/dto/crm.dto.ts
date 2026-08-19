@@ -9,7 +9,12 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { LeadStatus } from '@prisma/client';
+import {
+  LeadStatus,
+  LeadTaskKind,
+  LeadTaskPriority,
+  LeadTaskStatus,
+} from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateLeadStatusDto {
@@ -31,9 +36,9 @@ export class CreateLeadTaskDto {
   @MinLength(2)
   title!: string;
 
-  @ApiProperty({ example: 'CALL' })
-  @IsString()
-  kind!: 'CALL' | 'MEETING' | 'TASK';
+  @ApiProperty({ enum: LeadTaskKind })
+  @IsEnum(LeadTaskKind)
+  kind!: LeadTaskKind;
 
   @ApiProperty()
   @IsDateString()
@@ -43,6 +48,61 @@ export class CreateLeadTaskDto {
   @IsOptional()
   @IsString()
   assigneeId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ enum: LeadTaskPriority })
+  @IsOptional()
+  @IsEnum(LeadTaskPriority)
+  priority?: LeadTaskPriority;
+}
+
+export class UpdateLeadTaskDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  title?: string;
+
+  @ApiPropertyOptional({ enum: LeadTaskKind })
+  @IsOptional()
+  @IsEnum(LeadTaskKind)
+  kind?: LeadTaskKind;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  dueAt?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  assigneeId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ enum: LeadTaskStatus })
+  @IsOptional()
+  @IsEnum(LeadTaskStatus)
+  status?: LeadTaskStatus;
+
+  @ApiPropertyOptional({ enum: LeadTaskPriority })
+  @IsOptional()
+  @IsEnum(LeadTaskPriority)
+  priority?: LeadTaskPriority;
+}
+
+export class AddLeadTaskCommentDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(1)
+  body!: string;
 }
 
 export class SetNextStepDto {

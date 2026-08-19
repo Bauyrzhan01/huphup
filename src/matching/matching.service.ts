@@ -5,12 +5,17 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { LeadActivityType, LeadStatus, LeadTaskKind } from '@prisma/client';
+import { LeadActivityType, LeadStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
 import { GeminiService } from '../gemini/gemini.service';
 import { LeadCrmService } from '../crm/lead-crm.service';
-import type { BulkLeadsDto, SetNextStepDto } from '../crm/dto/crm.dto';
+import type {
+  BulkLeadsDto,
+  CreateLeadTaskDto,
+  SetNextStepDto,
+  UpdateLeadTaskDto,
+} from '../crm/dto/crm.dto';
 
 const leadRequestSelect = {
   id: true,
@@ -566,30 +571,53 @@ export class MatchingService {
     return this.crm.listTasks(leadId);
   }
 
-  async createTask(
-    userId: string,
-    leadId: string,
-    dto: { title: string; kind: string; dueAt: string; assigneeId?: string },
-  ) {
-    const { lead } = await this.requireCompanyLead(userId, leadId);
-    const kind = (['CALL', 'MEETING', 'TASK'] as const).includes(
-      dto.kind as LeadTaskKind,
-    )
-      ? (dto.kind as LeadTaskKind)
-      : LeadTaskKind.TASK;
+  async createTask(userId: string, leadId: string, dto: CreateLeadTaskDto) {
+    const { resolved, lead } = await this.requireCompanyLead(userId, leadId);
     const assigneeId = dto.assigneeId || lead.assigneeId || userId;
-    return this.crm.createTask(leadId, userId, {
+    await this.assertCompanyAssignee(resolved.company.id, resolved.company.ownerId, assigneeId);
+    return this.crm.createTask(leadId, lead.companyId, userId, {
       title: dto.title,
-      kind,
+      kind: dto.kind,
       dueAt: new Date(dto.dueAt),
       assigneeId,
+      description: dto.description,
+      priority: dto.priority,
     });
+  }
+
+  async updateTask(
+    userId: string,
+    leadId: string,
+    taskId: string,
+    dto: UpdateLeadTaskDto,
+  ) {
+    const { resolved, lead } = await this.requireCompanyLead(userId, leadId);
+    if (dto.assigneeId) {
+      await this.assertCompanyAssignee(
+        resolved.company.id,
+        resolved.company.ownerId,
+        dto.assigneeId,
+      );
+    }
+    const updated = await this.crm.updateTask(taskId, lead.companyId, userId, {
+      title: dto.title,
+      kind: dto.kind,
+      dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
+      assigneeId: dto.assigneeId,
+      description: dto.description,
+      status: dto.status,
+      priority: dto.priority,
+    });
+    if (!updated || updated.leadId !== leadId) {
+      throw new NotFoundException('Task not found');
+    }
+    return updated;
   }
 
   async completeTask(userId: string, leadId: string, taskId: string) {
     const { lead } = await this.requireCompanyLead(userId, leadId);
     const updated = await this.crm.completeTask(taskId, lead.companyId, userId);
-    if (!updated) {
+    if (!updated || updated.leadId !== leadId) {
       throw new NotFoundException('Task not found');
     }
     return updated;
@@ -599,6 +627,44 @@ export class MatchingService {
     const resolved = await this.companies.resolveCompanyForUser(userId);
     if (!resolved) return [];
     return this.crm.listMyOpenTasks(resolved.company.id, userId);
+  }
+
+  async listBoardTasks(userId: string) {
+    const resolved = await this.companies.resolveCompanyForUser(userId);
+    if (!resolved) return [];
+    return this.crm.listCompanyTasks(resolved.company.id);
+  }
+
+  async listTaskComments(userId: string, leadId: string, taskId: string) {
+    const { lead } = await this.requireCompanyLead(userId, leadId);
+    return this.crm.listComments(taskId, lead.companyId);
+  }
+
+  async addTaskComment(
+    userId: string,
+    leadId: string,
+    taskId: string,
+    body: string,
+  ) {
+    const { lead } = await this.requireCompanyLead(userId, leadId);
+    const comment = await this.crm.addComment(taskId, lead.companyId, userId, body);
+    if (!comment) {
+      throw new NotFoundException('Task not found');
+    }
+    return comment;
+  }
+
+  private async assertCompanyAssignee(
+    companyId: string,
+    ownerId: string,
+    assigneeId: string,
+  ) {
+    const member = await this.prisma.companyMember.findFirst({
+      where: { companyId, userId: assigneeId },
+    });
+    if (!member && ownerId !== assigneeId) {
+      throw new BadRequestException('Assignee must be a company member');
+    }
   }
 
   async bulkUpdate(userId: string, dto: BulkLeadsDto) {
