@@ -318,6 +318,40 @@ export type CrmAnalytics = {
   }>;
 };
 
+export type ApiHealth = {
+  status: string;
+  service: string;
+  database: 'up' | 'down';
+  dbLatencyMs?: number | null;
+  time: string;
+  uptimeSec: number;
+  memoryMb: number;
+  nodeVersion: string;
+};
+
+export type CrmLivePulse = {
+  checkedAt: string;
+  counts: {
+    products: number;
+    members: number;
+    membersOnline: number;
+    leads: number;
+    openTasks: number;
+    pendingOffers: number;
+    offersLast24h: number;
+    leadsLast24h: number;
+  };
+  feed: Array<{
+    id: string;
+    at: string;
+    type: string;
+    message: string;
+    leadId?: string;
+    requestCode?: string;
+    requestTitle?: string;
+  }>;
+};
+
 export type AnalyzeQuestion = {
   id: string;
   field: string;
