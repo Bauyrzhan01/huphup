@@ -5,10 +5,10 @@ import type { CrmAnalytics } from '../../types';
 
 const STATUS_ORDER = ['NEW', 'VIEWED', 'OFFERED', 'SKIPPED'] as const;
 const STATUS_COLORS: Record<string, string> = {
-  NEW: '#5b4dff',
-  VIEWED: '#f5c542',
-  OFFERED: '#22c55e',
-  SKIPPED: '#ef4444',
+  NEW: '#111111',
+  VIEWED: '#2563eb',
+  OFFERED: '#10a37f',
+  SKIPPED: '#a1a1aa',
 };
 
 function Delta({ value }: { value?: number | null }) {
@@ -40,7 +40,7 @@ function Donut({ analytics }: { analytics: CrmAnalytics }) {
   return (
     <div className="dash-donut-wrap">
       <svg viewBox="0 0 140 140" className="dash-donut">
-        <circle cx="70" cy="70" r={r} fill="none" stroke="#eee" strokeWidth="16" />
+        <circle cx="70" cy="70" r={r} fill="none" stroke="#ececee" strokeWidth="14" />
         {total
           ? slices.map((slice) => (
               <circle
@@ -50,7 +50,7 @@ function Donut({ analytics }: { analytics: CrmAnalytics }) {
                 r={r}
                 fill="none"
                 stroke={STATUS_COLORS[slice.status]}
-                strokeWidth="16"
+                strokeWidth="14"
                 strokeDasharray={`${slice.len} ${c - slice.len}`}
                 strokeDashoffset={-slice.offset}
                 transform="rotate(-90 70 70)"
@@ -79,26 +79,37 @@ function Donut({ analytics }: { analytics: CrmAnalytics }) {
 
 function Bars({ values, labels }: { values: number[]; labels: string[] }) {
   const max = Math.max(...values, 1);
-  const w = 360;
-  const h = 160;
-  const gap = 4;
+  const w = 420;
+  const h = 168;
+  const gap = 5;
   const barW = (w - gap * (values.length + 1)) / values.length;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="dash-chart" preserveAspectRatio="none">
+    <svg viewBox={`0 0 ${w} ${h}`} className="dash-chart">
+      {[0.25, 0.5, 0.75, 1].map((p) => (
+        <line
+          key={p}
+          x1="0"
+          x2={w}
+          y1={138 - p * 110}
+          y2={138 - p * 110}
+          stroke="#ececee"
+          strokeWidth="1"
+        />
+      ))}
       {values.map((v, i) => {
-        const bh = (v / max) * 120;
+        const bh = (v / max) * 110;
         const x = gap + i * (barW + gap);
         return (
           <rect
-            key={labels[i]}
+            key={labels[i] ?? i}
             x={x}
-            y={130 - bh}
+            y={138 - bh}
             width={barW}
-            height={Math.max(bh, v ? 2 : 0)}
-            rx="4"
-            fill="#22c55e"
-            opacity={v ? 1 : 0.25}
+            height={v ? Math.max(bh, 3) : 0}
+            rx="5"
+            fill="#111"
+            opacity={v ? 1 : 0.12}
           />
         );
       })}
@@ -106,32 +117,37 @@ function Bars({ values, labels }: { values: number[]; labels: string[] }) {
   );
 }
 
-function Lines({
-  a,
-  b,
-}: {
-  a: number[];
-  b: number[];
-}) {
+function Lines({ a, b }: { a: number[]; b: number[] }) {
   const max = Math.max(...a, ...b, 1);
-  const w = 360;
-  const h = 160;
+  const w = 640;
+  const h = 168;
   const step = a.length > 1 ? w / (a.length - 1) : w;
 
   function path(values: number[]) {
     return values
       .map((v, i) => {
         const x = i * step;
-        const y = 140 - (v / max) * 120;
+        const y = 148 - (v / max) * 120;
         return `${i === 0 ? 'M' : 'L'}${x},${y}`;
       })
       .join(' ');
   }
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="dash-chart" preserveAspectRatio="none">
-      <path d={path(a)} fill="none" stroke="#5b4dff" strokeWidth="2.5" />
-      <path d={path(b)} fill="none" stroke="#c4b5fd" strokeWidth="2.5" />
+    <svg viewBox={`0 0 ${w} ${h}`} className="dash-chart">
+      {[0.25, 0.5, 0.75, 1].map((p) => (
+        <line
+          key={p}
+          x1="0"
+          x2={w}
+          y1={148 - p * 120}
+          y2={148 - p * 120}
+          stroke="#ececee"
+          strokeWidth="1"
+        />
+      ))}
+      <path d={path(a)} fill="none" stroke="#111" strokeWidth="2.2" strokeLinejoin="round" />
+      <path d={path(b)} fill="none" stroke="#10a37f" strokeWidth="2.2" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -176,7 +192,9 @@ export function SupplierDashboard({ analytics }: { analytics: CrmAnalytics | nul
       <article className="dash-card dash-funnel">
         <header>
           <h3>{t('supplier.dashFunnel')}</h3>
-          <Link to="/supplier/deals">{t('supplier.dealsTitle')}</Link>
+          <Link className="dash-card-link" to="/supplier/deals">
+            {t('supplier.dealsTitle')}
+          </Link>
         </header>
         <Donut analytics={analytics} />
       </article>
@@ -193,7 +211,7 @@ export function SupplierDashboard({ analytics }: { analytics: CrmAnalytics | nul
         )}
       </article>
 
-      <article className="dash-card">
+      <article className="dash-card dash-wide">
         <header>
           <h3>{t('supplier.dashOffersFlow')}</h3>
           <span className="meta">{t('supplier.dashOffersHint')}</span>

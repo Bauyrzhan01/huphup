@@ -22,6 +22,7 @@ export function SupplierDashboardPage() {
   return (
     <SupplierLayout
       crumb={t('nav.dashboard')}
+      title={t('nav.dashboard')}
       actions={
         <div className="crm-head-actions">
           <Link className="ghost" to="/supplier/deals">
@@ -33,7 +34,7 @@ export function SupplierDashboardPage() {
         </div>
       }
     >
-      <div className="page crm-page">
+      <div className="page">
         {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
         <SupplierDashboard analytics={analytics} />
       </div>
