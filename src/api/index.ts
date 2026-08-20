@@ -9,8 +9,6 @@ import type {
   CompanyProductsResponse,
   ConversationItem,
   CrmAnalytics,
-  CrmLivePulse,
-  ApiHealth,
   CrmAutomationRule,
   CrmStage,
   InviteCreated,
@@ -401,11 +399,6 @@ export const crmApi = {
       body: JSON.stringify({ rules }),
     }),
   analytics: () => api<CrmAnalytics>('/crm/analytics'),
-  live: () => api<CrmLivePulse>('/crm/live'),
-};
-
-export const healthApi = {
-  check: () => api<ApiHealth>('/health'),
 };
 
 export const notificationsApi = {

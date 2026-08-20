@@ -1,19 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
-import type { ApiHealth, CrmAnalytics, CrmLivePulse } from '../../types';
-
-const ACT_LABELS: Record<string, string> = {
-  CREATED: 'crmActCreated',
-  VIEWED: 'crmActViewed',
-  CLAIMED: 'crmActClaimed',
-  REASSIGNED: 'crmActReassigned',
-  STATUS_CHANGED: 'crmActStatus',
-  OFFER_SENT: 'crmActOffer',
-  SKIPPED: 'crmActSkipped',
-  NOTE_ADDED: 'crmActNote',
-  NEXT_STEP_SET: 'crmActNextStep',
-};
+import type { CrmAnalytics } from '../../types';
 
 const STATUS_ORDER = ['NEW', 'VIEWED', 'OFFERED', 'SKIPPED'] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -164,127 +152,20 @@ function Lines({ a, b }: { a: number[]; b: number[] }) {
   );
 }
 
-function formatUptime(sec: number) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  if (h <= 0) return `${m}m`;
-  return `${h}h ${m}m`;
-}
-
-function timeAgo(iso: string, t: (key: string, opts?: Record<string, unknown>) => string) {
-  const sec = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
-  if (sec < 45) return t('supplier.dashLiveJustNow');
-  if (sec < 3600) return t('supplier.dashLiveMins', { count: Math.floor(sec / 60) });
-  return t('supplier.dashLiveHours', { count: Math.floor(sec / 3600) });
-}
-
-export function SupplierDashboard({
-  analytics,
-  health,
-  live,
-}: {
-  analytics: CrmAnalytics | null;
-  health: ApiHealth | null;
-  live: CrmLivePulse | null;
-}) {
+export function SupplierDashboard({ analytics }: { analytics: CrmAnalytics | null }) {
   const { t } = useTranslation();
   const { formatMoney } = useAppLocale();
-  if (!analytics && !live && !health) {
+  if (!analytics) {
     return <p className="meta">{t('common.loadingFromDb')}</p>;
   }
 
-  const series = analytics?.series ?? [];
+  const series = analytics.series ?? [];
   const leads = series.map((s) => s.leads);
   const offerAmt = series.map((s) => s.offerAmount);
   const acceptedAmt = series.map((s) => s.acceptedAmount);
-  const dbUp = health?.database === 'up';
-  const apiOk = health?.status === 'ok';
-  const counts = live?.counts;
 
   return (
     <div className="dash-grid">
-      <section className="dash-live">
-        <span className={`dash-live-dot${apiOk && dbUp ? '' : ' is-down'}`} />
-        <div className="dash-live-item">
-          <small>{t('supplier.dashLiveApi')}</small>
-          <b>{health ? (apiOk ? t('supplier.dashLiveOk') : t('supplier.dashLiveDegraded')) : '—'}</b>
-        </div>
-        <div className="dash-live-item">
-          <small>{t('supplier.dashLiveDb')}</small>
-          <b>{health ? (dbUp ? t('supplier.dashLiveOk') : t('supplier.dashLiveDown')) : '—'}</b>
-        </div>
-        <div className="dash-live-item">
-          <small>{t('supplier.dashLiveLatency')}</small>
-          <b>{health?.dbLatencyMs != null ? `${health.dbLatencyMs} ms` : '—'}</b>
-        </div>
-        <div className="dash-live-item">
-          <small>{t('supplier.dashLiveUptime')}</small>
-          <b>{health ? formatUptime(health.uptimeSec) : '—'}</b>
-        </div>
-        <div className="dash-live-item">
-          <small>{t('supplier.dashLiveRefresh')}</small>
-          <b>{live?.checkedAt ? timeAgo(live.checkedAt, t) : t('supplier.dashLivePolling')}</b>
-        </div>
-      </section>
-
-      {counts ? (
-        <div className="dash-kpis dash-live-counts">
-          <article className="dash-kpi">
-            <small>{t('supplier.dashLiveProducts')}</small>
-            <b>{counts.products}</b>
-            <Link to="/supplier/products">{t('nav.products')}</Link>
-          </article>
-          <article className="dash-kpi">
-            <small>{t('supplier.dashLiveTeam')}</small>
-            <b>
-              {counts.membersOnline}
-              <span className="dash-kpi-sub"> / {counts.members}</span>
-            </b>
-            <span className="meta">{t('supplier.dashLiveOnline')}</span>
-          </article>
-          <article className="dash-kpi">
-            <small>{t('supplier.dashLiveLeads24')}</small>
-            <b>{counts.leadsLast24h}</b>
-            <span className="meta">{t('supplier.dashLiveLeadsTotal', { count: counts.leads })}</span>
-          </article>
-          <article className="dash-kpi">
-            <small>{t('supplier.dashLiveOffers')}</small>
-            <b>{counts.pendingOffers}</b>
-            <span className="meta">{t('supplier.dashLiveOffers24', { count: counts.offersLast24h })}</span>
-          </article>
-        </div>
-      ) : null}
-
-      <article className="dash-card">
-        <header>
-          <h3>{t('supplier.dashLiveFeed')}</h3>
-          <span className="meta">{t('supplier.dashLiveFeedHint')}</span>
-        </header>
-        {live?.feed.length ? (
-          <ul className="dash-feed">
-            {live.feed.map((item) => (
-              <li key={item.id}>
-                <i />
-                <div>
-                  <b>{t(`supplier.${ACT_LABELS[item.type] ?? 'crmActStatus'}`)}</b>
-                  <p>{item.message}</p>
-                  {item.requestCode ? (
-                    <Link to={`/supplier/leads?leadId=${item.leadId}`}>
-                      {item.requestCode} · {item.requestTitle}
-                    </Link>
-                  ) : null}
-                </div>
-                <time>{timeAgo(item.at, t)}</time>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="meta">{t('common.noDataInDb')}</p>
-        )}
-      </article>
-
-      {analytics ? (
-        <>
       <div className="dash-kpis">
         <article className="dash-kpi is-accent">
           <small>{t('supplier.dashLeads14')}</small>
@@ -347,8 +228,6 @@ export function SupplierDashboard({
           <p className="meta">{t('common.noDataInDb')}</p>
         )}
       </article>
-        </>
-      ) : null}
     </div>
   );
 }
