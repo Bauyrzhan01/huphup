@@ -20,6 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { HealthModule } from './health/health.module';
 import { OpsModule } from './ops/ops.module';
+import { PlatformModule } from './platform/platform.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { OpsModule } from './ops/ops.module';
     AttachmentsModule,
     HealthModule,
     OpsModule,
+    PlatformModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
