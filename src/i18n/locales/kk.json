@@ -453,6 +453,8 @@
     "avatarRemove": "Аватарды өшіру",
     "avatarSaved": "Аватар жаңартылды",
     "avatarRemoved": "Аватар өшірілді",
+    "language": "Интерфейс тілі",
+    "languageHint": "Қосымшадағы мәзір, батырма және хабарландыру тілін таңдаңыз.",
     "showAllNotifications": "Барлығын көрсету ({{count}})",
     "showLessNotifications": "Жию"
   },

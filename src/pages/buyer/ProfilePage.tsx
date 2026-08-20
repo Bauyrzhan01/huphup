@@ -5,6 +5,7 @@ import { notificationsApi, usersApi } from '../../api';
 import { resolveMediaUrl } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import { PasswordInput } from '../../components/PasswordInput';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useRoleLabel } from '../../i18n/useAppLocale';
 import { getNotificationHref } from '../../utils/notificationNavigation';
@@ -283,6 +284,11 @@ export function ProfilePage() {
                   disabled
                   className="input-readonly"
                 />
+              </div>
+              <div className="field full account-profile-lang">
+                <label>{t('profile.language')}</label>
+                <p className="meta account-profile-hint">{t('profile.languageHint')}</p>
+                <LanguageSwitcher compact />
               </div>
             </div>
             {error ? (

@@ -20,7 +20,6 @@ import {
 import { companiesApi, notificationsApi, requestsApi } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { NotificationsBell } from '../components/NotificationsBell';
 import { PresenceDot } from '../components/PresenceDot';
 import { RecentRequestRow } from '../components/RecentRequestRow';
@@ -237,9 +236,8 @@ export function BuyerLayout({
               <div className="crumb">{crumb}</div>
             )}
             <div className="top-actions">
-              {actions}
               <NotificationsBell />
-              <LanguageSwitcher />
+              {actions}
               <Link className="ghost mode-switch" to="/supplier">
                 <span className="mode-long">{t('nav.supplierMode')}</span>
                 <span className="mode-short">{t('nav.supplierShort')}</span>
@@ -436,9 +434,8 @@ export function SupplierLayout({
               <div className="crumb">{crumb}</div>
             )}
             <div className="top-actions">
-              {actions}
               <NotificationsBell />
-              <LanguageSwitcher />
+              {actions}
               <Link className="ghost mode-switch" to="/app">
                 <span className="mode-long">{t('nav.buyerMode')}</span>
                 <span className="mode-short">{t('nav.buyerShort')}</span>

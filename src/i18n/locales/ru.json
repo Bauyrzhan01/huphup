@@ -455,6 +455,8 @@
     "avatarRemove": "Удалить аватар",
     "avatarSaved": "Аватар обновлён",
     "avatarRemoved": "Аватар удалён",
+    "language": "Язык интерфейса",
+    "languageHint": "Выберите язык меню, кнопок и уведомлений в приложении.",
     "showAllNotifications": "Показать все ({{count}})",
     "showLessNotifications": "Свернуть"
   },

@@ -1259,6 +1259,8 @@ body.mobile-nav-open{overflow:hidden}
 }
 .account-profile-card .section-title{margin-top:0}
 .account-profile-hint{margin:-4px 0 14px;line-height:1.45}
+.account-profile-lang .account-profile-hint{margin:0 0 10px}
+.account-profile-lang .lang-switch{margin-left:0}
 .account-profile-notifications{padding:18px}
 .account-profile-notif-head{
   display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;
