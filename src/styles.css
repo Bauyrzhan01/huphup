@@ -139,7 +139,18 @@ body.mobile-nav-open{overflow:hidden}
     flex-wrap:wrap;
     gap:8px;
   }
-  .topbar-page{align-items:flex-start;padding:12px 14px;min-height:auto}
+  .topbar-page{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    align-items:stretch;
+    padding:12px 14px;
+    min-height:auto;
+    gap:10px;
+  }
+  .topbar-page .topbar-head{
+    width:100%;
+    min-width:0;
+  }
   .topbar-head h1{font-size:clamp(22px,6vw,26px)}
   .topbar-head p{font-size:12px}
   .main-full{height:auto;overflow:visible}
@@ -155,17 +166,30 @@ body.mobile-nav-open{overflow:hidden}
     font-size:12px;
   }
   .top-actions{
-    flex:1 1 100%;
-    justify-content:flex-end;
-    flex-wrap:wrap;
+    flex:1 1 auto;
+    min-width:0;
+    justify-content:flex-start;
+    flex-wrap:nowrap;
     gap:6px;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
   }
+  .top-actions::-webkit-scrollbar{display:none}
+  .topbar-page .top-actions{
+    flex:none;
+    width:100%;
+    padding-bottom:2px;
+  }
+  .top-actions > *{flex-shrink:0}
   .top-actions .ghost,.top-actions .primary{
     padding:8px 10px;
     font-size:11px;
+    white-space:nowrap;
   }
-  .top-user-copy{display:none}
-  .top-user{padding:4px;max-width:none}
+  .topbar .top-user{display:none}
+  .topbar .top-user-copy{display:none}
+  .crm-head-actions{flex-shrink:0}
   .mode-long{display:none}
   .mode-short{display:inline}
   .home-shell{
