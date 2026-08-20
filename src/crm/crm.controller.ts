@@ -103,26 +103,4 @@ export class CrmController {
     }
     return this.crm.getAnalytics(companyId);
   }
-
-  @Get('live')
-  async live(@CurrentUser() user: AuthUser) {
-    const companyId = await this.companyId(user.id);
-    if (!companyId) {
-      return {
-        checkedAt: new Date().toISOString(),
-        counts: {
-          products: 0,
-          members: 0,
-          membersOnline: 0,
-          leads: 0,
-          openTasks: 0,
-          pendingOffers: 0,
-          offersLast24h: 0,
-          leadsLast24h: 0,
-        },
-        feed: [],
-      };
-    }
-    return this.crm.getLivePulse(companyId);
-  }
 }
