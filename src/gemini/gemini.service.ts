@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { geminiLogStore } from '../ops/gemini-log.store';
 import {
   buildRequestDescription,
   normalizeRequestDescription,
@@ -109,7 +110,7 @@ export class GeminiService {
 
   async analyzeRequest(text: string): Promise<GeminiAnalyzeResult | null> {
     if (!this.isConfigured) return null;
-    const raw = await this.generateChatJson([{ role: 'user', text }]);
+    const raw = await this.generateChatJson([{ role: 'user', text }], '', 'analyze');
     if (!raw) return null;
     return this.normalizeAnalyze(text, this.parseJson<Record<string, unknown>>(raw), [text]);
   }
@@ -134,7 +135,7 @@ export class GeminiService {
     const readyContext = input.previous?.ready
       ? '\n\nКОНТЕКСТ СЕССИИ: заявка уже собрана (ready=true). Ассистент уже сообщил, что заявку можно проверить и опубликовать. Если новое сообщение клиента — только подтверждение, согласие или просьба опубликовать без новых фактов о закупке, верни ackOnly=true и пустой assistantMessage.'
       : '';
-    const raw = await this.generateChatJson(turns, readyContext);
+    const raw = await this.generateChatJson(turns, readyContext, 'clarify');
     if (!raw) return null;
     const userTexts = turns.filter((t) => t.role === 'user').map((t) => t.text);
     const parsed = this.normalizeAnalyze(
@@ -205,7 +206,7 @@ text: """${input.requestText.slice(0, 3000)}"""
 Каталог:
 ${JSON.stringify(catalog)}`;
 
-    const raw = await this.generateText(prompt);
+    const raw = await this.generateText(prompt, 'match');
     if (!raw) return [];
 
     const parsed = this.parseJson<{ matches?: GeminiProductMatch[] }>(raw);
@@ -356,6 +357,7 @@ ${JSON.stringify(catalog)}`;
   private async generateChatJson(
     turns: Array<{ role: 'user' | 'model'; text: string }>,
     systemExtra = '',
+    purpose = 'chat',
   ): Promise<string | null> {
     const merged: Array<{ role: 'user' | 'model'; text: string }> = [];
     for (const t of turns) {
@@ -375,20 +377,32 @@ ${JSON.stringify(catalog)}`;
     return this.generateContent(contents, {
       temperature: 0.5,
       system: this.chatSystem + systemExtra,
+      purpose,
     });
   }
 
-  private async generateText(prompt: string): Promise<string | null> {
+  private async generateText(
+    prompt: string,
+    purpose = 'match',
+  ): Promise<string | null> {
     return this.generateContent([{ role: 'user', parts: [{ text: prompt }] }], {
       temperature: 0.2,
+      purpose,
     });
   }
 
   private async generateContent(
     contents: Array<{ role: string; parts: Array<{ text: string }> }>,
-    opts: { temperature: number; system?: string },
+    opts: { temperature: number; system?: string; purpose: string },
   ): Promise<string | null> {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.model)}:generateContent`;
+    const promptChars =
+      (opts.system?.length ?? 0) +
+      contents.reduce(
+        (sum, c) => sum + c.parts.reduce((s, p) => s + (p.text?.length ?? 0), 0),
+        0,
+      );
+    const started = Date.now();
     try {
       const res = await fetch(url, {
         method: 'POST',
@@ -413,25 +427,53 @@ ${JSON.stringify(catalog)}`;
       });
       const data = (await res.json()) as {
         error?: { message?: string };
+        usageMetadata?: {
+          promptTokenCount?: number;
+          candidatesTokenCount?: number;
+          totalTokenCount?: number;
+        };
         candidates?: Array<{
           content?: { parts?: Array<{ text?: string }> };
         }>;
       };
+      const text = data.candidates?.[0]?.content?.parts
+        ?.map((p) => p.text ?? '')
+        .join('')
+        .trim();
+      geminiLogStore.push({
+        purpose: opts.purpose,
+        ok: res.ok && Boolean(text),
+        status: res.status,
+        ms: Date.now() - started,
+        promptChars,
+        responseChars: text?.length ?? 0,
+        promptTokens: data.usageMetadata?.promptTokenCount,
+        outputTokens: data.usageMetadata?.candidatesTokenCount,
+        error: res.ok
+          ? text
+            ? undefined
+            : 'empty response'
+          : (data.error?.message ?? res.statusText).slice(0, 180),
+      });
       if (!res.ok) {
         this.logger.warn(
           `Gemini error ${res.status}: ${data.error?.message ?? res.statusText}`,
         );
         return null;
       }
-      const text = data.candidates?.[0]?.content?.parts
-        ?.map((p) => p.text ?? '')
-        .join('')
-        .trim();
       return text || null;
     } catch (err) {
-      this.logger.warn(
-        `Gemini request failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      const message = err instanceof Error ? err.message : String(err);
+      geminiLogStore.push({
+        purpose: opts.purpose,
+        ok: false,
+        status: 0,
+        ms: Date.now() - started,
+        promptChars,
+        responseChars: 0,
+        error: message.slice(0, 180),
+      });
+      this.logger.warn(`Gemini request failed: ${message}`);
       return null;
     }
   }

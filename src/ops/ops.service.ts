@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { queryLogStore } from './query-log.store';
 import { trafficStore } from './traffic.store';
+import { geminiLogStore } from './gemini-log.store';
 
 @Injectable()
 export class OpsService {
@@ -26,6 +27,7 @@ export class OpsService {
         activities,
         messages,
         frontend,
+        gemini,
       ] = await Promise.all([
         this.health(),
         this.tableCounts(),
@@ -101,6 +103,7 @@ export class OpsService {
           select: { createdAt: true },
         }),
         this.probeFrontend(),
+        this.probeGemini(),
       ]);
 
       return {
@@ -159,6 +162,7 @@ export class OpsService {
           })),
         },
         frontend,
+        gemini,
       };
     } finally {
       queryLogStore.resume();
@@ -268,6 +272,66 @@ export class OpsService {
       }),
     );
     return { base, checks };
+  }
+
+  private async probeGemini() {
+    const key = this.config.get<string>('GEMINI_API_KEY')?.trim() ?? '';
+    const model =
+      this.config.get<string>('GEMINI_MODEL')?.trim() || 'gemini-flash-latest';
+    const calls = geminiLogStore.snapshot();
+    if (!key) {
+      return {
+        configured: false,
+        model,
+        probe: {
+          ok: false,
+          status: 0,
+          ms: 0,
+          error: 'GEMINI_API_KEY missing',
+        },
+        calls,
+      };
+    }
+    const started = Date.now();
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`,
+        {
+          headers: { 'X-goog-api-key': key },
+          signal: AbortSignal.timeout(8000),
+        },
+      );
+      const body = (await res.json()) as {
+        name?: string;
+        error?: { message?: string };
+      };
+      return {
+        configured: true,
+        model,
+        probe: {
+          ok: res.ok,
+          status: res.status,
+          ms: Date.now() - started,
+          name: body.name ?? null,
+          error: res.ok
+            ? undefined
+            : (body.error?.message ?? res.statusText).slice(0, 180),
+        },
+        calls,
+      };
+    } catch (err) {
+      return {
+        configured: true,
+        model,
+        probe: {
+          ok: false,
+          status: 0,
+          ms: Date.now() - started,
+          error: err instanceof Error ? err.message : 'fetch failed',
+        },
+        calls,
+      };
+    }
   }
 }
 
