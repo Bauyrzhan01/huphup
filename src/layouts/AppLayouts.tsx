@@ -236,13 +236,15 @@ export function BuyerLayout({
               <div className="crumb">{crumb}</div>
             )}
             <div className="top-actions">
+              <div className="top-actions-main">
+                {actions}
+                <Link className="ghost mode-switch" to="/supplier">
+                  <span className="mode-long">{t('nav.supplierMode')}</span>
+                  <span className="mode-short">{t('nav.supplierShort')}</span>
+                </Link>
+                <SessionUserChip roleLabel={t('nav.buyer')} />
+              </div>
               <NotificationsBell />
-              {actions}
-              <Link className="ghost mode-switch" to="/supplier">
-                <span className="mode-long">{t('nav.supplierMode')}</span>
-                <span className="mode-short">{t('nav.supplierShort')}</span>
-              </Link>
-              <SessionUserChip roleLabel={t('nav.buyer')} />
             </div>
           </div>
           {children}
@@ -434,16 +436,18 @@ export function SupplierLayout({
               <div className="crumb">{crumb}</div>
             )}
             <div className="top-actions">
+              <div className="top-actions-main">
+                {actions}
+                <Link className="ghost mode-switch" to="/app">
+                  <span className="mode-long">{t('nav.buyerMode')}</span>
+                  <span className="mode-short">{t('nav.buyerShort')}</span>
+                </Link>
+                <SessionUserChip
+                  roleLabel={t('nav.supplier')}
+                  extra={companyName !== user?.fullName ? companyName : undefined}
+                />
+              </div>
               <NotificationsBell />
-              {actions}
-              <Link className="ghost mode-switch" to="/app">
-                <span className="mode-long">{t('nav.buyerMode')}</span>
-                <span className="mode-short">{t('nav.buyerShort')}</span>
-              </Link>
-              <SessionUserChip
-                roleLabel={t('nav.supplier')}
-                extra={companyName !== user?.fullName ? companyName : undefined}
-              />
             </div>
           </div>
           {children}
