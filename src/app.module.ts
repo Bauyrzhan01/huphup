@@ -19,6 +19,7 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { HealthModule } from './health/health.module';
+import { OpsModule } from './ops/ops.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { HealthModule } from './health/health.module';
     NotificationsModule,
     AttachmentsModule,
     HealthModule,
+    OpsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
