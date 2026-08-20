@@ -212,13 +212,20 @@ body.mobile-nav-open{overflow:hidden}
   .composer-footer{align-items:flex-end}
   .composer-tools{gap:6px}
   .tool-pill{padding:8px 9px;font-size:11px}
-  .suggestions{grid-template-columns:1fr}
+  .suggestions{grid-template-columns:1fr 1fr;gap:8px}
   .page{
-    padding:22px max(14px,env(safe-area-inset-right)) max(48px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+    padding:14px max(12px,env(safe-area-inset-right)) max(36px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
   }
-  .page:has(.dash-grid){
-    padding-top:12px;
-    padding-bottom:max(28px,env(safe-area-inset-bottom));
+  .page:has(.dash-grid),
+  .page:has(.stat-grid),
+  .page:has(.request-cards),
+  .leads-page,
+  .crm-page,
+  .team-page,
+  .offers-page-compact,
+  .account-profile-page{
+    padding-top:10px;
+    padding-bottom:max(24px,env(safe-area-inset-bottom));
   }
   .topbar-page{
     padding:10px 14px 8px;
@@ -228,29 +235,42 @@ body.mobile-nav-open{overflow:hidden}
   .page-head{
     flex-direction:column;
     align-items:stretch;
-    gap:12px;
-    margin-bottom:20px;
+    gap:10px;
+    margin-bottom:14px;
   }
-  .page-head h1{font-size:clamp(24px,6.5vw,28px)}
-  .page-head .actions,.page-head .top-actions{width:100%}
-  .page-head .primary,.page-head .ghost{width:100%;justify-content:center;text-align:center}
-  .form-grid,.ai-grid{grid-template-columns:1fr}
-  .stat-grid{grid-template-columns:1fr 1fr;gap:10px}
-  .stat{padding:14px}
-  .stat b{font-size:20px}
+  .page-head h1{font-size:clamp(22px,6vw,26px)}
+  .page-head .actions,.page-head .top-actions{
+    width:100%;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .page-head .primary,.page-head .ghost{
+    width:auto;
+    flex:1 1 calc(50% - 4px);
+    min-width:0;
+    justify-content:center;
+    text-align:center;
+  }
+  .form-grid,.ai-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .form-grid .field.full,.ai-grid .field.full{grid-column:1/-1}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+  .stat{padding:12px;border-radius:12px}
+  .stat b{font-size:18px}
+  .stat small{font-size:10px;margin-bottom:6px}
   .request-item{
     grid-template-columns:minmax(0,1fr) auto;
     gap:10px;
-    padding:14px;
+    padding:12px;
   }
   .request-item>div:not(:first-child):not(:last-child){display:none}
   .offer-row{
     grid-template-columns:minmax(0,1fr) auto;
     gap:10px;
-    padding:14px;
+    padding:12px;
   }
   .offer-row>div:not(:first-child):not(:last-child){display:none}
-  .supplier-grid{grid-template-columns:1fr}
+  .supplier-grid{grid-template-columns:1fr 1fr;gap:8px}
   .kanban{
     display:flex;
     gap:10px;
@@ -262,19 +282,20 @@ body.mobile-nav-open{overflow:hidden}
   .kanban .column{
     flex:0 0 min(78vw,260px);
     scroll-snap-align:start;
-    min-height:320px;
+    min-height:280px;
   }
   .composer textarea{font-size:16px;min-height:72px}
-  .detail-grid{grid-template-columns:1fr;gap:14px}
-  .panel{padding:16px;border-radius:16px}
+  .detail-grid{grid-template-columns:1fr;gap:12px}
+  .panel{padding:14px;border-radius:14px}
   .profile-hero{
     flex-wrap:wrap;
-    gap:14px;
+    gap:12px;
   }
-  .profile-hero .ghost{width:100%}
+  .profile-hero .ghost{width:auto;flex:1 1 calc(50% - 4px)}
   .profile-account .actions .primary{display:none}
   .profile-hero h2{font-size:20px}
-  .kv{grid-template-columns:1fr;gap:4px;padding:10px 0}
+  .kv{grid-template-columns:minmax(96px,34%) 1fr;gap:6px 10px;padding:8px 0}
+  .request-detail-page .kv{grid-template-columns:minmax(96px,34%) 1fr}
   .steps{
     overflow-x:auto;
     flex-wrap:nowrap;
@@ -282,35 +303,49 @@ body.mobile-nav-open{overflow:hidden}
     -webkit-overflow-scrolling:touch;
   }
   .step-line{width:24px;flex-shrink:0}
-  .toolbar{flex-direction:column;align-items:stretch}
+  .toolbar{flex-direction:column;align-items:stretch;gap:8px;margin-bottom:12px}
   .toolbar .search,.toolbar .filter,.toolbar .ghost,.toolbar .primary{width:100%}
   .actions{
     flex-wrap:wrap;
     justify-content:stretch;
+    gap:8px;
   }
   .actions .ghost,.actions .primary{
-    flex:1 1 calc(50% - 5px);
-    min-width:120px;
+    flex:1 1 calc(50% - 4px);
+    min-width:0;
     text-align:center;
     justify-content:center;
   }
   .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .tab{white-space:nowrap;flex-shrink:0}
+  .request-card{padding:14px;border-radius:14px}
+  .request-card h3{font-size:15px}
+  .request-card>p{margin:6px 0 10px;font-size:12px}
+  .offer-card{padding:12px 14px;border-radius:14px}
+  .supplier-directory-row{
+    min-height:0;
+    padding:10px 12px 10px 0;
+    gap:12px;
+    border-radius:14px;
+  }
+  .supplier-directory-avatar{width:44px;height:44px;border-radius:12px}
 }
 
 /* Small phones */
 @media(max-width:480px){
-  .stat-grid{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:8px}
   .request-item,.offer-row{
-    grid-template-columns:1fr;
-    align-items:flex-start;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
   }
   .request-item .arrow,.offer-row .arrow{display:none}
-  .request-item .badge,.offer-row .badge{margin-top:6px}
   .top-actions .lang-switch .tool-pill{padding:7px 8px}
-  .actions .ghost,.actions .primary{flex:1 1 100%}
+  .actions .ghost,.actions .primary{flex:1 1 calc(50% - 4px)}
   .send{width:44px;height:44px}
   .mobile-top-link{max-width:42vw;overflow:hidden;text-overflow:ellipsis}
+  .supplier-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .suggestion{padding:10px;border-radius:11px}
+  .ai-cell{padding:9px}
 }
 
 .lang-active{background:#111!important;color:#fff!important}
@@ -804,7 +839,7 @@ body.mobile-nav-open{overflow:hidden}
   .lead-info-grid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:560px){
-  .lead-info-grid{grid-template-columns:1fr}
+  .lead-info-grid{grid-template-columns:1fr 1fr;gap:8px}
 }
 
 /* Shared empty / request cards / chat / offers */
@@ -975,7 +1010,8 @@ body.mobile-nav-open{overflow:hidden}
 .prio-MEDIUM{color:#175cd3}
 .prio-LOW{color:#667085}
 @media(max-width:760px){
-  .task-create-form{grid-template-columns:1fr}
+  .task-create-form{grid-template-columns:1fr 1fr}
+  .task-create-form .primary{grid-column:1/-1}
 }
 .lead-tasks-list b{display:block;font-size:13px}
 .crm-head-actions{display:flex;gap:8px;align-items:center}
@@ -1107,9 +1143,11 @@ body.mobile-nav-open{overflow:hidden}
   .request-card-grid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:560px){
-  .chat-composer-row{flex-wrap:wrap}
-  .chat-composer-send{width:100%}
+  .chat-composer-row{flex-wrap:nowrap;gap:8px}
+  .chat-composer-send{width:auto;flex-shrink:0}
   .chat-panel-head{flex-direction:column}
+  .chat-rail{max-height:200px}
+  .chat-item{padding:10px 12px}
 }
 
 .supplier-card-link{display:block;color:inherit;transition:box-shadow .15s,border-color .15s}
@@ -1672,11 +1710,12 @@ body.mobile-nav-open{overflow:hidden}
   .product-detail-top-actions{width:100%}
 }
 @media(max-width:560px){
-  .supplier-products-grid{grid-template-columns:1fr 1fr;gap:12px}
-  .field-row,.product-detail-inline-fields{grid-template-columns:1fr}
-  .product-detail-page{padding:10px 14px 24px}
-  .product-detail-body{padding:14px}
-  .product-detail-footer{padding:12px 14px 14px}
+  .supplier-products-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .field-row,.product-detail-inline-fields{grid-template-columns:1fr 1fr;gap:8px}
+  .product-detail-page{padding:8px 12px 20px}
+  .product-detail-body{padding:12px}
+  .product-detail-footer{padding:10px 12px 12px}
+  .product-detail-cover,.product-detail-cover-empty{height:180px}
 }
 .product-images-editor{margin-top:4px}
 .product-images-editor .field-label{display:block;font-size:12px;font-weight:700;margin-bottom:4px}
@@ -1797,7 +1836,12 @@ body.mobile-nav-open{overflow:hidden}
 .team-pending-row b{display:block}
 .team-pending-row .meta{margin:4px 0 0}
 @media(max-width:800px){
-  .team-invite-form{grid-template-columns:1fr}
+  .team-invite-form{grid-template-columns:1fr 1fr;gap:8px}
+  .team-invite-form .primary,
+  .team-invite-form button[type="submit"]{grid-column:1/-1}
+  .team-member-card{padding:12px;gap:10px;border-radius:14px}
+  .team-member-avatar{width:42px;height:42px;border-radius:12px}
+  .team-member-list{gap:8px}
 }
 .team-invite-result{
   margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fafafa;
@@ -2473,4 +2517,48 @@ body.mobile-nav-open{overflow:hidden}
   }
   .dash-legend li{font-size:12px}
   .dash-chart{height:132px}
+}
+
+/* Shared mobile density for remaining app pages */
+@media(max-width:760px){
+  .crm-page{padding:8px 12px 16px}
+  .crm-toolbar{gap:6px;margin-bottom:8px}
+  .crm-toolbar .search{min-width:0;flex:1 1 100%}
+  .crm-filter-chips{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:2px;
+    margin-bottom:8px;
+  }
+  .crm-filter-chips .chip{flex-shrink:0}
+  .crm-my-tasks{padding:12px;margin-bottom:10px;border-radius:14px}
+  .crm-my-tasks h3{margin-bottom:8px;font-size:13px}
+  .crm-my-tasks ul{gap:6px}
+  .kanban-crm .deal{padding:8px;margin-bottom:6px}
+  .leads-page{padding:8px 12px 16px}
+  .lead-card{padding:12px;border-radius:14px}
+  .offers-page-compact{padding:8px 12px 16px}
+  .offers-page-compact .offer-card{padding:12px;border-radius:14px}
+  .team-page{padding-bottom:20px}
+  .supplier-profile-stats,
+  .account-profile-page .supplier-profile-stats,
+  .team-stats{
+    gap:8px;
+  }
+  .supplier-profile-stat,
+  .account-profile-page .supplier-profile-stat{
+    padding:12px;
+    border-radius:12px;
+  }
+  .account-profile-hero{padding:14px;border-radius:14px}
+  .account-profile-page .panel,
+  .account-profile-notifications{padding:12px 14px}
+  .account-notif-item{padding:10px}
+  .supplier-product-card-body{padding:10px 12px 12px;gap:4px}
+  .supplier-product-card-body h3{font-size:13px}
+  .supplier-product-card-media{aspect-ratio:4/3}
+  .product-detail-cover,.product-detail-cover-empty{height:180px}
+  .field-row,.product-detail-inline-fields{grid-template-columns:1fr 1fr}
+  .request-card-grid{grid-template-columns:1fr 1fr;gap:8px}
 }
