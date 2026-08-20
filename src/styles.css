@@ -981,7 +981,17 @@ body.mobile-nav-open{overflow:hidden}
 .crm-my-tasks a{display:flex;flex-direction:column;gap:2px;color:inherit}
 .lead-tasks-panel{display:flex;flex-direction:column;gap:8px}
 .lead-tasks-panel h4{margin:0 0 4px;font-size:13px}
-.lead-tasks-form{display:grid;gap:8px}
+.lead-tasks-form{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.lead-tasks-form .lead-field-full{grid-column:1/-1}
+.lead-tasks-form input,
+.lead-tasks-form select,
+.lead-tasks-form textarea,
+.lead-tasks-form button{min-width:0;width:100%}
+.lead-tasks-form textarea{min-height:64px;resize:vertical}
 .lead-tasks-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .lead-tasks-list li{
   display:flex;justify-content:space-between;gap:10px;align-items:center;
@@ -1016,7 +1026,14 @@ body.mobile-nav-open{overflow:hidden}
 .lead-tasks-list b{display:block;font-size:13px}
 .crm-head-actions{display:flex;gap:8px;align-items:center}
 .lead-note-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
-.lead-note-form{display:flex;flex-direction:column;gap:6px}
+.lead-note-form{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:end;
+}
+.lead-note-form textarea{min-width:0;min-height:56px;resize:vertical}
+.lead-note-form button{white-space:nowrap;min-height:40px}
 .crm-filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
 .crm-filter-chips .chip{padding:4px 8px;font-size:11px}
 .crm-member-chip{display:inline-flex;align-items:center;gap:5px}
@@ -2271,6 +2288,15 @@ body.mobile-nav-open{overflow:hidden}
 .lead-timeline-body p{margin:4px 0 0;font-size:13px}
 .lead-notes-panel,.lead-next-step-panel{display:flex;flex-direction:column;gap:8px}
 .lead-notes-panel h4,.lead-next-step-panel h4{margin:0 0 4px;font-size:13px}
+.lead-next-step-fields{
+  display:grid;
+  grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+}
+.lead-next-step-fields input,
+.lead-next-step-fields button{min-width:0;width:100%}
+.lead-next-step-fields .lead-field-action{width:auto;white-space:nowrap}
 .lead-notes-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto}
 .lead-notes-list li{padding:8px;background:#fafafa;border-radius:8px;font-size:13px}
 .crm-stages-editor{display:flex;flex-direction:column;gap:8px;margin:12px 0}
@@ -2538,6 +2564,16 @@ body.mobile-nav-open{overflow:hidden}
   .kanban-crm .deal{padding:8px;margin-bottom:6px}
   .leads-page{padding:8px 12px 16px}
   .lead-card{padding:12px;border-radius:14px}
+  .lead-next-step-fields{
+    grid-template-columns:1fr 1fr;
+  }
+  .lead-next-step-fields .lead-field-grow{grid-column:1/-1}
+  .lead-next-step-fields .lead-field-action{grid-column:1/-1;width:100%}
+  .lead-tasks-form{grid-template-columns:1fr 1fr;gap:8px}
+  .lead-note-form{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+  }
   .offers-page-compact{padding:8px 12px 16px}
   .offers-page-compact .offer-card{padding:12px;border-radius:14px}
   .team-page{padding-bottom:20px}

@@ -24,19 +24,22 @@ export function LeadNextStepPanel({ lead, busy, onSave }: Props) {
   return (
     <form className="lead-next-step-panel" onSubmit={(e) => void submit(e)}>
       <h4>{t('supplier.nextStepTitle')}</h4>
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={t('supplier.nextStepPlaceholder')}
-      />
-      <input
-        type="datetime-local"
-        value={at}
-        onChange={(e) => setAt(e.target.value)}
-      />
-      <button type="submit" className="ghost" disabled={busy}>
-        {t('common.save')}
-      </button>
+      <div className="lead-next-step-fields">
+        <input
+          className="lead-field-grow"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={t('supplier.nextStepPlaceholder')}
+        />
+        <input
+          type="datetime-local"
+          value={at}
+          onChange={(e) => setAt(e.target.value)}
+        />
+        <button type="submit" className="ghost lead-field-action" disabled={busy}>
+          {t('common.save')}
+        </button>
+      </div>
     </form>
   );
 }

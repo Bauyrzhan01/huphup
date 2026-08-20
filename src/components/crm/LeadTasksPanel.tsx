@@ -74,20 +74,22 @@ export function LeadTasksPanel({ tasks, members, busy, onAdd, onUpdate }: Props)
             ))}
           </select>
         ) : null}
+        <input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} required />
         <input
+          className="lead-field-full"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={t('supplier.taskPlaceholder')}
           required
         />
         <textarea
+          className="lead-field-full"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder={t('supplier.taskDescription')}
           rows={2}
         />
-        <input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} required />
-        <button type="submit" className="ghost" disabled={busy}>
+        <button type="submit" className="ghost lead-field-full" disabled={busy}>
           {t('supplier.taskAdd')}
         </button>
       </form>
