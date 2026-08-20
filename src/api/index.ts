@@ -31,6 +31,7 @@ import type {
   RequestItem,
   User,
 } from '../types';
+import type { PlatformLive } from '../landing/live/types';
 
 export const authApi = {
   register: (body: {
@@ -484,4 +485,8 @@ export const conversationsApi = {
     };
     return () => es.close();
   },
+};
+
+export const platformApi = {
+  live: () => api<PlatformLive>('/platform/live'),
 };

@@ -15,6 +15,7 @@ export function AppIcon({
     <Icon
       size={size}
       strokeWidth={strokeWidth}
+      stroke="currentColor"
       className={`ui-icon ${className}`.trim()}
       aria-hidden
       {...rest}
