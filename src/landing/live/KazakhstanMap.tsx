@@ -30,11 +30,8 @@ export function KazakhstanMap({ cities, pulse, flow }: Props) {
   const [hubOpen, setHubOpen] = useState(false);
 
   const activeCities = useMemo(() => resolveCityCounts(cities), [cities]);
-  const featuredCities = useMemo(() => {
-    const fromData = activeCities.filter((city) =>
-      MAP_FEATURE_CITIES.includes(city.id as (typeof MAP_FEATURE_CITIES)[number]),
-    );
-    if (fromData.length > 0) return fromData;
+  const mapCities = useMemo(() => {
+    if (activeCities.length > 0) return activeCities;
     return MAP_FEATURE_CITIES.map((id) => {
       const city = MAP_CITIES.find((item) => item.id === id)!;
       return { ...city, count: 0 };
@@ -104,7 +101,7 @@ export function KazakhstanMap({ cities, pulse, flow }: Props) {
           </g>
         )}
 
-        {featuredCities.map((city) => (
+        {mapCities.map((city) => (
           <g key={`city-${city.id}`} className="live-map-city" transform={`translate(${city.x}, ${city.y})`}>
             <circle className="live-map-city-halo" r={city.count > 4 ? 18 : 14} />
             <circle className="live-map-city-dot" r={city.count > 4 ? 8 : 6.5} />
