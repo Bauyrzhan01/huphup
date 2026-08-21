@@ -17,9 +17,7 @@ export class PlatformService {
       companies,
       products,
       online,
-      recentRequests,
-      recentOffers,
-      recentCompanies,
+      allRequests,
       cityGroups,
       acceptedTotal,
     ] = await Promise.all([
@@ -37,45 +35,22 @@ export class PlatformService {
       }),
       this.prisma.request.findMany({
         where: {
-          status: {
-            in: [
-              RequestStatus.PUBLISHED,
-              RequestStatus.IN_PROGRESS,
-              RequestStatus.CLOSED,
-            ],
-          },
+          status: { not: RequestStatus.DRAFT },
         },
         orderBy: { createdAt: 'desc' },
-        take: 10,
         select: {
           id: true,
           code: true,
           title: true,
           city: true,
-          createdAt: true,
-        },
-      }),
-      this.prisma.offer.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 6,
-        select: {
-          id: true,
           status: true,
           createdAt: true,
-          request: { select: { code: true, title: true, city: true } },
         },
-      }),
-      this.prisma.company.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 4,
-        select: { id: true, name: true, city: true, createdAt: true },
       }),
       this.prisma.request.groupBy({
         by: ['city'],
         where: {
-          status: {
-            in: [RequestStatus.PUBLISHED, RequestStatus.IN_PROGRESS],
-          },
+          status: { not: RequestStatus.DRAFT },
           city: { not: null },
         },
         _count: { _all: true },
@@ -83,35 +58,15 @@ export class PlatformService {
       this.prisma.offer.count({ where: { status: OfferStatus.ACCEPTED } }),
     ]);
 
-    const feed = [
-      ...recentRequests.map((row) => ({
-        id: row.id,
-        kind: 'request' as const,
-        code: row.code,
-        label: clipTitle(row.title),
-        city: row.city,
-        at: row.createdAt.toISOString(),
-      })),
-      ...recentOffers.map((row) => ({
-        id: row.id,
-        kind: 'offer' as const,
-        code: row.request.code,
-        label: clipTitle(row.request.title),
-        city: row.request.city,
-        status: row.status,
-        at: row.createdAt.toISOString(),
-      })),
-      ...recentCompanies.map((row) => ({
-        id: row.id,
-        kind: 'company' as const,
-        code: null,
-        label: row.name,
-        city: row.city,
-        at: row.createdAt.toISOString(),
-      })),
-    ]
-      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-      .slice(0, 12);
+    const feed = allRequests.map((row) => ({
+      id: row.id,
+      kind: 'request' as const,
+      code: row.code,
+      label: clipTitle(row.title),
+      city: row.city,
+      status: row.status,
+      at: row.createdAt.toISOString(),
+    }));
 
     const cities = cityGroups
       .filter((row) => row.city?.trim())
@@ -119,10 +74,9 @@ export class PlatformService {
         name: row.city!.trim(),
         count: row._count._all,
       }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
+      .sort((a, b) => b.count - a.count);
 
-    const pulse = feed.find((item) => item.kind === 'request') ?? feed[0] ?? null;
+    const pulse = feed[0] ?? null;
 
     const activeRequest = await this.prisma.request.findFirst({
       where: {
