@@ -17,8 +17,6 @@ type Props = {
   pulse: PlatformLiveFeedItem | null;
   flow: PlatformLiveFlow | null;
   feed: PlatformLiveFeedItem[];
-  activeRequest: PlatformLiveFeedItem | null;
-  activeIndex: number;
 };
 
 const REGION_FILLS = [
@@ -27,14 +25,7 @@ const REGION_FILLS = [
   'rgba(16, 163, 127, 0.038)',
 ];
 
-export function KazakhstanMap({
-  cities,
-  pulse,
-  flow,
-  feed,
-  activeRequest,
-  activeIndex,
-}: Props) {
+export function KazakhstanMap({ cities, pulse, flow, feed }: Props) {
   const { t } = useTranslation();
   const [hubOpen, setHubOpen] = useState(false);
 
@@ -42,8 +33,6 @@ export function KazakhstanMap({
     () => feed.filter((item) => item.kind === 'request'),
     [feed],
   );
-
-  const spotlight = activeRequest ?? pulse;
 
   const activeCities = useMemo(() => resolveCityCounts(cities), [cities]);
   const mapCities = useMemo(() => {
@@ -54,11 +43,14 @@ export function KazakhstanMap({
     });
   }, [activeCities]);
 
-  const spotlightPoint = resolveCityPoint(spotlight?.city ?? flow?.originCity ?? null);
-
-  const cardCode = spotlight?.code ?? flow?.code ?? 'HH-—';
-  const cardLabel = spotlight?.label ?? flow?.label ?? t('landing.live.flowWaiting');
-  const cardCity = spotlight?.city ?? flow?.originCity ?? '—';
+  const hotCityKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const request of requests) {
+      const point = resolveCityPoint(request.city);
+      if (point) keys.add(`${Math.round(point.x)}:${Math.round(point.y)}`);
+    }
+    return keys;
+  }, [requests]);
 
   const phaseLabel =
     flow?.phase === 'processing'
@@ -75,7 +67,7 @@ export function KazakhstanMap({
         <span className="live-flow-status-dot" />
         <span className="live-flow-status-text">
           {phaseLabel}
-          {spotlight?.code ? ` · ${spotlight.code}` : flow?.code ? ` · ${flow.code}` : ''}
+          {totalRequests > 0 ? ` · ${t('landing.live.allActive', { count: totalRequests })}` : ''}
         </span>
         {totalRequests > 0 && (
           <span className="live-flow-status-count">{totalRequests}</span>
@@ -113,32 +105,23 @@ export function KazakhstanMap({
           ))}
         </g>
 
-        <MapFlowAnimation flow={flow} cities={cities} activeRequest={spotlight} />
-
-        {spotlightPoint && (
-          <g
-            className="live-map-origin live-map-origin--active"
-            transform={`translate(${spotlightPoint.x}, ${spotlightPoint.y})`}
-            key={spotlight?.id ?? 'origin'}
-          >
-            <circle className="live-map-origin-ring" r="18" />
-            <circle className="live-map-origin-ring live-map-origin-ring--late" r="18" />
-            <circle className="live-map-origin-dot" r="7" />
-          </g>
-        )}
+        <MapFlowAnimation flow={flow} feed={feed} />
 
         {mapCities.map((city, index) => {
-          const isHot =
-            spotlightPoint &&
-            Math.abs(city.x - spotlightPoint.x) < 2 &&
-            Math.abs(city.y - spotlightPoint.y) < 2;
+          const isHot = hotCityKeys.has(`${Math.round(city.x)}:${Math.round(city.y)}`);
           return (
             <g
               key={`city-${city.id}`}
               className={`live-map-city${isHot ? ' is-hot' : ''}`}
               transform={`translate(${city.x}, ${city.y})`}
-              style={{ animationDelay: `${index * 0.12}s` }}
+              style={{ animationDelay: `${index * 0.08}s` }}
             >
+              {isHot && (
+                <>
+                  <circle className="live-map-origin-ring" r="16" />
+                  <circle className="live-map-origin-ring live-map-origin-ring--late" r="16" />
+                </>
+              )}
               <circle className="live-map-city-pulse" r="22" fill="url(#live-city-pulse)" />
               <circle className="live-map-city-halo" r={city.count > 4 ? 18 : 14} />
               <circle className="live-map-city-dot" r={city.count > 4 ? 8 : 6.5} />
@@ -196,38 +179,39 @@ export function KazakhstanMap({
 
       {!hubOpen && (
         <p className="live-map-hint">
-          {spotlight?.code
-            ? t('landing.live.hubHintActive', { code: spotlight.code })
+          {totalRequests > 0
+            ? t('landing.live.hubHintAll', { count: totalRequests })
             : t('landing.live.hubHint')}
         </p>
       )}
 
-      {spotlight && (
-        <div className={`live-flow-panel${hubOpen ? ' is-pinned' : ''}`} key={spotlight.id}>
-          {hubOpen && (
-            <button
-              type="button"
-              className="live-flow-panel-close"
-              onClick={() => setHubOpen(false)}
-              aria-label={t('landing.live.panelClose')}
-            >
-              ×
-            </button>
-          )}
+      {hubOpen && (
+        <div className="live-flow-panel is-pinned">
+          <button
+            type="button"
+            className="live-flow-panel-close"
+            onClick={() => setHubOpen(false)}
+            aria-label={t('landing.live.panelClose')}
+          >
+            ×
+          </button>
           <p className="live-flow-card-kicker">{t('landing.live.flowLabel')}</p>
-          <p className="live-flow-card-code">{cardCode}</p>
-          <p className="live-flow-card-title">{cardLabel}</p>
-          <p className="live-flow-card-city">{cardCity}</p>
-          <p className="live-flow-card-phase">{phaseLabel}</p>
-          {requests.length > 1 && (
-            <div className="live-flow-dots" aria-hidden>
-              {requests.map((item, index) => (
-                <span
-                  key={item.id}
-                  className={`live-flow-dot-pip${index === activeIndex % requests.length ? ' is-on' : ''}`}
-                />
-              ))}
-            </div>
+          <p className="live-flow-card-code">
+            {t('landing.live.allActive', { count: totalRequests })}
+          </p>
+          <ul className="live-flow-request-list">
+            {requests.slice(0, 8).map((item) => (
+              <li key={item.id}>
+                <b>{item.code}</b>
+                <span>{item.label}</span>
+                <small>{item.city ?? '—'}</small>
+              </li>
+            ))}
+          </ul>
+          {pulse && (
+            <p className="live-flow-card-phase">
+              {t('landing.live.latest')}: {pulse.code}
+            </p>
           )}
         </div>
       )}

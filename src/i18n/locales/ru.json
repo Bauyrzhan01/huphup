@@ -274,7 +274,11 @@
       "phaseDelivery": "Доставка поставщикам",
       "phaseLive": "Живая лента",
       "hubHintActive": "Сейчас на карте · {{code}}",
+      "hubHintAll": "На карте одновременно {{count}} заявок",
       "nowPlaying": "Сейчас в эфире",
+      "allActive": "{{count}} заявок одновременно",
+      "andMore": "и ещё {{count}}",
+      "latest": "Последняя",
       "feedCount": "{{count}} заявок",
       "onMap": "На карте"
     }

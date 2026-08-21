@@ -272,7 +272,11 @@
       "phaseDelivery": "Жеткізушілерге жеткізу",
       "phaseLive": "Тірі лента",
       "hubHintActive": "Картада қазір · {{code}}",
+      "hubHintAll": "Картада бір уақытта {{count}} өтінім",
       "nowPlaying": "Қазір эфирде",
+      "allActive": "{{count}} өтінім бір уақытта",
+      "andMore": "және тағы {{count}}",
+      "latest": "Соңғысы",
       "feedCount": "{{count}} өтінім",
       "onMap": "Картада"
     }

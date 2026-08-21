@@ -11,7 +11,6 @@ import type { PlatformLive, PlatformLiveFeedItem } from './types';
 import './live-platform.css';
 
 const POLL_MS = 5_000;
-const CYCLE_MS = 4_000;
 
 function formatRelative(iso: string, locale: string) {
   const delta = Date.now() - new Date(iso).getTime();
@@ -45,8 +44,7 @@ function AnimatedStat({ value, loading }: { value: number | undefined; loading: 
     }
     const id = window.setInterval(() => {
       frame += 1;
-      const next = Math.round(start + (diff * frame) / 14);
-      setDisplay(next);
+      setDisplay(Math.round(start + (diff * frame) / 14));
       if (frame >= 14) window.clearInterval(id);
     }, 30);
     return () => window.clearInterval(id);
@@ -61,7 +59,6 @@ export function LiveLandingPage() {
   const { user } = useAuth();
   const [data, setData] = useState<PlatformLive | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [freshPulse, setFreshPulse] = useState(false);
   const cabinetHref = user?.role === 'SUPPLIER' ? '/supplier' : '/app';
 
@@ -93,18 +90,6 @@ export function LiveLandingPage() {
     [data?.feed],
   );
 
-  useEffect(() => {
-    if (requests.length <= 1) {
-      setActiveIndex(0);
-      return;
-    }
-    const timer = window.setInterval(() => {
-      setActiveIndex((index) => (index + 1) % requests.length);
-    }, CYCLE_MS);
-    return () => window.clearInterval(timer);
-  }, [requests.length]);
-
-  const activeRequest = requests[activeIndex % Math.max(requests.length, 1)] ?? data?.pulse ?? null;
   const stats = data?.stats;
 
   return (
@@ -140,8 +125,6 @@ export function LiveLandingPage() {
               pulse={data?.pulse ?? null}
               flow={data?.flow ?? null}
               feed={data?.feed ?? []}
-              activeRequest={activeRequest}
-              activeIndex={activeIndex}
             />
           </div>
 
@@ -153,15 +136,25 @@ export function LiveLandingPage() {
             <h1 className="live-title">{t('landing.live.title')}</h1>
             <p className="live-lead">{t('landing.live.lead')}</p>
 
-            {activeRequest && (
-              <div className="live-ticker" key={activeRequest.id}>
+            {requests.length > 0 && (
+              <div className="live-ticker live-ticker--all">
                 <span className="live-ticker-badge">{t('landing.live.nowPlaying')}</span>
-                <p className="live-ticker-code">{activeRequest.code}</p>
-                <p className="live-ticker-title">{activeRequest.label}</p>
-                <p className="live-ticker-meta">
-                  {activeRequest.city ? `${activeRequest.city} · ` : ''}
-                  {formatRelative(activeRequest.at, i18n.language)}
+                <p className="live-ticker-code">
+                  {t('landing.live.allActive', { count: requests.length })}
                 </p>
+                <ul className="live-ticker-list">
+                  {requests.slice(0, 5).map((item) => (
+                    <li key={item.id}>
+                      <b>{item.code}</b>
+                      <span>{item.city ?? '—'}</span>
+                    </li>
+                  ))}
+                </ul>
+                {requests.length > 5 && (
+                  <p className="live-ticker-meta">
+                    {t('landing.live.andMore', { count: requests.length - 5 })}
+                  </p>
+                )}
               </div>
             )}
 
@@ -239,32 +232,31 @@ export function LiveLandingPage() {
           <p className="live-feed-empty">{t('landing.live.feedEmpty')}</p>
         ) : (
           <ul className="live-feed-list">
-            {data.feed.map((item, index) => {
-              const isActive = activeRequest?.id === item.id;
-              return (
-                <li
-                  key={`${item.kind}-${item.id}`}
-                  className={`live-feed-item${isActive ? ' is-active' : ''}`}
-                  style={{ animationDelay: `${Math.min(index, 12) * 0.05}s` }}
-                >
-                  <span className={`live-feed-badge live-feed-badge--${item.kind}`}>
-                    {feedKindLabel(item.kind, t)}
-                  </span>
-                  <div className="live-feed-body">
-                    <p className="live-feed-title">
-                      {item.code ? `${item.code} · ` : ''}
-                      {item.label}
-                    </p>
-                    <p className="live-feed-meta">
-                      {item.city ? `${item.city} · ` : ''}
-                      {formatRelative(item.at, i18n.language)}
-                      {item.status ? ` · ${item.status}` : ''}
-                    </p>
-                  </div>
-                  {isActive && <span className="live-feed-live">{t('landing.live.onMap')}</span>}
-                </li>
-              );
-            })}
+            {data.feed.map((item, index) => (
+              <li
+                key={`${item.kind}-${item.id}`}
+                className="live-feed-item is-active"
+                style={{ animationDelay: `${Math.min(index, 12) * 0.05}s` }}
+              >
+                <span className={`live-feed-badge live-feed-badge--${item.kind}`}>
+                  {feedKindLabel(item.kind, t)}
+                </span>
+                <div className="live-feed-body">
+                  <p className="live-feed-title">
+                    {item.code ? `${item.code} · ` : ''}
+                    {item.label}
+                  </p>
+                  <p className="live-feed-meta">
+                    {item.city ? `${item.city} · ` : ''}
+                    {formatRelative(item.at, i18n.language)}
+                    {item.status ? ` · ${item.status}` : ''}
+                  </p>
+                </div>
+                {item.kind === 'request' && (
+                  <span className="live-feed-live">{t('landing.live.onMap')}</span>
+                )}
+              </li>
+            ))}
           </ul>
         )}
       </section>

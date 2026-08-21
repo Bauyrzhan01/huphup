@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { PlatformLiveFeedItem, PlatformLiveFlow } from './types';
-import { MAP_CENTER, resolveCityCounts, resolveCityPoint } from './cities';
+import { MAP_CENTER, resolveCityPoint } from './cities';
 
 type Props = {
   flow: PlatformLiveFlow | null;
-  cities: Array<{ name: string; count: number }>;
-  activeRequest: PlatformLiveFeedItem | null;
+  feed: PlatformLiveFeedItem[];
 };
 
 type LineSpec = {
@@ -14,49 +13,49 @@ type LineSpec = {
   y1: number;
   x2: number;
   y2: number;
-  tone: 'inbound' | 'outbound' | 'ambient';
+  tone: 'inbound' | 'outbound';
   delay: number;
   dur: number;
+  particles: number;
 };
 
-function buildLines(
-  flow: PlatformLiveFlow | null,
-  cities: Array<{ name: string; count: number }>,
-  activeRequest: PlatformLiveFeedItem | null,
-): LineSpec[] {
+function buildLines(flow: PlatformLiveFlow | null, feed: PlatformLiveFeedItem[]): LineSpec[] {
   const lines: LineSpec[] = [];
-  const mapped = resolveCityCounts(cities);
+  const requests = feed.filter((item) => item.kind === 'request');
 
-  // Ambient activity: every city with requests quietly streams toward the hub
-  mapped.forEach((city, index) => {
+  // One active inbound stream per request city — all at once
+  const byCity = new Map<string, { x: number; y: number; count: number; codes: string[] }>();
+  for (const request of requests) {
+    const point = resolveCityPoint(request.city);
+    if (!point) continue;
+    const key = `${point.x},${point.y}`;
+    const prev = byCity.get(key);
+    if (prev) {
+      prev.count += 1;
+      if (request.code) prev.codes.push(request.code);
+    } else {
+      byCity.set(key, {
+        x: point.x,
+        y: point.y,
+        count: 1,
+        codes: request.code ? [request.code] : [],
+      });
+    }
+  }
+
+  [...byCity.entries()].forEach(([key, city], index) => {
     lines.push({
-      id: `ambient-${city.id}`,
+      id: `request-city-${key}`,
       x1: city.x,
       y1: city.y,
       x2: MAP_CENTER.x,
       y2: MAP_CENTER.y,
-      tone: 'ambient',
-      delay: index * 0.55,
-      dur: 3.8 + (index % 3) * 0.4,
+      tone: 'inbound',
+      delay: index * 0.25,
+      dur: 2.1 + (index % 3) * 0.25,
+      particles: Math.min(1 + city.count, 5),
     });
   });
-
-  const spotlightCity =
-    resolveCityPoint(activeRequest?.city ?? flow?.originCity ?? null) ??
-    (mapped[0] ? { x: mapped[0].x, y: mapped[0].y } : null);
-
-  if (spotlightCity) {
-    lines.push({
-      id: `spotlight-${activeRequest?.id ?? 'flow'}`,
-      x1: spotlightCity.x,
-      y1: spotlightCity.y,
-      x2: MAP_CENTER.x,
-      y2: MAP_CENTER.y,
-      tone: 'inbound',
-      delay: 0,
-      dur: 2.2,
-    });
-  }
 
   if (flow?.phase === 'delivery') {
     flow.deliveryCities.forEach((name, index) => {
@@ -69,8 +68,9 @@ function buildLines(
         x2: point.x,
         y2: point.y,
         tone: 'outbound',
-        delay: index * 0.35,
-        dur: 2.4,
+        delay: index * 0.3,
+        dur: 2.3,
+        particles: 2,
       });
     });
   }
@@ -78,22 +78,13 @@ function buildLines(
   return lines;
 }
 
-export function MapFlowAnimation({ flow, cities, activeRequest }: Props) {
-  const lines = useMemo(
-    () => buildLines(flow, cities, activeRequest),
-    [flow, cities, activeRequest],
-  );
-  const [tick, setTick] = useState(0);
-
-  // Force remount of motion particles when spotlight request changes
-  useEffect(() => {
-    setTick((n) => n + 1);
-  }, [activeRequest?.id, flow?.code, flow?.phase]);
+export function MapFlowAnimation({ flow, feed }: Props) {
+  const lines = useMemo(() => buildLines(flow, feed), [flow, feed]);
 
   if (!lines.length) return null;
 
   return (
-    <g className="live-flow-layer" aria-hidden="true" key={tick}>
+    <g className="live-flow-layer" aria-hidden="true">
       {lines.map((line) => {
         const path = `M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`;
         return (
@@ -104,24 +95,20 @@ export function MapFlowAnimation({ flow, cities, activeRequest }: Props) {
               d={path}
               style={{ animationDelay: `${line.delay}s` }}
             />
-            <circle className="live-flow-dot" r={line.tone === 'ambient' ? 3.5 : 5.5}>
-              <animateMotion
-                dur={`${line.dur}s`}
-                repeatCount="indefinite"
-                begin={`${line.delay}s`}
-                path={path}
-              />
-            </circle>
-            {line.tone !== 'ambient' && (
-              <circle className="live-flow-dot live-flow-dot--trail" r="3.2">
+            {Array.from({ length: line.particles }, (_, particleIndex) => (
+              <circle
+                key={`${line.id}-p-${particleIndex}`}
+                className={`live-flow-dot${particleIndex > 0 ? ' live-flow-dot--trail' : ''}`}
+                r={particleIndex === 0 ? 5.5 : 3.2}
+              >
                 <animateMotion
                   dur={`${line.dur}s`}
                   repeatCount="indefinite"
-                  begin={`${line.delay + 0.28}s`}
+                  begin={`${line.delay + particleIndex * 0.35}s`}
                   path={path}
                 />
               </circle>
-            )}
+            ))}
           </g>
         );
       })}
