@@ -1177,6 +1177,12 @@
   color: var(--live-muted);
 }
 
+.live-ticker-meta {
+  margin: 0.3rem 0 0;
+  font-size: 0.71875rem;
+  color: var(--live-muted);
+}
+
 .live-stat {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   animation: live-stat-in 0.45s ease both;
