@@ -98,20 +98,28 @@ export class PlatformService {
       },
     });
 
-    const acceptedOffers = activeRequest
-      ? await this.prisma.offer.findMany({
-          where: {
-            requestId: activeRequest.id,
-            status: OfferStatus.ACCEPTED,
-          },
-          orderBy: { updatedAt: 'desc' },
-          take: 4,
-          select: {
-            id: true,
-            company: { select: { city: true } },
-          },
-        })
-      : [];
+    const [acceptedOffers, supplierCompanies] = activeRequest
+      ? await Promise.all([
+          this.prisma.offer.findMany({
+            where: {
+              requestId: activeRequest.id,
+              status: OfferStatus.ACCEPTED,
+            },
+            orderBy: { updatedAt: 'desc' },
+            take: 4,
+            select: {
+              id: true,
+              company: { select: { city: true } },
+            },
+          }),
+          this.prisma.company.findMany({
+            where: { city: { not: null } },
+            orderBy: { updatedAt: 'desc' },
+            take: 12,
+            select: { city: true },
+          }),
+        ])
+      : [[], []];
 
     const flowPhase = !activeRequest
       ? 'idle'
@@ -120,16 +128,23 @@ export class PlatformService {
         ? 'delivery'
         : 'processing';
 
+    const originKey = activeRequest?.city?.trim().toLowerCase() ?? '';
     let deliveryCities = [
       ...new Set(
-        acceptedOffers
-          .map((row) => row.company.city?.trim())
-          .filter((city): city is string => Boolean(city)),
+        [
+          ...acceptedOffers.map((row) => row.company.city?.trim()),
+          ...supplierCompanies.map((row) => row.city?.trim()),
+        ].filter((city): city is string => Boolean(city)),
       ),
-    ].slice(0, 4);
+    ]
+      .filter((city) => city.toLowerCase() !== originKey)
+      .slice(0, 5);
 
-    if (deliveryCities.length === 0 && flowPhase === 'delivery') {
-      deliveryCities = ['Астана', 'Шымкент'];
+    // Always fan out from hub so the map shows request → HupHup → suppliers
+    if (activeRequest && deliveryCities.length === 0) {
+      deliveryCities = ['Астана', 'Шымкент', 'Караганда', 'Актау'].filter(
+        (city) => city.toLowerCase() !== originKey,
+      );
     }
 
     return {
