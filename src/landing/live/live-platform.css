@@ -1017,12 +1017,66 @@
   fill: rgba(245, 158, 11, 0.18);
 }
 
-.live-map-origin-ring--late {
+.live-map-city.is-target .live-map-city-dot {
+  stroke: #10a37f;
+  stroke-width: 3;
+}
+
+.live-map-city.is-target .live-map-city-halo {
+  fill: rgba(16, 163, 127, 0.18);
+}
+
+.live-map-origin-ring--late,
+.live-map-target-ring--late {
   animation-delay: 1.1s;
 }
 
 .live-map-hub-ring--always {
   animation: live-hub-ring 2.8s ease-out infinite;
+}
+
+.live-map-hub-ring--process {
+  fill: none;
+  stroke: rgba(16, 163, 127, 0.55);
+  stroke-width: 2.5;
+  animation: live-hub-ring 1.8s ease-out infinite;
+}
+
+.live-map-hub-ring--process-late {
+  animation-delay: 0.9s;
+}
+
+.live-map-hub-glow.is-busy {
+  animation: live-hub-glow-busy 2.2s ease-in-out infinite;
+}
+
+.live-map-hub-group.is-busy .live-map-hub {
+  animation: live-hub-scale 2.2s ease-in-out infinite;
+}
+
+@keyframes live-hub-glow-busy {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform-origin: center;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes live-hub-scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.live-flow-status--pipeline {
+  border-color: rgba(16, 163, 127, 0.28);
 }
 
 .live-flow-status--live {

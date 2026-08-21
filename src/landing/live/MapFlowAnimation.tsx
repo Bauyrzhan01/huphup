@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { PlatformLiveFeedItem, PlatformLiveFlow } from './types';
-import { MAP_CENTER, resolveCityPoint } from './cities';
+import { MAP_CENTER, MAP_CITIES, resolveCityPoint } from './cities';
 
 type Props = {
   flow: PlatformLiveFlow | null;
@@ -19,61 +19,84 @@ type LineSpec = {
   particles: number;
 };
 
+const DEFAULT_FANOUT = ['Астана', 'Шымкент', 'Павлодар', 'Актау', 'Атырау'];
+
 function buildLines(flow: PlatformLiveFlow | null, feed: PlatformLiveFeedItem[]): LineSpec[] {
   const lines: LineSpec[] = [];
   const requests = feed.filter((item) => item.kind === 'request');
 
-  // One active inbound stream per request city — all at once
-  const byCity = new Map<string, { x: number; y: number; count: number; codes: string[] }>();
+  // 1) Request cities → HupHup (inbound)
+  const byCity = new Map<string, { x: number; y: number; count: number }>();
   for (const request of requests) {
     const point = resolveCityPoint(request.city);
     if (!point) continue;
     const key = `${point.x},${point.y}`;
     const prev = byCity.get(key);
-    if (prev) {
-      prev.count += 1;
-      if (request.code) prev.codes.push(request.code);
-    } else {
-      byCity.set(key, {
-        x: point.x,
-        y: point.y,
-        count: 1,
-        codes: request.code ? [request.code] : [],
-      });
-    }
+    if (prev) prev.count += 1;
+    else byCity.set(key, { x: point.x, y: point.y, count: 1 });
   }
 
   [...byCity.entries()].forEach(([key, city], index) => {
     lines.push({
-      id: `request-city-${key}`,
+      id: `inbound-${key}`,
       x1: city.x,
       y1: city.y,
       x2: MAP_CENTER.x,
       y2: MAP_CENTER.y,
       tone: 'inbound',
-      delay: index * 0.25,
-      dur: 2.1 + (index % 3) * 0.25,
-      particles: Math.min(1 + city.count, 5),
+      delay: index * 0.2,
+      dur: 2.0 + (index % 3) * 0.2,
+      particles: Math.min(1 + city.count, 4),
     });
   });
 
-  if (flow?.phase === 'delivery') {
-    flow.deliveryCities.forEach((name, index) => {
-      const point = resolveCityPoint(name);
-      if (!point) return;
-      lines.push({
-        id: `delivery-${name}-${index}`,
-        x1: MAP_CENTER.x,
-        y1: MAP_CENTER.y,
-        x2: point.x,
-        y2: point.y,
-        tone: 'outbound',
-        delay: index * 0.3,
-        dur: 2.3,
-        particles: 2,
-      });
-    });
+  if (requests.length === 0) return lines;
+
+  // 2) HupHup → supplier / delivery cities (outbound) — always, after hub
+  const originKeys = new Set(
+    [...byCity.values()].map((city) => `${Math.round(city.x)}:${Math.round(city.y)}`),
+  );
+
+  const fanoutNames =
+    flow?.deliveryCities?.length
+      ? flow.deliveryCities
+      : DEFAULT_FANOUT;
+
+  const targets = new Map<string, { x: number; y: number; name: string }>();
+  for (const name of fanoutNames) {
+    const point = resolveCityPoint(name);
+    if (!point) continue;
+    const key = `${Math.round(point.x)}:${Math.round(point.y)}`;
+    if (originKeys.has(key)) continue;
+    if (key === `${Math.round(MAP_CENTER.x)}:${Math.round(MAP_CENTER.y)}`) continue;
+    targets.set(key, { ...point, name });
   }
+
+  // Ensure at least 3 outbound destinations so the story continues past the hub
+  if (targets.size < 3) {
+    for (const city of MAP_CITIES) {
+      const key = `${Math.round(city.x)}:${Math.round(city.y)}`;
+      if (originKeys.has(key)) continue;
+      if (key === `${Math.round(MAP_CENTER.x)}:${Math.round(MAP_CENTER.y)}`) continue;
+      targets.set(key, { x: city.x, y: city.y, name: city.label });
+      if (targets.size >= 4) break;
+    }
+  }
+
+  [...targets.values()].forEach((city, index) => {
+    lines.push({
+      id: `outbound-${city.name}-${index}`,
+      x1: MAP_CENTER.x,
+      y1: MAP_CENTER.y,
+      x2: city.x,
+      y2: city.y,
+      tone: 'outbound',
+      // Start slightly after inbound so motion reads: city → hub → suppliers
+      delay: 0.9 + index * 0.22,
+      dur: 2.3 + (index % 2) * 0.25,
+      particles: 2,
+    });
+  });
 
   return lines;
 }
