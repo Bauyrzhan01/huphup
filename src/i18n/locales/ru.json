@@ -271,7 +271,12 @@
       "hubAria": "Открыть последнюю заявку на карте",
       "panelClose": "Закрыть",
       "phaseProcessing": "Обработка заявки",
-      "phaseDelivery": "Доставка поставщикам"
+      "phaseDelivery": "Доставка поставщикам",
+      "phaseLive": "Живая лента",
+      "hubHintActive": "Сейчас на карте · {{code}}",
+      "nowPlaying": "Сейчас в эфире",
+      "feedCount": "{{count}} заявок",
+      "onMap": "На карте"
     }
   },
   "home": {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { platformApi } from '../../api';
@@ -10,7 +10,8 @@ import { KazakhstanMap } from './KazakhstanMap';
 import type { PlatformLive, PlatformLiveFeedItem } from './types';
 import './live-platform.css';
 
-const POLL_MS = 20_000;
+const POLL_MS = 5_000;
+const CYCLE_MS = 4_000;
 
 function formatRelative(iso: string, locale: string) {
   const delta = Date.now() - new Date(iso).getTime();
@@ -29,17 +30,51 @@ function feedKindLabel(kind: PlatformLiveFeedItem['kind'], t: (key: string) => s
   return t('landing.live.kindCompany');
 }
 
+function AnimatedStat({ value, loading }: { value: number | undefined; loading: boolean }) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (loading && value == null) return;
+    const target = value ?? 0;
+    let frame = 0;
+    const start = display;
+    const diff = target - start;
+    if (diff === 0) {
+      setDisplay(target);
+      return;
+    }
+    const id = window.setInterval(() => {
+      frame += 1;
+      const next = Math.round(start + (diff * frame) / 14);
+      setDisplay(next);
+      if (frame >= 14) window.clearInterval(id);
+    }, 30);
+    return () => window.clearInterval(id);
+  }, [value, loading]);
+
+  if (loading && value == null) return <>…</>;
+  return <>{display}</>;
+}
+
 export function LiveLandingPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [data, setData] = useState<PlatformLive | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [freshPulse, setFreshPulse] = useState(false);
   const cabinetHref = user?.role === 'SUPPLIER' ? '/supplier' : '/app';
 
   const load = useCallback(async () => {
     try {
       const snapshot = await platformApi.live();
-      setData(snapshot);
+      setData((prev) => {
+        if (prev && snapshot.feed[0]?.id && prev.feed[0]?.id !== snapshot.feed[0]?.id) {
+          setFreshPulse(true);
+          window.setTimeout(() => setFreshPulse(false), 1600);
+        }
+        return snapshot;
+      });
     } catch {
       /* keep last snapshot */
     } finally {
@@ -53,10 +88,27 @@ export function LiveLandingPage() {
     return () => window.clearInterval(timer);
   }, [load]);
 
+  const requests = useMemo(
+    () => (data?.feed ?? []).filter((item) => item.kind === 'request'),
+    [data?.feed],
+  );
+
+  useEffect(() => {
+    if (requests.length <= 1) {
+      setActiveIndex(0);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setActiveIndex((index) => (index + 1) % requests.length);
+    }, CYCLE_MS);
+    return () => window.clearInterval(timer);
+  }, [requests.length]);
+
+  const activeRequest = requests[activeIndex % Math.max(requests.length, 1)] ?? data?.pulse ?? null;
   const stats = data?.stats;
 
   return (
-    <div className="live-page">
+    <div className={`live-page${freshPulse ? ' is-fresh' : ''}`}>
       <section className="live-stage">
         <header className="live-header">
           <Link to="/" className="live-mark">
@@ -87,13 +139,32 @@ export function LiveLandingPage() {
               cities={data?.cities ?? []}
               pulse={data?.pulse ?? null}
               flow={data?.flow ?? null}
+              feed={data?.feed ?? []}
+              activeRequest={activeRequest}
+              activeIndex={activeIndex}
             />
           </div>
 
           <div className="live-hero-overlay">
-            <p className="live-kicker">{t('landing.live.kicker')}</p>
+            <p className="live-kicker">
+              <span className="live-kicker-dot" />
+              {t('landing.live.kicker')}
+            </p>
             <h1 className="live-title">{t('landing.live.title')}</h1>
             <p className="live-lead">{t('landing.live.lead')}</p>
+
+            {activeRequest && (
+              <div className="live-ticker" key={activeRequest.id}>
+                <span className="live-ticker-badge">{t('landing.live.nowPlaying')}</span>
+                <p className="live-ticker-code">{activeRequest.code}</p>
+                <p className="live-ticker-title">{activeRequest.label}</p>
+                <p className="live-ticker-meta">
+                  {activeRequest.city ? `${activeRequest.city} · ` : ''}
+                  {formatRelative(activeRequest.at, i18n.language)}
+                </p>
+              </div>
+            )}
+
             <div className="live-hero-cta">
               <Link to="/register?next=/requests/new" className="live-cta">
                 {t('landing.heroCta')}
@@ -104,6 +175,7 @@ export function LiveLandingPage() {
             </div>
             {data?.checkedAt && (
               <p className="live-updated">
+                <span className="live-updated-dot" />
                 {t('landing.live.updated', {
                   time: formatRelative(data.checkedAt, i18n.language),
                 })}
@@ -115,27 +187,39 @@ export function LiveLandingPage() {
 
       <section className="live-stats" aria-label={t('landing.live.statsLabel')}>
         <article className="live-stat">
-          <p className="live-stat-value">{stats?.requestsToday ?? (loading ? '…' : 0)}</p>
+          <p className="live-stat-value">
+            <AnimatedStat value={stats?.requestsToday} loading={loading} />
+          </p>
           <p className="live-stat-label">{t('landing.live.statRequests')}</p>
         </article>
         <article className="live-stat">
-          <p className="live-stat-value">{stats?.offersToday ?? (loading ? '…' : 0)}</p>
+          <p className="live-stat-value">
+            <AnimatedStat value={stats?.offersToday} loading={loading} />
+          </p>
           <p className="live-stat-label">{t('landing.live.statOffers')}</p>
         </article>
         <article className="live-stat">
-          <p className="live-stat-value">{stats?.companies ?? (loading ? '…' : 0)}</p>
+          <p className="live-stat-value">
+            <AnimatedStat value={stats?.companies} loading={loading} />
+          </p>
           <p className="live-stat-label">{t('landing.live.statCompanies')}</p>
         </article>
         <article className="live-stat">
-          <p className="live-stat-value">{stats?.online ?? (loading ? '…' : 0)}</p>
+          <p className="live-stat-value">
+            <AnimatedStat value={stats?.online} loading={loading} />
+          </p>
           <p className="live-stat-label">{t('landing.live.statOnline')}</p>
         </article>
         <article className="live-stat">
-          <p className="live-stat-value">{stats?.products ?? (loading ? '…' : 0)}</p>
+          <p className="live-stat-value">
+            <AnimatedStat value={stats?.products} loading={loading} />
+          </p>
           <p className="live-stat-label">{t('landing.live.statProducts')}</p>
         </article>
         <article className="live-stat">
-          <p className="live-stat-value">{stats?.acceptedTotal ?? (loading ? '…' : 0)}</p>
+          <p className="live-stat-value">
+            <AnimatedStat value={stats?.acceptedTotal} loading={loading} />
+          </p>
           <p className="live-stat-label">{t('landing.live.statAccepted')}</p>
         </article>
       </section>
@@ -143,6 +227,11 @@ export function LiveLandingPage() {
       <section className="live-feed-section">
         <div className="live-feed-head">
           <h2>{t('landing.live.feedTitle')}</h2>
+          {requests.length > 0 && (
+            <span className="live-feed-count">
+              {t('landing.live.feedCount', { count: requests.length })}
+            </span>
+          )}
         </div>
         {loading && !data ? (
           <p className="live-feed-empty">{t('landing.live.loading')}</p>
@@ -150,23 +239,32 @@ export function LiveLandingPage() {
           <p className="live-feed-empty">{t('landing.live.feedEmpty')}</p>
         ) : (
           <ul className="live-feed-list">
-            {data.feed.map((item) => (
-              <li key={`${item.kind}-${item.id}`} className="live-feed-item">
-                <span className={`live-feed-badge live-feed-badge--${item.kind}`}>
-                  {feedKindLabel(item.kind, t)}
-                </span>
-                <div className="live-feed-body">
-                  <p className="live-feed-title">
-                    {item.code ? `${item.code} · ` : ''}
-                    {item.label}
-                  </p>
-                  <p className="live-feed-meta">
-                    {item.city ? `${item.city} · ` : ''}
-                    {formatRelative(item.at, i18n.language)}
-                  </p>
-                </div>
-              </li>
-            ))}
+            {data.feed.map((item, index) => {
+              const isActive = activeRequest?.id === item.id;
+              return (
+                <li
+                  key={`${item.kind}-${item.id}`}
+                  className={`live-feed-item${isActive ? ' is-active' : ''}`}
+                  style={{ animationDelay: `${Math.min(index, 12) * 0.05}s` }}
+                >
+                  <span className={`live-feed-badge live-feed-badge--${item.kind}`}>
+                    {feedKindLabel(item.kind, t)}
+                  </span>
+                  <div className="live-feed-body">
+                    <p className="live-feed-title">
+                      {item.code ? `${item.code} · ` : ''}
+                      {item.label}
+                    </p>
+                    <p className="live-feed-meta">
+                      {item.city ? `${item.city} · ` : ''}
+                      {formatRelative(item.at, i18n.language)}
+                      {item.status ? ` · ${item.status}` : ''}
+                    </p>
+                  </div>
+                  {isActive && <span className="live-feed-live">{t('landing.live.onMap')}</span>}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

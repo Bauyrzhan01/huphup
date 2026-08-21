@@ -269,7 +269,12 @@
       "hubAria": "Картада соңғы өтінімді ашу",
       "panelClose": "Жабу",
       "phaseProcessing": "Өтінім өңделуде",
-      "phaseDelivery": "Жеткізушілерге жеткізу"
+      "phaseDelivery": "Жеткізушілерге жеткізу",
+      "phaseLive": "Тірі лента",
+      "hubHintActive": "Картада қазір · {{code}}",
+      "nowPlaying": "Қазір эфирде",
+      "feedCount": "{{count}} өтінім",
+      "onMap": "Картада"
     }
   },
   "home": {
