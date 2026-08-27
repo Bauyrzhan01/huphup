@@ -13,10 +13,12 @@
   </head>
   <body>
     <div class="layout">
-      <aside class="sidebar">
+      <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+      <aside class="sidebar" id="sidebar">
         <div class="brand">
           <div class="logo">H</div>
           HupHup
+          <button type="button" id="sidebar-close" class="icon-btn sidebar-close" aria-label="Менюны жабу">×</button>
         </div>
         <div class="side-label">Мониторинг</div>
         <nav class="nav">
@@ -41,7 +43,12 @@
 
       <div class="main">
         <header class="topbar">
-          <div class="crumb">HupHup для бизнеса · <span id="crumb-tab">Dashboard</span></div>
+          <div class="topbar-left">
+            <button type="button" id="menu-btn" class="icon-btn menu-btn" aria-label="Меню" aria-expanded="false" aria-controls="sidebar">
+              <span></span><span></span><span></span>
+            </button>
+            <div class="crumb">HupHup · <span id="crumb-tab">Dashboard</span></div>
+          </div>
           <div class="top-actions">
             <span id="poll-label" class="chip">—</span>
             <span id="overall-badge" class="badge">—</span>

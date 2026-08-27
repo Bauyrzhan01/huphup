@@ -614,10 +614,34 @@ async function runCheck() {
   els.refreshBtn.disabled = false;
 }
 
+function setupMobileNav() {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const menuBtn = document.getElementById('menu-btn');
+  const closeBtn = document.getElementById('sidebar-close');
+
+  const setOpen = (open: boolean) => {
+    sidebar?.classList.toggle('is-open', open);
+    document.body.classList.toggle('nav-open', open);
+    if (backdrop) backdrop.hidden = !open;
+    menuBtn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+
+  menuBtn?.addEventListener('click', () => setOpen(true));
+  closeBtn?.addEventListener('click', () => setOpen(false));
+  backdrop?.addEventListener('click', () => setOpen(false));
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setOpen(false);
+  });
+
+  return { close: () => setOpen(false) };
+}
+
 function setupTabs() {
   const links = document.querySelectorAll('.nav a[data-tab]');
   const panels = document.querySelectorAll('.tab-panel');
   const crumb = $('crumb-tab');
+  const mobileNav = setupMobileNav();
 
   links.forEach((link) => {
     link.addEventListener('click', (e) => {
@@ -637,6 +661,7 @@ function setupTabs() {
         endpoints: 'Endpoints',
       };
       crumb.textContent = titles[tab] ?? tab;
+      mobileNav.close();
       if (tab === 'dashboard' || tab === 'history') {
         window.requestAnimationFrame(() => renderCharts());
       }
