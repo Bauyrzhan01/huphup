@@ -9,10 +9,7 @@ type Props = {
 
 type LineSpec = {
   id: string;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
+  path: string;
   tone: 'inbound' | 'outbound';
   delay: number;
   dur: number;
@@ -21,11 +18,24 @@ type LineSpec = {
 
 const DEFAULT_FANOUT = ['Астана', 'Шымкент', 'Павлодар', 'Актау', 'Атырау'];
 
+/** Soft quadratic curve between two points (bulge away from hub axis). */
+function curvePath(x1: number, y1: number, x2: number, y2: number, bulge = 0.18) {
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / len) * len * bulge;
+  const ny = (dx / len) * len * bulge;
+  const cx = mx + nx;
+  const cy = my + ny;
+  return `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+}
+
 function buildLines(flow: PlatformLiveFlow | null, feed: PlatformLiveFeedItem[]): LineSpec[] {
   const lines: LineSpec[] = [];
   const requests = feed.filter((item) => item.kind === 'request');
 
-  // 1) Request cities → HupHup (inbound)
   const byCity = new Map<string, { x: number; y: number; count: number }>();
   for (const request of requests) {
     const point = resolveCityPoint(request.city);
@@ -39,30 +49,23 @@ function buildLines(flow: PlatformLiveFlow | null, feed: PlatformLiveFeedItem[])
   [...byCity.entries()].forEach(([key, city], index) => {
     lines.push({
       id: `inbound-${key}`,
-      x1: city.x,
-      y1: city.y,
-      x2: MAP_CENTER.x,
-      y2: MAP_CENTER.y,
+      path: curvePath(city.x, city.y, MAP_CENTER.x, MAP_CENTER.y, 0.14 + (index % 3) * 0.03),
       tone: 'inbound',
-      delay: index * 0.2,
-      dur: 2.0 + (index % 3) * 0.2,
-      particles: Math.min(1 + city.count, 4),
+      delay: index * 0.35,
+      dur: 3.2 + (index % 3) * 0.35,
+      particles: Math.min(1 + Math.ceil(city.count / 3), 2),
     });
   });
 
   if (requests.length === 0) return lines;
 
-  // 2) HupHup → supplier / delivery cities (outbound) — always, after hub
   const originKeys = new Set(
     [...byCity.values()].map((city) => `${Math.round(city.x)}:${Math.round(city.y)}`),
   );
 
-  const fanoutNames =
-    flow?.deliveryCities?.length
-      ? flow.deliveryCities
-      : DEFAULT_FANOUT;
-
+  const fanoutNames = flow?.deliveryCities?.length ? flow.deliveryCities : DEFAULT_FANOUT;
   const targets = new Map<string, { x: number; y: number; name: string }>();
+
   for (const name of fanoutNames) {
     const point = resolveCityPoint(name);
     if (!point) continue;
@@ -72,7 +75,6 @@ function buildLines(flow: PlatformLiveFlow | null, feed: PlatformLiveFeedItem[])
     targets.set(key, { ...point, name });
   }
 
-  // Ensure at least 3 outbound destinations so the story continues past the hub
   if (targets.size < 3) {
     for (const city of MAP_CITIES) {
       const key = `${Math.round(city.x)}:${Math.round(city.y)}`;
@@ -86,15 +88,12 @@ function buildLines(flow: PlatformLiveFlow | null, feed: PlatformLiveFeedItem[])
   [...targets.values()].forEach((city, index) => {
     lines.push({
       id: `outbound-${city.name}-${index}`,
-      x1: MAP_CENTER.x,
-      y1: MAP_CENTER.y,
-      x2: city.x,
-      y2: city.y,
+      path: curvePath(MAP_CENTER.x, MAP_CENTER.y, city.x, city.y, 0.12 + (index % 3) * 0.025),
       tone: 'outbound',
-      // Start slightly after inbound so motion reads: city → hub → suppliers
-      delay: 0.9 + index * 0.22,
-      dur: 2.3 + (index % 2) * 0.25,
-      particles: 2,
+      // Clear second beat: hub processes, then fans out
+      delay: 1.4 + index * 0.4,
+      dur: 3.4 + (index % 2) * 0.3,
+      particles: 1,
     });
   });
 
@@ -108,33 +107,33 @@ export function MapFlowAnimation({ flow, feed }: Props) {
 
   return (
     <g className="live-flow-layer" aria-hidden="true">
-      {lines.map((line) => {
-        const path = `M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`;
-        return (
-          <g key={line.id} className={`live-flow-line live-flow-line--${line.tone}`}>
-            <path className="live-flow-track" d={path} />
-            <path
-              className="live-flow-active"
-              d={path}
-              style={{ animationDelay: `${line.delay}s` }}
-            />
-            {Array.from({ length: line.particles }, (_, particleIndex) => (
-              <circle
-                key={`${line.id}-p-${particleIndex}`}
-                className={`live-flow-dot${particleIndex > 0 ? ' live-flow-dot--trail' : ''}`}
-                r={particleIndex === 0 ? 5.5 : 3.2}
-              >
-                <animateMotion
-                  dur={`${line.dur}s`}
-                  repeatCount="indefinite"
-                  begin={`${line.delay + particleIndex * 0.35}s`}
-                  path={path}
-                />
-              </circle>
-            ))}
-          </g>
-        );
-      })}
+      {lines.map((line) => (
+        <g key={line.id} className={`live-flow-line live-flow-line--${line.tone}`}>
+          <path className="live-flow-track" d={line.path} />
+          <path
+            className="live-flow-active"
+            d={line.path}
+            style={{ animationDelay: `${line.delay}s` }}
+          />
+          {Array.from({ length: line.particles }, (_, particleIndex) => (
+            <circle
+              key={`${line.id}-p-${particleIndex}`}
+              className={`live-flow-dot${particleIndex > 0 ? ' live-flow-dot--trail' : ''}`}
+              r={particleIndex === 0 ? 4.2 : 2.6}
+            >
+              <animateMotion
+                dur={`${line.dur}s`}
+                repeatCount="indefinite"
+                begin={`${line.delay + particleIndex * 0.55}s`}
+                path={line.path}
+                calcMode="spline"
+                keyTimes="0;1"
+                keySplines="0.4 0 0.2 1"
+              />
+            </circle>
+          ))}
+        </g>
+      ))}
     </g>
   );
 }

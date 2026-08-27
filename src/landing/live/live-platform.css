@@ -158,39 +158,41 @@
 
 .live-flow-track {
   fill: none;
-  stroke: rgba(17, 17, 17, 0.08);
-  stroke-width: 2.5;
+  stroke: rgba(17, 17, 17, 0.05);
+  stroke-width: 1.6;
   stroke-linecap: round;
 }
 
 .live-flow-active {
   fill: none;
-  stroke-width: 2.5;
+  stroke-width: 1.75;
   stroke-linecap: round;
-  stroke-dasharray: 7 10;
-  animation: live-flow-dash 2.2s linear infinite;
+  stroke-dasharray: 5 14;
+  animation: live-flow-dash 3.6s linear infinite;
+  opacity: 0.72;
 }
 
 .live-flow-line--inbound .live-flow-active {
-  stroke: rgba(245, 158, 11, 0.75);
+  stroke: rgba(245, 158, 11, 0.55);
 }
 
 .live-flow-line--outbound .live-flow-active {
-  stroke: rgba(16, 163, 127, 0.85);
+  stroke: rgba(16, 163, 127, 0.58);
 }
 
 .live-flow-dot {
   fill: var(--live-green);
-  filter: drop-shadow(0 0 6px rgba(16, 163, 127, 0.55));
+  filter: drop-shadow(0 0 4px rgba(16, 163, 127, 0.35));
+  opacity: 0.9;
 }
 
 .live-flow-line--inbound .live-flow-dot {
   fill: #f59e0b;
-  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.55));
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.35));
 }
 
 .live-flow-dot--trail {
-  opacity: 0.45;
+  opacity: 0.32;
 }
 
 .live-map-origin-ring,
@@ -1037,21 +1039,21 @@
 
 .live-map-hub-ring--process {
   fill: none;
-  stroke: rgba(16, 163, 127, 0.55);
-  stroke-width: 2.5;
-  animation: live-hub-ring 1.8s ease-out infinite;
+  stroke: rgba(16, 163, 127, 0.35);
+  stroke-width: 1.75;
+  animation: live-hub-ring 2.6s ease-out infinite;
 }
 
 .live-map-hub-ring--process-late {
-  animation-delay: 0.9s;
+  animation-delay: 1.2s;
 }
 
 .live-map-hub-glow.is-busy {
-  animation: live-hub-glow-busy 2.2s ease-in-out infinite;
+  animation: live-hub-glow-busy 3.2s ease-in-out infinite;
 }
 
 .live-map-hub-group.is-busy .live-map-hub {
-  animation: live-hub-scale 2.2s ease-in-out infinite;
+  animation: live-hub-scale 3.2s ease-in-out infinite;
 }
 
 @keyframes live-hub-glow-busy {

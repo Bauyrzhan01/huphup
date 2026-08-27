@@ -185,6 +185,8 @@ export type RequestItem = {
     score: number;
     status: string;
     productId?: string | null;
+    matchedProductName?: string | null;
+    matchReason?: string | null;
     company: Pick<Company, 'id' | 'name' | 'city' | 'verified' | 'avatarUrl'>;
   }>;
 };
@@ -217,6 +219,15 @@ export type Lead = {
   score: number;
   status: string;
   matchReason?: string | null;
+  matchedProductId?: string | null;
+  matchedProduct?: {
+    id: string;
+    name: string;
+    unit?: string | null;
+    priceFrom?: string | number | null;
+    currency?: string | null;
+    city?: string | null;
+  } | null;
   createdAt: string;
   claimedAt?: string | null;
   assigneeId?: string | null;

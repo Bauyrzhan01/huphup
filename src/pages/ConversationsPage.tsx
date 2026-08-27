@@ -127,9 +127,12 @@ export function ConversationsPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [peerTyping, setPeerTyping] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const stickToBottomRef = useRef(true);
+  const typingTimerRef = useRef<number | undefined>(undefined);
+  const peerTypingClearRef = useRef<number | undefined>(undefined);
 
   const conversationFromUrl = searchParams.get('conversationId');
 
@@ -244,15 +247,29 @@ export function ConversationsPage() {
 
     void loadMessages();
 
-    const unsubscribe = conversationsApi.subscribeStream(selectedId, (msg) => {
-      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
-      stickToBottomRef.current = true;
-      void conversationsApi.list().then(setItems).catch(() => {});
-    });
+    setPeerTyping(false);
+    const unsubscribe = conversationsApi.subscribeStream(
+      selectedId,
+      (msg) => {
+        setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+        stickToBottomRef.current = true;
+        setPeerTyping(false);
+        void conversationsApi.list().then(setItems).catch(() => {});
+      },
+      (payload) => {
+        if (payload.userId === user?.id) return;
+        setPeerTyping(payload.isTyping);
+        if (peerTypingClearRef.current) window.clearTimeout(peerTypingClearRef.current);
+        if (payload.isTyping) {
+          peerTypingClearRef.current = window.setTimeout(() => setPeerTyping(false), 2800);
+        }
+      },
+    );
 
     return () => {
       cancelled = true;
       unsubscribe();
+      if (peerTypingClearRef.current) window.clearTimeout(peerTypingClearRef.current);
     };
   }, [selectedId, user?.id, t]);
 
@@ -569,6 +586,10 @@ export function ConversationsPage() {
                     </div>
                   </div>
 
+                  {peerTyping ? (
+                    <p className="chat-typing-indicator">{t('conversations.typing')}</p>
+                  ) : null}
+
                   <form className="chat-composer" onSubmit={(e) => void send(e)}>
                     {pendingFile ? (
                       <div className="chat-pending-file">
@@ -608,12 +629,22 @@ export function ConversationsPage() {
                       </button>
                       <textarea
                         value={body}
-                        onChange={(e) => setBody(e.target.value)}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setBody(next);
+                          if (!selectedId) return;
+                          conversationsApi.emitTyping(selectedId, true);
+                          if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+                          typingTimerRef.current = window.setTimeout(() => {
+                            conversationsApi.emitTyping(selectedId, false);
+                          }, 1200);
+                        }}
                         placeholder={t('conversations.placeholder')}
                         rows={1}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
+                            conversationsApi.emitTyping(selectedId, false);
                             void send(e as unknown as FormEvent);
                           }
                         }}

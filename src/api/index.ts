@@ -1,6 +1,7 @@
 import { api, API_URL, ApiError, getToken, uploadApi } from './client';
 import { applyConversationPrefs, hideConversationLocally, pinConversationLocally } from '../utils/conversationPrefs';
 import { filterVisibleRequests, hideRequestLocally } from '../utils/hiddenRequests';
+import { io, type Socket } from 'socket.io-client';
 import type {
   AnalyzeResult,
   Attachment,
@@ -408,6 +409,8 @@ export const notificationsApi = {
     api<{ ok: boolean }>(`/notifications/${id}/read`, { method: 'POST' }),
 };
 
+const activeTypingEmitters = new Map<string, (isTyping: boolean) => void>();
+
 export const conversationsApi = {
   list: async () => applyConversationPrefs(await api<ConversationItem[]>('/conversations')),
   hide: async (id: string) => {
@@ -471,19 +474,78 @@ export const conversationsApi = {
   subscribeStream: (
     conversationId: string,
     onMessage: (msg: MessageItem) => void,
+    onTyping?: (payload: { userId: string; isTyping: boolean }) => void,
   ): (() => void) => {
     const token = getToken();
     if (!token) return () => {};
-    const url = `${API_URL}/conversations/${conversationId}/stream?access_token=${encodeURIComponent(token)}`;
-    const es = new EventSource(url);
-    es.onmessage = (e) => {
-      try {
-        onMessage(JSON.parse(e.data) as MessageItem);
-      } catch {
-        /* ignore malformed events */
-      }
+
+    const base = API_URL.replace(/\/api\/v1\/?$/, '');
+    let cleaned = false;
+    let socket: Socket | null = null;
+    let es: EventSource | null = null;
+    let fallbackTimer: number | undefined;
+
+    const startSse = () => {
+      if (cleaned || es) return;
+      const url = `${API_URL}/conversations/${conversationId}/stream?access_token=${encodeURIComponent(token)}`;
+      es = new EventSource(url);
+      es.onmessage = (e) => {
+        try {
+          onMessage(JSON.parse(e.data) as MessageItem);
+        } catch {
+          /* ignore malformed events */
+        }
+      };
     };
-    return () => es.close();
+
+    socket = io(`${base}/chat`, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+    });
+
+    fallbackTimer = window.setTimeout(() => {
+      if (!socket?.connected) startSse();
+    }, 2500);
+
+    socket.on('connect', () => {
+      socket?.emit('join', { conversationId });
+    });
+
+    socket.on('message:new', (msg: MessageItem) => {
+      onMessage(msg);
+    });
+
+    socket.on(
+      'typing',
+      (payload: { userId: string; isTyping: boolean; conversationId?: string }) => {
+        if (payload.conversationId && payload.conversationId !== conversationId) return;
+        onTyping?.(payload);
+      },
+    );
+
+    socket.on('connect_error', () => {
+      startSse();
+    });
+
+    const typingEmit = (isTyping: boolean) => {
+      socket?.emit('typing', { conversationId, isTyping });
+    };
+    activeTypingEmitters.set(conversationId, typingEmit);
+
+    return () => {
+      if (cleaned) return;
+      cleaned = true;
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      typingEmit(false);
+      activeTypingEmitters.delete(conversationId);
+      socket?.emit('leave', { conversationId });
+      socket?.disconnect();
+      es?.close();
+    };
+  },
+  emitTyping: (conversationId: string, isTyping: boolean) => {
+    activeTypingEmitters.get(conversationId)?.(isTyping);
   },
 };
 

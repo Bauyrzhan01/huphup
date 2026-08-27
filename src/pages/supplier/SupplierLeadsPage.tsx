@@ -295,6 +295,15 @@ export function SupplierLeadsPage() {
                       {selected.matchReason ? (
                         <p className="meta lead-match-reason">{selected.matchReason}</p>
                       ) : null}
+                      {selected.matchedProduct ? (
+                        <p className="meta lead-matched-product">
+                          {t('supplier.matchedProduct')}:{' '}
+                          <b>{selected.matchedProduct.name}</b>
+                          {selected.matchedProduct.priceFrom != null
+                            ? ` · ${selected.matchedProduct.priceFrom} ${selected.matchedProduct.currency ?? 'KZT'}`
+                            : ''}
+                        </p>
+                      ) : null}
                     </div>
                     <div className={`match-meter score-${scoreTone(selected.score)}`}>
                       <div className="match-meter-value">
