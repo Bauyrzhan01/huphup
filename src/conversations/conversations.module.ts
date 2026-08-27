@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ConversationsService } from './conversations.service';
 import { ConversationsController } from './conversations.controller';
 import { ChatEventsService } from './chat-events.service';
+import { ChatGateway } from './chat.gateway';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { StorageModule } from '../storage/storage.module';
 
@@ -26,7 +27,7 @@ import { StorageModule } from '../storage/storage.module';
     }),
   ],
   controllers: [ConversationsController],
-  providers: [ConversationsService, ChatEventsService],
+  providers: [ConversationsService, ChatEventsService, ChatGateway],
   exports: [ConversationsService],
 })
 export class ConversationsModule {}

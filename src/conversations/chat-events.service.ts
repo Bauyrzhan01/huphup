@@ -21,6 +21,11 @@ export type ChatMessageEvent = {
 @Injectable()
 export class ChatEventsService {
   private readonly subjects = new Map<string, Subject<ChatMessageEvent>>();
+  private broadcaster: ((event: ChatMessageEvent) => void) | null = null;
+
+  setBroadcaster(fn: (event: ChatMessageEvent) => void) {
+    this.broadcaster = fn;
+  }
 
   private channel(conversationId: string) {
     let subject = this.subjects.get(conversationId);
@@ -60,6 +65,7 @@ export class ChatEventsService {
       })),
     };
     this.channel(message.conversationId).next(event);
+    this.broadcaster?.(event);
   }
 
   stream(conversationId: string) {

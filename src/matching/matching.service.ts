@@ -42,6 +42,16 @@ const leadInclude = {
   request: { select: leadRequestSelect },
   assignee: { select: leadUserSelect },
   lastActor: { select: leadUserSelect },
+  matchedProduct: {
+    select: {
+      id: true,
+      name: true,
+      unit: true,
+      priceFrom: true,
+      currency: true,
+      city: true,
+    },
+  },
 } as const;
 
 @Injectable()
@@ -129,10 +139,12 @@ export class MatchingService {
           companyId: item.companyId,
           score: item.score,
           matchReason: item.reason?.slice(0, 500),
+          matchedProductId: item.productId ?? null,
         },
         update: {
           score: item.score,
           matchReason: item.reason?.slice(0, 500),
+          matchedProductId: item.productId ?? null,
         },
       });
       await this.crm.logActivity({
@@ -175,10 +187,12 @@ export class MatchingService {
         companyId,
         score: 100,
         matchReason: reason.slice(0, 500),
+        matchedProductId: productId,
       },
       update: {
         score: 100,
         matchReason: reason.slice(0, 500),
+        matchedProductId: productId,
       },
     });
     await this.crm.logActivity({

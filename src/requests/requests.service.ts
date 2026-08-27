@@ -274,6 +274,9 @@ export class RequestsService {
                 owner: { select: { avatarUrl: true } },
               },
             },
+            matchedProduct: {
+              select: { id: true, name: true },
+            },
           },
           orderBy: { score: 'desc' },
         },
@@ -302,6 +305,8 @@ export class RequestsService {
       })),
       leads: request.leads.map((lead) => ({
         ...lead,
+        productId: lead.matchedProductId ?? lead.matchedProduct?.id ?? null,
+        matchedProductName: lead.matchedProduct?.name ?? null,
         company: {
           ...lead.company,
           avatarUrl:
