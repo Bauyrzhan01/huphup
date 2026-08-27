@@ -29,6 +29,7 @@ import { SupplierProductDetailPage } from './pages/supplier/SupplierProductDetai
 import { SupplierTeamPage } from './pages/supplier/SupplierTeamPage';
 import { InviteAcceptPage } from './pages/InviteAcceptPage';
 import { LandingPage } from './pages/LandingPage';
+import { LiveLandingPage } from './landing/live';
 
 export default function App() {
   return (
@@ -36,6 +37,14 @@ export default function App() {
       <WorkspaceModeProvider>
         <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route
+          path="/live"
+          element={
+            <ProtectedRoute>
+              <LiveLandingPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
