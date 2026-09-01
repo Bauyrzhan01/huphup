@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { attachmentsApi } from '../api';
+import { resolvePrivateMediaUrl } from '../api/client';
 import type { Attachment } from '../types';
 
 type Props = {
@@ -104,7 +105,11 @@ export function RequestAttachments({ requestId, editable = false }: Props) {
         <ul className="attachment-list">
           {items.map((a) => (
             <li key={a.id} className="attachment-item">
-              <a href={a.fileUrl} target="_blank" rel="noreferrer">
+              <a
+                href={resolvePrivateMediaUrl(a.fileUrl)}
+                target="_blank"
+                rel="noreferrer"
+              >
                 {a.fileName}
               </a>
               <span className="meta">

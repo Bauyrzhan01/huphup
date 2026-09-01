@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ImageIcon, MessageSquare, Paperclip, Pin } from 'lucide-react';
 import { conversationsApi } from '../api';
-import { resolveMediaUrl } from '../api/client';
+import { resolvePrivateMediaUrl } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
 import { ItemOverflowMenu } from '../components/ItemOverflowMenu';
@@ -62,7 +62,7 @@ function MessageAttachments({
   return (
     <div className="bubble-attachments">
       {attachments.map((att) => {
-        const href = resolveMediaUrl(att.fileUrl);
+        const href = resolvePrivateMediaUrl(att.fileUrl);
         if (isImageAttachment(att)) {
           return <ChatImage key={att.id} att={att} href={href} />;
         }

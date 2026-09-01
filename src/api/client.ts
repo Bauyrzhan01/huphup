@@ -37,6 +37,20 @@ export function getToken() {
   return localStorage.getItem('huphup_token');
 }
 
+/**
+ * For PRIVATE media (chat + request attachments) the backend requires a JWT.
+ * Since <img>/<a> tags can't send an Authorization header, the backend also
+ * accepts the token via an ?access_token= query param — append it here.
+ * Do NOT use this for public assets (avatars, logos, product images).
+ */
+export function resolvePrivateMediaUrl(url: string) {
+  const resolved = resolveMediaUrl(url);
+  const token = getToken();
+  if (!resolved || !token) return resolved;
+  const sep = resolved.includes('?') ? '&' : '?';
+  return `${resolved}${sep}access_token=${encodeURIComponent(token)}`;
+}
+
 export async function api<T>(
   path: string,
   options: RequestInit = {},
