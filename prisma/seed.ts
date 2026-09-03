@@ -243,6 +243,8 @@ async function upsertSupplier(entry: (typeof suppliers)[number], passwordHash: s
     });
   }
 
+  await ensureWallet(user.id);
+
   let company = await prisma.company.findUnique({ where: { ownerId: user.id } });
   if (!company) {
     company = await prisma.company.create({
@@ -321,7 +323,43 @@ async function upsertSupplier(entry: (typeof suppliers)[number], passwordHash: s
   return { email, company: entry.company };
 }
 
-async function upsertBuyer(passwordHash: string) {
+async function ensureWallet(userId: string) {
+  return prisma.wallet.upsert({
+    where: { userId },
+    create: { userId },
+    update: {},
+  });
+}
+
+async function upsertAdmin(passwordHash: string) {
+  const email = 'admin@huphup.test';
+  let user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        fullName: 'Тест Админ',
+        role: UserRole.ADMIN,
+        phone: '+77000000000',
+      },
+    });
+  } else {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        role: UserRole.ADMIN,
+        fullName: 'Тест Админ',
+        isActive: true,
+      },
+    });
+  }
+  await ensureWallet(user.id);
+  return user;
+}
+
+async function upsertBuyer(passwordHash: string, adminId: string) {
   const email = 'buyer@huphup.test';
   let user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
@@ -335,7 +373,7 @@ async function upsertBuyer(passwordHash: string) {
       },
     });
   } else {
-    await prisma.user.update({
+    user = await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash,
@@ -345,19 +383,45 @@ async function upsertBuyer(passwordHash: string) {
       },
     });
   }
+
+  const wallet = await ensureWallet(user.id);
+  const txCount = await prisma.walletTransaction.count({
+    where: { walletId: wallet.id },
+  });
+  if (txCount === 0) {
+    await prisma.$transaction([
+      prisma.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: 50000 },
+      }),
+      prisma.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'CREDIT',
+          amount: 50000,
+          balanceAfter: 50000,
+          comment: 'Seed top-up',
+          createdById: adminId,
+        },
+      }),
+    ]);
+  }
+
   return email;
 }
 
 async function main() {
   const passwordHash = await bcrypt.hash(PASSWORD, 12);
-  const buyerEmail = await upsertBuyer(passwordHash);
+  const admin = await upsertAdmin(passwordHash);
+  const buyerEmail = await upsertBuyer(passwordHash, admin.id);
   const created = [];
   for (const s of suppliers) {
     created.push(await upsertSupplier(s, passwordHash));
   }
 
   console.log('Seed OK');
-  console.log(`Buyer: ${buyerEmail} / ${PASSWORD}`);
+  console.log(`Admin:  ${admin.email} / ${PASSWORD}`);
+  console.log(`Buyer:  ${buyerEmail} / ${PASSWORD} (wallet 50000 KZT)`);
   console.log('Suppliers (all password same):');
   for (const c of created) {
     console.log(`  ${c.email} — ${c.company}`);

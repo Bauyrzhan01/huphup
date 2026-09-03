@@ -66,6 +66,11 @@ enum CompanyMemberRole {
   MANAGER
 }
 
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -98,6 +103,8 @@ model User {
   createdLeadTasks LeadTask[] @relation("LeadTaskCreator")
   assignedLeadTasks LeadTask[] @relation("LeadTaskAssignee")
   leadTaskComments LeadTaskComment[]
+  wallet           Wallet?
+  createdWalletTxns WalletTransaction[] @relation("WalletTxnCreator")
 
   @@index([role])
   @@map("users")
@@ -555,4 +562,35 @@ model StoredFile {
   createdAt DateTime @default(now())
 
   @@map("stored_files")
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Decimal  @default(0) @db.Decimal(14, 2)
+  currency  String   @default("KZT")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id           String                @id @default(cuid())
+  walletId     String
+  type         WalletTransactionType
+  amount       Decimal               @db.Decimal(14, 2)
+  balanceAfter Decimal               @db.Decimal(14, 2)
+  comment      String?
+  createdById  String
+  createdAt    DateTime              @default(now())
+
+  wallet    Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("WalletTxnCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([walletId, createdAt])
+  @@map("wallet_transactions")
 }
