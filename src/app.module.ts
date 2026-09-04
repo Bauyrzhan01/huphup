@@ -22,6 +22,7 @@ import { HealthModule } from './health/health.module';
 import { OpsModule } from './ops/ops.module';
 import { PlatformModule } from './platform/platform.module';
 import { BillingModule } from './billing/billing.module';
+import { WalletsModule } from './wallets/wallets.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { BillingModule } from './billing/billing.module';
     HealthModule,
     OpsModule,
     PlatformModule,
+    WalletsModule,
     BillingModule,
   ],
   providers: [

@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
-import { BillingReason, Prisma, WalletTxType } from '@prisma/client';
+import { BillingReason, Prisma, WalletTransactionType } from '@prisma/client';
 import type { CompaniesService } from '../companies/companies.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import type { PrismaService } from '../prisma/prisma.service';
@@ -20,7 +20,7 @@ type WalletRow = {
 type TxRow = {
   id: string;
   walletId: string;
-  type: WalletTxType;
+  type: WalletTransactionType;
   reason: BillingReason | null;
   amount: Prisma.Decimal;
   balanceAfter: Prisma.Decimal;
@@ -191,7 +191,7 @@ describe('BillingService', () => {
 
       expect(result.balance.toString()).toBe('50000');
       expect(state.transactions).toHaveLength(1);
-      expect(state.transactions[0].type).toBe(WalletTxType.TOPUP);
+      expect(state.transactions[0].type).toBe(WalletTransactionType.CREDIT);
       expect(state.transactions[0].balanceAfter.toString()).toBe('50000');
     });
 
@@ -233,6 +233,28 @@ describe('BillingService', () => {
       }
       expect(state.wallet.balance.toString()).toBe('8000');
       expect(state.transactions).toHaveLength(1);
+    });
+
+    it('списание записывается как DEBIT, пополнение — как CREDIT', async () => {
+      const { service, state } = buildService(10000);
+      state.platformPrice = {
+        reason: BillingReason.LEAD_UNLOCK,
+        enabled: true,
+        amount: dec(2000),
+        percent: null,
+      };
+
+      await service.charge({
+        owner: { companyId: 'c1' },
+        reason: BillingReason.LEAD_UNLOCK,
+        idempotencyKey: 'LEAD_UNLOCK:lead-direction',
+      });
+      await service.topUp({ owner: { companyId: 'c1' }, amount: 500 });
+
+      expect(state.transactions[0].type).toBe(WalletTransactionType.DEBIT);
+      expect(state.transactions[0].amount.toString()).toBe('-2000');
+      expect(state.transactions[1].type).toBe(WalletTransactionType.CREDIT);
+      expect(state.transactions[1].amount.toString()).toBe('500');
     });
   });
 

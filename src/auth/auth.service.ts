@@ -44,6 +44,7 @@ export class AuthService {
         fullName: dto.fullName,
         phone: dto.phone,
         role,
+        wallet: { create: {} },
       },
       select: {
         id: true,

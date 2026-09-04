@@ -68,6 +68,11 @@ enum CompanyMemberRole {
   MANAGER
 }
 
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -82,26 +87,26 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  company            Company?
-  buyerRequests      Request[]            @relation("BuyerRequests")
-  offers             Offer[]
-  memberships        ConversationMember[]
-  messages           Message[]
-  notifications      Notification[]
-  companyMembers     CompanyMember[]
-  createdInvites     CompanyInvite[]      @relation("InviteCreator")
-  usedInvites        CompanyInvite[]      @relation("InviteUser")
-  passwordResets     PasswordResetToken[]
-  productReviews     ProductReview[]
-  assignedLeads      Lead[]               @relation("LeadAssignee")
-  actedLeads         Lead[]               @relation("LeadLastActor")
-  leadActivities     LeadActivity[]
-  leadNotes          LeadNote[]
-  createdLeadTasks   LeadTask[]           @relation("LeadTaskCreator")
-  assignedLeadTasks  LeadTask[]           @relation("LeadTaskAssignee")
-  leadTaskComments   LeadTaskComment[]
-  wallet             Wallet?
-  walletTransactions WalletTransaction[]  @relation("WalletTxAuthor")
+  company           Company?
+  buyerRequests     Request[]            @relation("BuyerRequests")
+  offers            Offer[]
+  memberships       ConversationMember[]
+  messages          Message[]
+  notifications     Notification[]
+  companyMembers    CompanyMember[]
+  createdInvites    CompanyInvite[]      @relation("InviteCreator")
+  usedInvites       CompanyInvite[]      @relation("InviteUser")
+  passwordResets    PasswordResetToken[]
+  productReviews    ProductReview[]
+  assignedLeads     Lead[]               @relation("LeadAssignee")
+  actedLeads        Lead[]               @relation("LeadLastActor")
+  leadActivities    LeadActivity[]
+  leadNotes         LeadNote[]
+  createdLeadTasks  LeadTask[]           @relation("LeadTaskCreator")
+  assignedLeadTasks LeadTask[]           @relation("LeadTaskAssignee")
+  leadTaskComments  LeadTaskComment[]
+  wallet            Wallet?
+  createdWalletTxns WalletTransaction[]  @relation("WalletTxnCreator")
 
   @@index([role])
   @@map("users")
@@ -564,11 +569,23 @@ model StoredFile {
   @@map("stored_files")
 }
 
-enum WalletTxType {
-  TOPUP
-  CHARGE
-  REFUND
-  ADJUSTMENT
+/// Кошелёк одной стороны: компании-поставщика ИЛИ пользователя.
+/// Ровно одно из userId/companyId заполнено — проверка CHECK в миграции.
+model Wallet {
+  id                   String    @id @default(cuid())
+  userId               String?   @unique
+  companyId            String?   @unique
+  balance              Decimal   @default(0) @db.Decimal(14, 2)
+  currency             String    @default("KZT")
+  lowBalanceNotifiedAt DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user         User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company      Company?            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@map("wallets")
 }
 
 enum BillingReason {
@@ -579,45 +596,26 @@ enum BillingReason {
   MANUAL
 }
 
-/// Кошелёк компании-поставщика или покупателя. Заполнено ровно одно из companyId/userId
-/// (проверка CHECK добавлена в миграции — Prisma такое условие не выражает).
-model Wallet {
-  id                   String    @id @default(cuid())
-  companyId            String?   @unique
-  userId               String?   @unique
-  balance              Decimal   @default(0) @db.Decimal(14, 2)
-  currency             String    @default("KZT")
-  lowBalanceNotifiedAt DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  company      Company?            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user         User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions WalletTransaction[]
-
-  @@map("wallets")
-}
-
-/// Неизменяемая проводка. amount знаковая: плюс — приход, минус — расход.
-/// idempotencyKey защищает от двойного списания при ретраях.
+/// Неизменяемая проводка. type задаёт направление, reason — за что списали.
+/// idempotencyKey защищает от двойного списания при повторе запроса.
 model WalletTransaction {
-  id             String         @id @default(cuid())
+  id             String                @id @default(cuid())
   walletId       String
-  type           WalletTxType
+  type           WalletTransactionType
   reason         BillingReason?
-  amount         Decimal        @db.Decimal(14, 2)
-  balanceAfter   Decimal        @db.Decimal(14, 2)
-  idempotencyKey String         @unique
+  amount         Decimal               @db.Decimal(14, 2)
+  balanceAfter   Decimal               @db.Decimal(14, 2)
+  idempotencyKey String?               @unique
+  comment        String?
   leadId         String?
   offerId        String?
   requestId      String?
-  createdById    String?
-  comment        String?
   meta           Json?
-  createdAt      DateTime       @default(now())
+  createdById    String?
+  createdAt      DateTime              @default(now())
 
   wallet    Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  createdBy User?  @relation("WalletTxAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy User?  @relation("WalletTxnCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([walletId, createdAt])
   @@index([reason])
@@ -638,7 +636,7 @@ model PlatformPrice {
   @@map("platform_prices")
 }
 
-/// Индивидуальная цена для конкретной компании, перекрывает PlatformPrice.
+/// Индивидуальная цена для компании, перекрывает PlatformPrice.
 model CompanyPrice {
   id        String        @id @default(cuid())
   companyId String

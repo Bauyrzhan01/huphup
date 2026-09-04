@@ -12,7 +12,7 @@ import {
   Prisma,
   Wallet,
   WalletTransaction,
-  WalletTxType,
+  WalletTransactionType,
 } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { CompaniesService } from '../companies/companies.service';
@@ -26,7 +26,6 @@ export type MoveInput = {
   walletId: string;
   /** Signed: positive credits the wallet, negative debits it. */
   amount: Prisma.Decimal;
-  type: WalletTxType;
   reason?: BillingReason;
   /** The same key never moves money twice — the unique index is the guarantee. */
   idempotencyKey: string;
@@ -231,7 +230,10 @@ export class BillingService {
         const transaction = await tx.walletTransaction.create({
           data: {
             walletId: wallet.id,
-            type: input.type,
+            // Направление однозначно следует из знака суммы.
+            type: amount.lessThan(ZERO)
+              ? WalletTransactionType.DEBIT
+              : WalletTransactionType.CREDIT,
             reason: input.reason,
             amount,
             balanceAfter: wallet.balance,
@@ -278,7 +280,6 @@ export class BillingService {
     const result = await this.move({
       walletId: wallet.id,
       amount: round2(input.amount),
-      type: WalletTxType.TOPUP,
       idempotencyKey: input.idempotencyKey ?? `TOPUP:${randomUUID()}`,
       createdById: input.createdById,
       comment: input.comment,
@@ -300,7 +301,6 @@ export class BillingService {
     const result = await this.move({
       walletId: wallet.id,
       amount: round2(input.amount),
-      type: WalletTxType.ADJUSTMENT,
       idempotencyKey: input.idempotencyKey ?? `ADJUST:${randomUUID()}`,
       createdById: input.createdById,
       comment: input.comment,
@@ -337,7 +337,6 @@ export class BillingService {
     const result = await this.move({
       walletId: wallet.id,
       amount: amount.negated(),
-      type: WalletTxType.CHARGE,
       reason: input.reason,
       idempotencyKey: input.idempotencyKey,
       createdById: input.createdById,
