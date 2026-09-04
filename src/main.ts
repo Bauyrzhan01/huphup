@@ -6,12 +6,21 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import { AppModule } from './app.module';
+import { isOriginAllowed, parseCorsOrigins } from './common/cors';
+import { RedisIoAdapter } from './common/redis-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
 
-  app.useWebSocketAdapter(new IoAdapter(app));
+  const redisUrl = config.get<string>('REDIS_URL')?.trim();
+  if (redisUrl) {
+    const redisAdapter = new RedisIoAdapter(app);
+    const connected = await redisAdapter.connect(redisUrl);
+    app.useWebSocketAdapter(connected ? redisAdapter : new IoAdapter(app));
+  } else {
+    app.useWebSocketAdapter(new IoAdapter(app));
+  }
 
   const prefix = config.get<string>('API_PREFIX', 'api/v1');
   app.setGlobalPrefix(prefix);
@@ -26,23 +35,11 @@ async function bootstrap() {
     }),
   );
 
-  const origins = (config.get<string>('CORS_ORIGINS') ?? '*')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+  const origins = parseCorsOrigins(config.get<string>('CORS_ORIGINS'));
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || origins.includes('*')) {
-        callback(null, true);
-        return;
-      }
-      const allowed =
-        origins.includes(origin) ||
-        origin.endsWith('.vercel.app') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1');
-      callback(null, allowed);
+      callback(null, isOriginAllowed(origin, origins));
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
@@ -51,7 +48,9 @@ async function bootstrap() {
 
   const swagger = new DocumentBuilder()
     .setTitle('HupHup API')
-    .setDescription('B2B marketplace backend for requests, offers, leads and chat')
+    .setDescription(
+      'B2B marketplace backend for requests, offers, leads and chat',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -60,9 +59,7 @@ async function bootstrap() {
 
   const port = Number(config.get('PORT') ?? 3000);
   await app.listen(port, '0.0.0.0');
-  // eslint-disable-next-line no-console
   console.log(`HupHup API http://0.0.0.0:${port}/${prefix}`);
-  // eslint-disable-next-line no-console
   console.log(`Swagger     http://0.0.0.0:${port}/docs`);
 }
 

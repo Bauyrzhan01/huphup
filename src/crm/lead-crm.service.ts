@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  Prisma,
   LeadActivityType,
   LeadStatus,
   LeadTaskKind,
@@ -71,7 +72,7 @@ export class LeadCrmService {
     userId?: string | null;
     type: LeadActivityType;
     message: string;
-    meta?: Record<string, unknown>;
+    meta?: Prisma.InputJsonValue;
   }) {
     return this.prisma.leadActivity.create({
       data: {
@@ -79,7 +80,7 @@ export class LeadCrmService {
         userId: input.userId ?? undefined,
         type: input.type,
         message: input.message,
-        meta: (input.meta ?? undefined) as object | undefined,
+        meta: input.meta ?? undefined,
       },
       include: {
         user: {
@@ -224,7 +225,7 @@ export class LeadCrmService {
     const status = input.status;
     const doneAt =
       status === LeadTaskStatus.DONE
-        ? task.doneAt ?? new Date()
+        ? (task.doneAt ?? new Date())
         : status
           ? null
           : undefined;
@@ -258,7 +259,11 @@ export class LeadCrmService {
         assigneeId: updated.assigneeId,
       },
     });
-    if (input.assigneeId && input.assigneeId !== userId && input.assigneeId !== task.assigneeId) {
+    if (
+      input.assigneeId &&
+      input.assigneeId !== userId &&
+      input.assigneeId !== task.assigneeId
+    ) {
       await this.notifications.notifyUsers([input.assigneeId], {
         type: NotificationType.SYSTEM,
         title: updated.code,
@@ -292,7 +297,12 @@ export class LeadCrmService {
     });
   }
 
-  async addComment(taskId: string, companyId: string, userId: string, body: string) {
+  async addComment(
+    taskId: string,
+    companyId: string,
+    userId: string,
+    body: string,
+  ) {
     const task = await this.prisma.leadTask.findFirst({
       where: { id: taskId, companyId },
     });
@@ -509,7 +519,10 @@ export class LeadCrmService {
           acceptedSumByDay.set(key, (acceptedSumByDay.get(key) ?? 0) + price);
           currentAccepted += price;
         }
-      } else if (prevKeys.includes(key) && offer.status === OfferStatus.ACCEPTED) {
+      } else if (
+        prevKeys.includes(key) &&
+        offer.status === OfferStatus.ACCEPTED
+      ) {
         previousAccepted += price;
       }
     }
@@ -596,7 +609,10 @@ export class LeadCrmService {
 
     for (const lead of leads) {
       for (const rule of enabled) {
-        const cfg = (rule.config ?? {}) as { hours?: number; statuses?: string[] };
+        const cfg = (rule.config ?? {}) as {
+          hours?: number;
+          statuses?: string[];
+        };
         const hours = cfg.hours ?? 24;
         const key = `${lead.id}:${rule.trigger}`;
 

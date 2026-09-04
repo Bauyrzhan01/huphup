@@ -360,7 +360,9 @@ export class CompaniesService {
     });
 
     if (resolved.company.logoKey && resolved.company.logoKey !== uploaded.key) {
-      await this.storage.delete(resolved.company.logoKey).catch(() => undefined);
+      await this.storage
+        .delete(resolved.company.logoKey)
+        .catch(() => undefined);
     }
     return this.withAvatar(company);
   }
@@ -375,7 +377,9 @@ export class CompaniesService {
       },
     });
     if (resolved.company.logoKey) {
-      await this.storage.delete(resolved.company.logoKey).catch(() => undefined);
+      await this.storage
+        .delete(resolved.company.logoKey)
+        .catch(() => undefined);
     }
     return this.withAvatar(company);
   }
@@ -499,7 +503,9 @@ export class CompaniesService {
       },
     });
     if (pending) {
-      throw new ConflictException('An active invite already exists for this email');
+      throw new ConflictException(
+        'An active invite already exists for this email',
+      );
     }
 
     const token = randomBytes(24).toString('hex');
@@ -626,7 +632,10 @@ export class CompaniesService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    if (invite.email && user.email.toLowerCase() !== invite.email.toLowerCase()) {
+    if (
+      invite.email &&
+      user.email.toLowerCase() !== invite.email.toLowerCase()
+    ) {
       throw new ForbiddenException('Sign in with the invited email');
     }
 

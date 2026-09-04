@@ -9,6 +9,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { RequestsService } from './requests.service';
 import {
   AnalyzeRequestDto,
@@ -30,13 +31,17 @@ import { Public } from '../auth/decorators/public.decorator';
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 
+  // Unauthenticated and backed by the paid Gemini API — tighter than the
+  // global 120/min so an open endpoint cannot burn the quota.
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('analyze')
   analyze(@Body() dto: AnalyzeRequestDto) {
     return this.requestsService.analyze(dto);
   }
 
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('analyze/clarify')
   clarify(@Body() dto: ClarifyRequestDto) {
     return this.requestsService.clarify(dto);

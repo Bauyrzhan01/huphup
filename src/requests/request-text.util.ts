@@ -22,7 +22,8 @@ export function normalizeRequestDescription(
 
   if (rawText) {
     const rc = compact(rawText);
-    if (dc === rc && (tc === rc || tc.includes(rc) || rc.includes(tc))) return '';
+    if (dc === rc && (tc === rc || tc.includes(rc) || rc.includes(tc)))
+      return '';
   }
 
   const tail = d.slice(t.length).trim();
@@ -49,7 +50,9 @@ export function buildRequestDescription(input: {
     input.category ? `Категория: ${input.category}` : '',
     input.quantity && input.quantity !== '—' ? `Объём: ${input.quantity}` : '',
     input.city ? `Город: ${input.city}` : '',
-    input.deadline && input.deadline !== 'Уточнить' ? `Срок: ${input.deadline}` : '',
+    input.deadline && input.deadline !== 'Уточнить'
+      ? `Срок: ${input.deadline}`
+      : '',
   ].filter(Boolean);
 
   return lines.join('\n');

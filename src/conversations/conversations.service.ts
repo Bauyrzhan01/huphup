@@ -39,7 +39,9 @@ export class ConversationsService {
   ) {}
 
   private readonly messageInclude = {
-    sender: { select: { id: true, fullName: true, role: true, avatarUrl: true } },
+    sender: {
+      select: { id: true, fullName: true, role: true, avatarUrl: true },
+    },
     attachments: {
       select: {
         id: true,
@@ -173,8 +175,8 @@ export class ConversationsService {
     }
 
     const orderBy = query.before
-      ? ({ createdAt: 'desc' as const })
-      : ({ createdAt: 'asc' as const });
+      ? { createdAt: 'desc' as const }
+      : { createdAt: 'asc' as const };
 
     const rows = await this.prisma.message.findMany({
       where,
@@ -186,7 +188,9 @@ export class ConversationsService {
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
     const ordered = query.before ? [...items].reverse() : items;
-    const nextCursor = hasMore ? ordered[ordered.length - 1]?.id ?? null : null;
+    const nextCursor = hasMore
+      ? (ordered[ordered.length - 1]?.id ?? null)
+      : null;
 
     return { items: ordered, hasMore, nextCursor };
   }

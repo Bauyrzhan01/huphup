@@ -9,19 +9,41 @@ import {
 } from '@nestjs/websockets';
 import { Logger, OnModuleInit } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import type { DefaultEventsMap } from 'socket.io';
 import { Server, Socket } from 'socket.io';
+import { isOriginAllowed, parseCorsOrigins } from '../common/cors';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  ChatEventsService,
-  ChatMessageEvent,
-} from './chat-events.service';
+import { ChatEventsService, ChatMessageEvent } from './chat-events.service';
 
 type AuthPayload = { sub: string };
+
+type ChatSocketData = {
+  userId?: string;
+  conversationId?: string;
+};
+
+type ChatSocket = Socket<
+  DefaultEventsMap,
+  DefaultEventsMap,
+  DefaultEventsMap,
+  ChatSocketData
+>;
+
+/** Same allow-list as the HTTP layer; read lazily so config is loaded first. */
+function checkOrigin(
+  origin: string | undefined,
+  callback: (err: Error | null, allow?: boolean) => void,
+) {
+  callback(
+    null,
+    isOriginAllowed(origin, parseCorsOrigins(process.env.CORS_ORIGINS)),
+  );
+}
 
 @WebSocketGateway({
   namespace: '/chat',
   cors: {
-    origin: true,
+    origin: checkOrigin,
     credentials: true,
   },
 })
@@ -41,17 +63,15 @@ export class ChatGateway
 
   onModuleInit() {
     this.events.setBroadcaster((event: ChatMessageEvent) => {
-      this.server.to(event.conversationId).emit('message:new', event);
+      // The gateway may not have booted yet (or the adapter failed) — skip
+      // rather than break the HTTP request that produced the message.
+      this.server?.to(event.conversationId).emit('message:new', event);
     });
   }
 
-  async handleConnection(client: Socket) {
+  async handleConnection(client: ChatSocket) {
     try {
-      const token =
-        (client.handshake.auth?.token as string | undefined) ||
-        (client.handshake.query?.access_token as string | undefined) ||
-        client.handshake.headers.authorization?.replace(/^Bearer\s+/i, '');
-
+      const token = readToken(client);
       if (!token) {
         client.disconnect(true);
         return;
@@ -64,16 +84,18 @@ export class ChatGateway
       }
 
       client.data.userId = payload.sub;
-      client.join(`user:${payload.sub}`);
+      await client.join(`user:${payload.sub}`);
     } catch (err) {
-      this.logger.warn(`WS auth failed: ${(err as Error).message}`);
+      this.logger.warn(
+        `WS auth failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
       client.disconnect(true);
     }
   }
 
-  handleDisconnect(client: Socket) {
-    const userId = client.data.userId as string | undefined;
-    const room = client.data.conversationId as string | undefined;
+  handleDisconnect(client: ChatSocket) {
+    const userId = client.data.userId;
+    const room = client.data.conversationId;
     if (userId && room) {
       client.to(room).emit('typing', {
         conversationId: room,
@@ -85,10 +107,10 @@ export class ChatGateway
 
   @SubscribeMessage('join')
   async join(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: ChatSocket,
     @MessageBody() body: { conversationId?: string },
   ) {
-    const userId = client.data.userId as string | undefined;
+    const userId = client.data.userId;
     const conversationId = body?.conversationId?.trim();
     if (!userId || !conversationId) {
       return { ok: false, error: 'unauthorized' };
@@ -102,9 +124,9 @@ export class ChatGateway
       return { ok: false, error: 'forbidden' };
     }
 
-    const prev = client.data.conversationId as string | undefined;
+    const prev = client.data.conversationId;
     if (prev && prev !== conversationId) {
-      client.leave(prev);
+      await client.leave(prev);
     }
 
     client.data.conversationId = conversationId;
@@ -114,12 +136,11 @@ export class ChatGateway
 
   @SubscribeMessage('leave')
   async leave(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: ChatSocket,
     @MessageBody() body: { conversationId?: string },
   ) {
     const conversationId =
-      body?.conversationId?.trim() ||
-      (client.data.conversationId as string | undefined);
+      body?.conversationId?.trim() || client.data.conversationId;
     if (conversationId) {
       await client.leave(conversationId);
       if (client.data.conversationId === conversationId) {
@@ -131,13 +152,12 @@ export class ChatGateway
 
   @SubscribeMessage('typing')
   typing(
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: ChatSocket,
     @MessageBody() body: { conversationId?: string; isTyping?: boolean },
   ) {
-    const userId = client.data.userId as string | undefined;
+    const userId = client.data.userId;
     const conversationId =
-      body?.conversationId?.trim() ||
-      (client.data.conversationId as string | undefined);
+      body?.conversationId?.trim() || client.data.conversationId;
     if (!userId || !conversationId) return;
 
     client.to(conversationId).emit('typing', {
@@ -146,4 +166,16 @@ export class ChatGateway
       isTyping: Boolean(body?.isTyping),
     });
   }
+}
+
+/** Token from the socket.io auth payload, the query string or an Authorization header. */
+function readToken(client: ChatSocket): string | undefined {
+  const auth = client.handshake.auth as { token?: unknown } | undefined;
+  if (typeof auth?.token === 'string' && auth.token) return auth.token;
+
+  const queryToken = client.handshake.query?.access_token;
+  const fromQuery = Array.isArray(queryToken) ? queryToken[0] : queryToken;
+  if (fromQuery) return fromQuery;
+
+  return client.handshake.headers.authorization?.replace(/^Bearer\s+/i, '');
 }

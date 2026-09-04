@@ -32,7 +32,9 @@ export class AttachmentsService {
     }
     const request = await this.requireOwner(userId, requestId);
     if (request.status !== 'DRAFT' && request.status !== 'CANCELLED') {
-      throw new ForbiddenException('Attachments only on draft/cancelled requests');
+      throw new ForbiddenException(
+        'Attachments only on draft/cancelled requests',
+      );
     }
 
     const uploaded = await this.storage.upload({
@@ -56,7 +58,9 @@ export class AttachmentsService {
   async remove(userId: string, requestId: string, attachmentId: string) {
     const request = await this.requireOwner(userId, requestId);
     if (request.status !== 'DRAFT' && request.status !== 'CANCELLED') {
-      throw new ForbiddenException('Attachments only on draft/cancelled requests');
+      throw new ForbiddenException(
+        'Attachments only on draft/cancelled requests',
+      );
     }
     const attachment = await this.prisma.attachment.findFirst({
       where: { id: attachmentId, requestId },

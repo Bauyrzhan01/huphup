@@ -15,9 +15,9 @@ export class PrismaService
         { emit: 'stdout', level: 'error' },
       ],
     });
-    this.$on('query' as never, ((event: { duration: number; query: string }) => {
+    this.$on('query' as never, (event: { duration: number; query: string }) => {
       queryLogStore.push(event.duration, event.query);
-    }) as never);
+    });
   }
 
   async onModuleInit() {

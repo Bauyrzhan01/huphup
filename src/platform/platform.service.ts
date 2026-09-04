@@ -1,6 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { OfferStatus, RequestStatus, UserRole } from '@prisma/client';
+import { OfferStatus, Prisma, RequestStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+/** Hard cap for the public feed so the landing page can never pull the whole table. */
+export const FEED_LIMIT = 200;
+
+/**
+ * Requests that may be shown publicly: published (non-draft) and not hidden.
+ * `hiddenAt` marks a request the buyer deleted — it must never reach the landing page.
+ */
+const publicRequestWhere: Prisma.RequestWhereInput = {
+  status: { not: RequestStatus.DRAFT },
+  hiddenAt: null,
+};
+
+type FlowPhase = 'idle' | 'processing' | 'delivery';
 
 @Injectable()
 export class PlatformService {
@@ -17,15 +31,13 @@ export class PlatformService {
       companies,
       products,
       online,
-      allRequests,
+      feedRequests,
+      feedTotal,
       cityGroups,
       acceptedTotal,
     ] = await Promise.all([
       this.prisma.request.count({
-        where: {
-          createdAt: { gte: sinceDay },
-          status: { not: RequestStatus.DRAFT },
-        },
+        where: { ...publicRequestWhere, createdAt: { gte: sinceDay } },
       }),
       this.prisma.offer.count({ where: { createdAt: { gte: sinceDay } } }),
       this.prisma.company.count(),
@@ -34,10 +46,9 @@ export class PlatformService {
         where: { lastSeenAt: { gte: onlineSince }, role: UserRole.SUPPLIER },
       }),
       this.prisma.request.findMany({
-        where: {
-          status: { not: RequestStatus.DRAFT },
-        },
+        where: publicRequestWhere,
         orderBy: { createdAt: 'desc' },
+        take: FEED_LIMIT,
         select: {
           id: true,
           code: true,
@@ -47,18 +58,16 @@ export class PlatformService {
           createdAt: true,
         },
       }),
+      this.prisma.request.count({ where: publicRequestWhere }),
       this.prisma.request.groupBy({
         by: ['city'],
-        where: {
-          status: { not: RequestStatus.DRAFT },
-          city: { not: null },
-        },
+        where: { ...publicRequestWhere, city: { not: null } },
         _count: { _all: true },
       }),
       this.prisma.offer.count({ where: { status: OfferStatus.ACCEPTED } }),
     ]);
 
-    const feed = allRequests.map((row) => ({
+    const feed = feedRequests.map((row) => ({
       id: row.id,
       kind: 'request' as const,
       code: row.code,
@@ -80,11 +89,9 @@ export class PlatformService {
 
     const activeRequest = await this.prisma.request.findFirst({
       where: {
+        hiddenAt: null,
         status: {
-          in: [
-            RequestStatus.PUBLISHED,
-            RequestStatus.IN_PROGRESS,
-          ],
+          in: [RequestStatus.PUBLISHED, RequestStatus.IN_PROGRESS],
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -121,7 +128,7 @@ export class PlatformService {
         ])
       : [[], []];
 
-    const flowPhase = !activeRequest
+    const flowPhase: FlowPhase = !activeRequest
       ? 'idle'
       : activeRequest.status === RequestStatus.IN_PROGRESS ||
           acceptedOffers.length > 0
@@ -158,11 +165,13 @@ export class PlatformService {
         acceptedTotal,
       },
       feed,
+      feedTotal,
+      feedLimit: FEED_LIMIT,
       cities,
       pulse,
       flow: activeRequest
         ? {
-            phase: flowPhase as 'idle' | 'processing' | 'delivery',
+            phase: flowPhase,
             code: activeRequest.code,
             label: clipTitle(activeRequest.title),
             originCity: activeRequest.city,

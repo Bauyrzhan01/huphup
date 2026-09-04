@@ -33,7 +33,10 @@ export class StorageService {
         region,
         credentials: { accessKeyId, secretAccessKey },
         ...(this.config.get<string>('AWS_S3_ENDPOINT')
-          ? { endpoint: this.config.get<string>('AWS_S3_ENDPOINT'), forcePathStyle: true }
+          ? {
+              endpoint: this.config.get<string>('AWS_S3_ENDPOINT'),
+              forcePathStyle: true,
+            }
           : {}),
       });
     } else {
@@ -58,7 +61,7 @@ export class StorageService {
     mimeType?: string;
     folder?: string;
   }): Promise<{ key: string; url: string }> {
-    const safeName = input.fileName.replace(/[^\w.\-]/g, '_').slice(0, 120);
+    const safeName = input.fileName.replace(/[^\w.-]/g, '_').slice(0, 120);
     const mimeType = input.mimeType || 'application/octet-stream';
     const key = `${input.folder ?? 'files'}/${randomUUID()}-${safeName}`;
     const encodedKey = key.split('/').map(encodeURIComponent).join('/');
@@ -89,7 +92,9 @@ export class StorageService {
 
     await mkdir(this.localDir, { recursive: true }).catch(() => undefined);
     const diskName = key.replace(/\//g, '_');
-    await writeFile(join(this.localDir, diskName), input.buffer).catch(() => undefined);
+    await writeFile(join(this.localDir, diskName), input.buffer).catch(
+      () => undefined,
+    );
 
     return { key: `db:${stored.id}`, url: `/api/v1/media/${stored.id}` };
   }

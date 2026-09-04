@@ -3,12 +3,16 @@ import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class MessagesQueryDto {
-  @ApiPropertyOptional({ description: 'Message id — return messages after this one' })
+  @ApiPropertyOptional({
+    description: 'Message id — return messages after this one',
+  })
   @IsOptional()
   @IsString()
   after?: string;
 
-  @ApiPropertyOptional({ description: 'Message id — return messages before this one' })
+  @ApiPropertyOptional({
+    description: 'Message id — return messages before this one',
+  })
   @IsOptional()
   @IsString()
   before?: string;

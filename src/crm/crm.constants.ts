@@ -7,9 +7,24 @@ export const DEFAULT_CRM_STAGES: Array<{
   color: string;
 }> = [
   { status: LeadStatus.NEW, label: 'Входящие', sortOrder: 0, color: '#3b82f6' },
-  { status: LeadStatus.VIEWED, label: 'В работе', sortOrder: 1, color: '#8b5cf6' },
-  { status: LeadStatus.OFFERED, label: 'КП отправлено', sortOrder: 2, color: '#f59e0b' },
-  { status: LeadStatus.SKIPPED, label: 'Пропущено', sortOrder: 3, color: '#9ca3af' },
+  {
+    status: LeadStatus.VIEWED,
+    label: 'В работе',
+    sortOrder: 1,
+    color: '#8b5cf6',
+  },
+  {
+    status: LeadStatus.OFFERED,
+    label: 'КП отправлено',
+    sortOrder: 2,
+    color: '#f59e0b',
+  },
+  {
+    status: LeadStatus.SKIPPED,
+    label: 'Пропущено',
+    sortOrder: 3,
+    color: '#9ca3af',
+  },
 ];
 
 export const DEFAULT_AUTOMATION_RULES = [

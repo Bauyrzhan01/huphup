@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { asText } from '../common/text.util';
 import { geminiLogStore } from '../ops/gemini-log.store';
 import {
   buildRequestDescription,
@@ -110,9 +111,17 @@ export class GeminiService {
 
   async analyzeRequest(text: string): Promise<GeminiAnalyzeResult | null> {
     if (!this.isConfigured) return null;
-    const raw = await this.generateChatJson([{ role: 'user', text }], '', 'analyze');
+    const raw = await this.generateChatJson(
+      [{ role: 'user', text }],
+      '',
+      'analyze',
+    );
     if (!raw) return null;
-    return this.normalizeAnalyze(text, this.parseJson<Record<string, unknown>>(raw), [text]);
+    return this.normalizeAnalyze(
+      text,
+      this.parseJson<Record<string, unknown>>(raw),
+      [text],
+    );
   }
 
   async clarifyRequest(input: {
@@ -127,7 +136,8 @@ export class GeminiService {
     const turns =
       history.length > 0
         ? history.map((m) => ({
-            role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
+            role:
+              m.role === 'assistant' ? ('model' as const) : ('user' as const),
             text: m.content,
           }))
         : [{ role: 'user' as const, text: input.text }];
@@ -215,10 +225,7 @@ ${JSON.stringify(catalog)}`;
     }
 
     const allowed = new Map(
-      input.products.map((p) => [
-        p.id,
-        { companyId: p.company.id },
-      ]),
+      input.products.map((p) => [p.id, { companyId: p.company.id }]),
     );
 
     const byCompany = new Map<string, GeminiProductMatch>();
@@ -231,7 +238,8 @@ ${JSON.stringify(catalog)}`;
         productId: m.productId,
         companyId,
         score,
-        reason: typeof m.reason === 'string' ? m.reason.slice(0, 200) : undefined,
+        reason:
+          typeof m.reason === 'string' ? m.reason.slice(0, 200) : undefined,
       };
       const prev = byCompany.get(companyId);
       if (!prev || next.score > prev.score) {
@@ -254,47 +262,49 @@ ${JSON.stringify(catalog)}`;
       .map((item) => {
         if (!item || typeof item !== 'object') return null;
         const row = item as Record<string, unknown>;
-        const name = String(row.name ?? '').trim();
+        const name = asText(row.name).trim();
         if (!name) return null;
         return {
           name: name.slice(0, 120),
-          quantity: String(row.quantity ?? '').trim().slice(0, 80),
-          specs: String(row.specs ?? '').trim().slice(0, 240),
-          city: String(row.city ?? '').trim().slice(0, 80),
+          quantity: asText(row.quantity).trim().slice(0, 80),
+          specs: asText(row.specs).trim().slice(0, 240),
+          city: asText(row.city).trim().slice(0, 80),
         };
       })
       .filter((item): item is GeminiRequestItem => Boolean(item))
       .slice(0, 8);
 
-    const questionsRaw = Array.isArray(parsed.questions) ? parsed.questions : [];
+    const questionsRaw = Array.isArray(parsed.questions)
+      ? parsed.questions
+      : [];
     const questions: GeminiClarifyQuestion[] = [];
     for (const [i, q] of questionsRaw.entries()) {
       if (!q || typeof q !== 'object') continue;
       const row = q as Record<string, unknown>;
-      const question = String(row.question ?? '').trim();
+      const question = asText(row.question).trim();
       if (!question) continue;
       const options = Array.isArray(row.options)
         ? row.options
-            .map((o) => String(o).trim())
+            .map((o) => asText(o).trim())
             .filter(Boolean)
             .slice(0, 6)
         : [];
       const next: GeminiClarifyQuestion = {
-        id: String(row.id ?? `q${i + 1}`).slice(0, 40),
-        field: String(row.field ?? 'other').slice(0, 40),
+        id: (asText(row.id) || `q${i + 1}`).slice(0, 40),
+        field: (asText(row.field) || 'other').slice(0, 40),
         question: question.slice(0, 220),
       };
-      const placeholder = String(row.placeholder ?? '').trim().slice(0, 120);
+      const placeholder = asText(row.placeholder).trim().slice(0, 120);
       if (placeholder) next.placeholder = placeholder;
       if (options.length) next.options = options;
       questions.push(next);
       if (questions.length >= 1) break;
     }
 
-    const understanding = String(parsed.understanding || '').slice(0, 400);
+    const understanding = asText(parsed.understanding).slice(0, 400);
     const firstQuestion = questions[0]?.question ?? '';
     const assistantMessage = this.stripEcho(
-      String(parsed.assistantMessage || firstQuestion).trim(),
+      (asText(parsed.assistantMessage) || firstQuestion).trim(),
       userTexts,
       firstQuestion,
     ).slice(0, 800);
@@ -302,26 +312,29 @@ ${JSON.stringify(catalog)}`;
     const ackOnly = parsed.ackOnly === true;
     const ready = (parsed.ready === true && questions.length === 0) || ackOnly;
 
-    const title = String(parsed.title || text).slice(0, 120);
-    const rawDescription = String(parsed.description || text).slice(0, 4000);
+    const title = (asText(parsed.title) || text).slice(0, 120);
+    const rawDescription = (asText(parsed.description) || text).slice(0, 4000);
     const description =
       normalizeRequestDescription(title, rawDescription, text) ||
       buildRequestDescription({
         title,
         description: rawDescription,
-        category: String(parsed.category || 'Товары и материалы').slice(0, 80),
-        city: String(parsed.city || '').slice(0, 80),
-        quantity: String(parsed.quantity || '—').slice(0, 80),
-        deadline: String(parsed.deadline || 'Уточнить').slice(0, 80),
+        category: (asText(parsed.category) || 'Товары и материалы').slice(
+          0,
+          80,
+        ),
+        city: asText(parsed.city).slice(0, 80),
+        quantity: (asText(parsed.quantity) || '—').slice(0, 80),
+        deadline: (asText(parsed.deadline) || 'Уточнить').slice(0, 80),
       });
 
     return {
       title,
       description,
-      category: String(parsed.category || 'Товары и материалы').slice(0, 80),
-      city: String(parsed.city || '').slice(0, 80),
-      quantity: String(parsed.quantity || '—').slice(0, 80),
-      deadline: String(parsed.deadline || 'Уточнить').slice(0, 80),
+      category: (asText(parsed.category) || 'Товары и материалы').slice(0, 80),
+      city: asText(parsed.city).slice(0, 80),
+      quantity: (asText(parsed.quantity) || '—').slice(0, 80),
+      deadline: (asText(parsed.deadline) || 'Уточнить').slice(0, 80),
       rawText: text,
       understanding,
       assistantMessage: ackOnly ? '' : assistantMessage,
@@ -340,14 +353,29 @@ ${JSON.stringify(catalog)}`;
       const cu = compact(u);
       if (cu.length < 2) continue;
       if (compact(msg).startsWith(cu)) {
-        msg = msg.slice(u.length).replace(/^[\s,.\-:;]+/, '').trim();
+        msg = msg
+          .slice(u.length)
+          .replace(/^[\s,.\-:;]+/, '')
+          .trim();
       }
     }
     const dump = compact(users.join(' '));
     if (dump.length >= 8 && compact(msg).includes(dump)) {
-      msg = msg.replace(new RegExp(users.map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'), 'i'), '').trim();
+      msg = msg
+        .replace(
+          new RegExp(
+            users
+              .map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+              .join('\\s+'),
+            'i',
+          ),
+          '',
+        )
+        .trim();
     }
-    const echoed = users.filter((u) => u.length > 4 && compact(msg).includes(compact(u)));
+    const echoed = users.filter(
+      (u) => u.length > 4 && compact(msg).includes(compact(u)),
+    );
     if (echoed.length >= Math.max(1, users.length - 1) && users.length > 1) {
       return fallback || 'Какая марка или характеристики нужны?';
     }
@@ -399,7 +427,8 @@ ${JSON.stringify(catalog)}`;
     const promptChars =
       (opts.system?.length ?? 0) +
       contents.reduce(
-        (sum, c) => sum + c.parts.reduce((s, p) => s + (p.text?.length ?? 0), 0),
+        (sum, c) =>
+          sum + c.parts.reduce((s, p) => s + (p.text?.length ?? 0), 0),
         0,
       );
     const started = Date.now();

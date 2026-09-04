@@ -120,17 +120,20 @@ export function hasProductSignal(text: string) {
 }
 
 function slug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-zа-яёәғқңөұүһі0-9]+/gi, '_')
-    .replace(/^_|_$/g, '')
-    .slice(0, 24) || 'item';
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-zа-яёәғқңөұүһі0-9]+/gi, '_')
+      .replace(/^_|_$/g, '')
+      .slice(0, 24) || 'item'
+  );
 }
 
 function isWeakSpec(specs: string) {
   const s = specs.trim().toLowerCase();
   if (!s || s === '—' || s === '-') return true;
-  if (/^\d+[\s.,]?\d*\s*(т|тонн|шт|штук|кг|м2|м²|м|мм|см)?$/i.test(s)) return true;
+  if (/^\d+[\s.,]?\d*\s*(т|тонн|шт|штук|кг|м2|м²|м|мм|см)?$/i.test(s))
+    return true;
   return s.length < 4;
 }
 
@@ -154,12 +157,18 @@ function itemsFrom(result: GeminiAnalyzeResult): GeminiRequestItem[] {
   return source.filter((item) => !isNotAProduct(item.name));
 }
 
-function alreadyAsks(questions: GeminiClarifyQuestion[], id: string, name: string) {
+function alreadyAsks(
+  questions: GeminiClarifyQuestion[],
+  id: string,
+  name: string,
+) {
   const n = name.toLowerCase();
   return questions.some(
     (q) =>
       q.id === id ||
-      (q.field === 'spec' && n && q.question.toLowerCase().includes(n.slice(0, 18))),
+      (q.field === 'spec' &&
+        n &&
+        q.question.toLowerCase().includes(n.slice(0, 18))),
   );
 }
 
@@ -193,7 +202,8 @@ export function requiredSpecQuestions(
         id,
         field: 'spec',
         question: `Какие характеристики нужны для «${item.name}»?`,
-        placeholder: 'Марка, размер, материал, модель — то, что нужно поставщику',
+        placeholder:
+          'Марка, размер, материал, модель — то, что нужно поставщику',
       });
     }
   }
@@ -201,7 +211,8 @@ export function requiredSpecQuestions(
   for (const rule of SPEC_RULES) {
     const id = `spec_${rule.id}`;
     if (!rule.match.test(corpus) || rule.satisfied.test(corpus)) continue;
-    if (extra.some((q) => q.id === id) || alreadyAsks(result.questions, id, '')) continue;
+    if (extra.some((q) => q.id === id) || alreadyAsks(result.questions, id, ''))
+      continue;
     extra.push({
       id,
       field: 'spec',
@@ -306,7 +317,8 @@ export function withRequiredSpecQuestions(
   const isReady = productKnown && next.length === 0;
   let assistantMessage = result.assistantMessage?.trim() ?? '';
   const dumped = compact(result.rawText);
-  const echoed = dumped.length > 6 && compact(assistantMessage).includes(dumped);
+  const echoed =
+    dumped.length > 6 && compact(assistantMessage).includes(dumped);
   const repeated =
     Boolean(assistantMessage) && alreadyAsked(askedTexts, assistantMessage);
 
@@ -318,8 +330,7 @@ export function withRequiredSpecQuestions(
   } else if (isReady && result.ackOnly) {
     assistantMessage = '';
   } else if (isReady) {
-    assistantMessage =
-      'Собрал заявку. Можно проверить и опубликовать.';
+    assistantMessage = 'Собрал заявку. Можно проверить и опубликовать.';
   } else if (echoed || repeated || !assistantMessage) {
     assistantMessage =
       next[0]?.question || 'Записал. Могу собрать заявку для поставщиков.';

@@ -13,8 +13,7 @@ import {
 
 export class AnalyzeRequestDto {
   @ApiProperty({
-    example:
-      'Нужно 500 м² брусчатки в Алматы с доставкой до 20 августа',
+    example: 'Нужно 500 м² брусчатки в Алматы с доставкой до 20 августа',
   })
   @IsString()
   @MinLength(2)

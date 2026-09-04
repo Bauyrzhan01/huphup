@@ -234,7 +234,8 @@ export class MatchingService {
       };
     }>,
   ) {
-    const hay = `${requestText} ${request.category ?? ''} ${request.city ?? ''}`.toLowerCase();
+    const hay =
+      `${requestText} ${request.category ?? ''} ${request.city ?? ''}`.toLowerCase();
     const tokens = hay
       .split(/[^a-zA-Zа-яА-ЯёЁәғқңөұүһі0-9]+/u)
       .map((t) => t.trim())
@@ -275,7 +276,9 @@ export class MatchingService {
       }
     }
 
-    return [...byCompany.values()].sort((a, b) => b.score - a.score).slice(0, 12);
+    return [...byCompany.values()]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12);
   }
 
   async listLeadsForSupplier(userId: string) {
@@ -322,7 +325,10 @@ export class MatchingService {
       orderBy: { createdAt: 'desc' },
       select: { requestId: true, authorId: true, createdAt: true },
     });
-    const authorByRequest = new Map<string, { authorId: string; createdAt: Date }>();
+    const authorByRequest = new Map<
+      string,
+      { authorId: string; createdAt: Date }
+    >();
     for (const offer of offers) {
       if (!authorByRequest.has(offer.requestId)) {
         authorByRequest.set(offer.requestId, {
@@ -365,8 +371,7 @@ export class MatchingService {
 
   async markLeadViewed(userId: string, leadId: string) {
     const { resolved, lead } = await this.requireCompanyLead(userId, leadId);
-    const isOwner =
-      resolved.isOwner || resolved.company.ownerId === userId;
+    const isOwner = resolved.isOwner || resolved.company.ownerId === userId;
 
     // Owner can inspect a lead without taking it from the inbox.
     if (isOwner && !lead.assigneeId) {
@@ -397,12 +402,8 @@ export class MatchingService {
       data: {
         status: nextStatus,
         lastActorId: userId,
-        ...(nextStatus !== lead.status
-          ? { statusChangedAt: new Date() }
-          : {}),
-        ...(shouldClaim
-          ? { assigneeId: userId, claimedAt: new Date() }
-          : {}),
+        ...(nextStatus !== lead.status ? { statusChangedAt: new Date() } : {}),
+        ...(shouldClaim ? { assigneeId: userId, claimedAt: new Date() } : {}),
       },
       include: leadInclude,
     });
@@ -448,8 +449,7 @@ export class MatchingService {
 
   async reassignLead(userId: string, leadId: string, assigneeId: string) {
     const { resolved, lead } = await this.requireCompanyLead(userId, leadId);
-    const isOwner =
-      resolved.isOwner || resolved.company.ownerId === userId;
+    const isOwner = resolved.isOwner || resolved.company.ownerId === userId;
     if (!isOwner) {
       throw new ForbiddenException('Only company owner can reassign leads');
     }
@@ -521,7 +521,9 @@ export class MatchingService {
         where: { requestId: lead.requestId, companyId: lead.companyId },
       });
       if (hasOffer && status !== LeadStatus.SKIPPED) {
-        throw new BadRequestException('Lead has an offer — only skip is allowed');
+        throw new BadRequestException(
+          'Lead has an offer — only skip is allowed',
+        );
       }
     }
 
@@ -588,7 +590,11 @@ export class MatchingService {
   async createTask(userId: string, leadId: string, dto: CreateLeadTaskDto) {
     const { resolved, lead } = await this.requireCompanyLead(userId, leadId);
     const assigneeId = dto.assigneeId || lead.assigneeId || userId;
-    await this.assertCompanyAssignee(resolved.company.id, resolved.company.ownerId, assigneeId);
+    await this.assertCompanyAssignee(
+      resolved.company.id,
+      resolved.company.ownerId,
+      assigneeId,
+    );
     return this.crm.createTask(leadId, lead.companyId, userId, {
       title: dto.title,
       kind: dto.kind,
@@ -661,7 +667,12 @@ export class MatchingService {
     body: string,
   ) {
     const { lead } = await this.requireCompanyLead(userId, leadId);
-    const comment = await this.crm.addComment(taskId, lead.companyId, userId, body);
+    const comment = await this.crm.addComment(
+      taskId,
+      lead.companyId,
+      userId,
+      body,
+    );
     if (!comment) {
       throw new NotFoundException('Task not found');
     }

@@ -4,12 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { RequestStatus } from '@prisma/client';
+import { asText } from '../common/text.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchingService } from '../matching/matching.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { GeminiService } from '../gemini/gemini.service';
 import { withRequiredSpecQuestions, isNotAProduct } from './spec-questions';
-import { buildRequestDescription, normalizeRequestDescription } from './request-text.util';
+import {
+  buildRequestDescription,
+  normalizeRequestDescription,
+} from './request-text.util';
 import {
   AnalyzeRequestDto,
   ClarifyRequestDto,
@@ -43,11 +47,12 @@ export class RequestsService {
     const geminiResult = await this.gemini.clarifyRequest({
       text: dto.text,
       answers: dto.answers,
-      previous: dto.previous as never,
+      previous: dto.previous,
       messages: dto.messages,
     });
     const base =
-      geminiResult ?? this.clarifyFallback(dto.text, dto.answers, dto.previous, cities);
+      geminiResult ??
+      this.clarifyFallback(dto.text, dto.answers, dto.previous, cities);
     return withRequiredSpecQuestions(base, extra, asked, cities);
   }
 
@@ -70,8 +75,7 @@ export class RequestsService {
 
   private analyzeFallback(text: string, cities: string[]) {
     const lower = text.toLowerCase();
-    const city =
-      cities.find((c) => lower.includes(c.toLowerCase())) ?? '';
+    const city = cities.find((c) => lower.includes(c.toLowerCase())) ?? '';
     const qtyMatch = text.match(/(\d+[\s]?(?:м²|м2|шт|штук|тонн|т|кг))/i);
     const quantity = qtyMatch?.[1] ?? '';
     const deadlineMatch = text.match(
@@ -109,13 +113,16 @@ export class RequestsService {
     if (previous?.ready === true) {
       const lastAnswer = answers.at(-1)?.answer?.trim() || text.trim();
       return {
-        ...(previous as Record<string, unknown>),
+        ...previous,
         rawText: text,
         assistantMessage: '',
         questions: [],
         ready: true,
         ackOnly: true,
-        understanding: String(previous.understanding ?? lastAnswer).slice(0, 400),
+        understanding: (asText(previous.understanding) || lastAnswer).slice(
+          0,
+          400,
+        ),
       } as never;
     }
 
@@ -130,11 +137,12 @@ export class RequestsService {
     if (byId.get('quantity')) base.quantity = byId.get('quantity')!;
     if (byId.get('deadline')) base.deadline = byId.get('deadline')!;
 
-    const description = normalizeRequestDescription(
-      base.title,
-      [text, extra].filter(Boolean).join('\n\n'),
-      text,
-    ) || buildRequestDescription(base);
+    const description =
+      normalizeRequestDescription(
+        base.title,
+        [text, extra].filter(Boolean).join('\n\n'),
+        text,
+      ) || buildRequestDescription(base);
     return {
       ...base,
       description,
@@ -214,7 +222,9 @@ export class RequestsService {
     await this.notifications.notifyUsers(lead.memberUserIds, {
       type: 'NEW_LEAD',
       title: product.name,
-      body: [product.company.name, quantity, deadline].filter(Boolean).join(' · '),
+      body: [product.company.name, quantity, deadline]
+        .filter(Boolean)
+        .join(' · '),
       payload: {
         requestId: published.id,
         code: published.code,
@@ -322,7 +332,9 @@ export class RequestsService {
       request.status !== RequestStatus.DRAFT &&
       request.status !== RequestStatus.CANCELLED
     ) {
-      throw new ForbiddenException('Only draft or cancelled requests can be edited');
+      throw new ForbiddenException(
+        'Only draft or cancelled requests can be edited',
+      );
     }
     return this.prisma.request.update({
       where: { id },
@@ -336,7 +348,9 @@ export class RequestsService {
       request.status !== RequestStatus.DRAFT &&
       request.status !== RequestStatus.PUBLISHED
     ) {
-      throw new ForbiddenException('Only draft or published requests can be cancelled');
+      throw new ForbiddenException(
+        'Only draft or published requests can be cancelled',
+      );
     }
     return this.prisma.request.update({
       where: { id },
@@ -382,7 +396,9 @@ export class RequestsService {
       request.status !== RequestStatus.DRAFT &&
       request.status !== RequestStatus.CANCELLED
     ) {
-      throw new ForbiddenException('Only draft/cancelled requests can be published');
+      throw new ForbiddenException(
+        'Only draft/cancelled requests can be published',
+      );
     }
 
     const updated = await this.prisma.request.update({
@@ -392,9 +408,7 @@ export class RequestsService {
 
     const leads = await this.matching.createLeadsForRequest(updated.id);
 
-    const notifyUserIds = [
-      ...new Set(leads.flatMap((l) => l.memberUserIds)),
-    ];
+    const notifyUserIds = [...new Set(leads.flatMap((l) => l.memberUserIds))];
 
     await this.notifications.notifyUsers(notifyUserIds, {
       type: 'NEW_LEAD',

@@ -16,7 +16,6 @@ import { memoryStorage } from 'multer';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto/company.dto';
 import { CreateInviteDto } from './dto/invite.dto';
-import { SupplierMember } from '../common/decorators/supplier-member.decorator';
 import {
   AuthUser,
   CurrentUser,

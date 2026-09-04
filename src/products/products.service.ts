@@ -11,14 +11,15 @@ import { CompaniesService } from '../companies/companies.service';
 import { StorageService } from '../storage/storage.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { CreateProductReviewDto } from './dto/review.dto';
+import { toDisplayText } from '../common/text.util';
 
 const MAX_IMAGES_PER_PRODUCT = 10;
 const IMAGE_MIME_PREFIX = 'image/';
 
 function uniqueSorted(values: Array<string | null | undefined>) {
-  return [...new Set(values.map((v) => v?.trim()).filter(Boolean) as string[])].sort(
-    (a, b) => a.localeCompare(b, 'ru'),
-  );
+  return [
+    ...new Set(values.map((v) => v?.trim()).filter(Boolean) as string[]),
+  ].sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
 type ReviewStats = {
@@ -85,26 +86,34 @@ export class ProductsService {
       rows.map((r) => [
         r.productId,
         {
-          avgRating: r._avg.rating != null ? Math.round(r._avg.rating * 10) / 10 : null,
+          avgRating:
+            r._avg.rating != null ? Math.round(r._avg.rating * 10) / 10 : null,
           reviewCount: r._count.rating,
         },
       ]),
     );
   }
 
-  private mapProduct<T extends { id: string; priceFrom?: unknown; currency?: unknown }>(
+  private mapProduct<
+    T extends { id: string; priceFrom?: unknown; currency?: unknown },
+  >(
     product: T,
     stats: Map<string, ReviewStats>,
     images?: { id: string; url: string; sortOrder: number }[],
   ) {
     const s = stats.get(product.id) ?? { avgRating: null, reviewCount: 0 };
-    const { priceFrom, currency, images: _images, ...rest } = product as T & {
+    const {
+      priceFrom,
+      currency,
+      images: _images,
+      ...rest
+    } = product as T & {
       images?: unknown;
     };
     return {
       ...rest,
-      priceFrom: priceFrom == null ? null : String(priceFrom),
-      currency: currency == null ? 'KZT' : String(currency),
+      priceFrom: priceFrom == null ? null : toDisplayText(priceFrom),
+      currency: currency == null ? 'KZT' : toDisplayText(currency, 'KZT'),
       images: images ?? [],
       avgRating: s.avgRating,
       reviewCount: s.reviewCount,
@@ -122,7 +131,11 @@ export class ProductsService {
     });
     const stats = await this.reviewStatsForProducts(products.map((p) => p.id));
     return products.map((p) =>
-      this.mapProduct(p, stats, p.images.map(({ id, url, sortOrder }) => ({ id, url, sortOrder }))),
+      this.mapProduct(
+        p,
+        stats,
+        p.images.map(({ id, url, sortOrder }) => ({ id, url, sortOrder })),
+      ),
     );
   }
 
@@ -150,7 +163,9 @@ export class ProductsService {
       where: { id: productId },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.description !== undefined
+          ? { description: dto.description }
+          : {}),
         ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
         ...(dto.city !== undefined ? { city: dto.city } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
@@ -171,7 +186,11 @@ export class ProductsService {
       where: { productId: product.id },
     });
     await this.prisma.product.delete({ where: { id: productId } });
-    await Promise.all(images.map((img) => this.storage.delete(img.storageKey).catch(() => undefined)));
+    await Promise.all(
+      images.map((img) =>
+        this.storage.delete(img.storageKey).catch(() => undefined),
+      ),
+    );
     return { ok: true };
   }
 
@@ -220,9 +239,13 @@ export class ProductsService {
       throw new BadRequestException('Only image files are allowed');
     }
     await this.getOwnedProduct(userId, productId);
-    const count = await this.prisma.productImage.count({ where: { productId } });
+    const count = await this.prisma.productImage.count({
+      where: { productId },
+    });
     if (count >= MAX_IMAGES_PER_PRODUCT) {
-      throw new BadRequestException(`Maximum ${MAX_IMAGES_PER_PRODUCT} images per product`);
+      throw new BadRequestException(
+        `Maximum ${MAX_IMAGES_PER_PRODUCT} images per product`,
+      );
     }
 
     const uploaded = await this.storage.upload({
@@ -272,7 +295,11 @@ export class ProductsService {
     });
   }
 
-  async upsertReview(userId: string, productId: string, dto: CreateProductReviewDto) {
+  async upsertReview(
+    userId: string,
+    productId: string,
+    dto: CreateProductReviewDto,
+  ) {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, isActive: true },
       select: { id: true, companyId: true },
@@ -321,7 +348,10 @@ export class ProductsService {
       }),
       this.reviewStatsForProducts(ids),
     ]);
-    const imagesByProduct = new Map<string, { id: string; url: string; sortOrder: number }[]>();
+    const imagesByProduct = new Map<
+      string,
+      { id: string; url: string; sortOrder: number }[]
+    >();
     for (const img of images) {
       const list = imagesByProduct.get(img.productId) ?? [];
       list.push({ id: img.id, url: img.url, sortOrder: img.sortOrder });
@@ -404,7 +434,10 @@ export class ProductsService {
     ]);
 
     const enriched = await this.enrichPublicProducts(items);
-    const merged = enriched.map((p, i) => ({ ...p, company: items[i].company }));
+    const merged = enriched.map((p, i) => ({
+      ...p,
+      company: items[i].company,
+    }));
 
     return {
       items: merged,

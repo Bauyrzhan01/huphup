@@ -216,7 +216,35 @@ Analyze (`POST /requests/analyze`) — заявка мәтінін структ�
 
 | Method | Path | Auth | Сипаттама |
 |--------|------|------|-----------|
-| GET | `/health` | Public | `{ status, service, database, time }` |
+| GET | `/health` | Public | Readiness: `{ status, service, database, dbLatencyMs, time }`. DB қолжетімсіз болса **503** |
+| GET | `/health/live` | Public | Liveness: процесс тірі ме (DB-ға тимейді), әрқашан 200 |
+
+### Platform (лендинг)
+
+| Method | Path | Auth | Сипаттама |
+|--------|------|------|-----------|
+| GET | `/platform/live` | Public | Карта мен фид: `{ stats, feed, feedTotal, feedLimit, cities, pulse, flow }`. Тек жасырылмаған (`hiddenAt = null`), DRAFT емес өтінімдер; фид ең көбі 200 жол |
+
+### Billing (баланс)
+
+Кошелёк бір жақта: жеткізуші компанияда (`companyId`) немесе қолданушыда (`userId`).
+Барлық ақша қозғалысы `wallet_transactions`-та қалады, `idempotencyKey` қайталап списание жасауға жол бермейді.
+
+| Method | Path | Auth | Сипаттама |
+|--------|------|------|-----------|
+| GET | `/billing/wallet` | JWT | Балансым: жеткізушіге — компания кошелегі, сатып алушыға — жеке |
+| GET | `/billing/transactions` | JWT | Проводкалар тарихы, пагинация `?page=&limit=` |
+| GET | `/billing/pricing` | JWT | Маған қолданылатын бағалар (әр повод бойынша) |
+| GET | `/admin/billing/wallets` | JWT (ADMIN) | Барлық кошелектер, `?q=` іздеу |
+| GET | `/admin/billing/transactions` | JWT (ADMIN) | Платформадағы барлық проводка, `?reason=` |
+| POST | `/admin/billing/topup` | JWT (ADMIN) | Қолмен толтыру: `{ companyId|userId, amount, comment }` |
+| POST | `/admin/billing/adjust` | JWT (ADMIN) | Түзету, теріс сома да болады |
+| GET | `/admin/billing/pricing` | JWT (ADMIN) | Платформа бағалары + компания бойынша ерекшеліктер |
+| PUT | `/admin/billing/pricing` | JWT (ADMIN) | Бағаларды қою; `enabled: false` — әрекет тегін |
+
+Списание поводтары (`BillingReason`): `LEAD_UNLOCK`, `OFFER_SENT`, `SUBSCRIPTION`, `DEAL_COMMISSION`, `MANUAL`.
+Баға қосылмаса (`enabled: false`) немесе жоқ болса — әрекет тегін қалады.
+Ақша жетпесе **402** `INSUFFICIENT_FUNDS`, баланс минуста болса **402** `WALLET_IN_DEBT`.
 
 ### Auth
 

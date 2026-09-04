@@ -11,7 +11,13 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtService } from '@nestjs/jwt';
@@ -127,6 +133,11 @@ export class ConversationsController {
     @UploadedFile() file: Express.Multer.File,
     @Body('body') body?: string,
   ) {
-    return this.conversationsService.sendMessageWithFile(user.id, id, file, body);
+    return this.conversationsService.sendMessageWithFile(
+      user.id,
+      id,
+      file,
+      body,
+    );
   }
 }

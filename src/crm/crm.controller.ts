@@ -7,10 +7,7 @@ import {
   CurrentUser,
 } from '../common/decorators/current-user.decorator';
 import { CompaniesService } from '../companies/companies.service';
-import {
-  UpdateAutomationDto,
-  UpdateCrmStagesDto,
-} from './dto/crm.dto';
+import { UpdateAutomationDto, UpdateCrmStagesDto } from './dto/crm.dto';
 
 @ApiTags('crm')
 @ApiBearerAuth()
