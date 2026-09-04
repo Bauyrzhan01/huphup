@@ -107,6 +107,7 @@ model User {
   leadTaskComments  LeadTaskComment[]
   wallet            Wallet?
   createdWalletTxns WalletTransaction[]  @relation("WalletTxnCreator")
+  deals             Deal[]               @relation("DealBuyer")
 
   @@index([role])
   @@map("users")
@@ -139,6 +140,7 @@ model Company {
   leadTasks          LeadTask[]
   wallet             Wallet?
   prices             CompanyPrice[]
+  deals              Deal[]
 
   @@index([city])
   @@index([verified])
@@ -262,6 +264,7 @@ model Request {
   leads        Lead[]
   attachments  Attachment[]
   conversation Conversation?
+  deals        Deal[]
 
   @@index([buyerId])
   @@index([status])
@@ -287,6 +290,7 @@ model Offer {
   request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  deal    Deal?
 
   @@index([requestId])
   @@index([companyId])
@@ -589,6 +593,9 @@ model Wallet {
 }
 
 enum BillingReason {
+  ESCROW_HOLD
+  ESCROW_RELEASE
+  ESCROW_REFUND
   LEAD_UNLOCK
   OFFER_SENT
   SUBSCRIPTION
@@ -651,4 +658,49 @@ model CompanyPrice {
 
   @@unique([companyId, reason])
   @@map("company_prices")
+}
+
+/// Стадии сейф-сделки. Порядок линейный, назад пути нет:
+/// оплата -> отгрузка -> выдача. Спор ставит паузу и решается площадкой.
+enum DealStatus {
+  AWAITING_PAYMENT
+  HELD
+  SHIPPED
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+/// Сейф-сделка: деньги покупателя лежат у площадки, пока товар не получен.
+/// Сумма фиксируется в момент акцепта и дальше не меняется.
+model Deal {
+  id            String     @id @default(cuid())
+  offerId       String     @unique
+  requestId     String
+  buyerId       String
+  companyId     String
+  amount        Decimal    @db.Decimal(14, 2)
+  /// Удержано площадкой при выдаче; считается по прайсу в момент выпуска.
+  commission    Decimal    @default(0) @db.Decimal(14, 2)
+  currency      String     @default("KZT")
+  status        DealStatus @default(AWAITING_PAYMENT)
+  fundedAt      DateTime?
+  shippedAt     DateTime?
+  /// Отгрузка плюс срок ожидания: после этой даты деньги выходят сами.
+  autoReleaseAt DateTime?
+  releasedAt    DateTime?
+  refundedAt    DateTime?
+  disputeReason String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  offer   Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  buyer   User    @relation("DealBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([buyerId, status])
+  @@index([companyId, status])
+  @@index([status, autoReleaseAt])
+  @@map("deals")
 }

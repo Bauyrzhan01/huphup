@@ -22,6 +22,7 @@ import { HealthModule } from './health/health.module';
 import { OpsModule } from './ops/ops.module';
 import { PlatformModule } from './platform/platform.module';
 import { BillingModule } from './billing/billing.module';
+import { DealsModule } from './deals/deals.module';
 import { WalletsModule } from './wallets/wallets.module';
 
 @Module({
@@ -46,6 +47,7 @@ import { WalletsModule } from './wallets/wallets.module';
     PlatformModule,
     WalletsModule,
     BillingModule,
+    DealsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

@@ -10,6 +10,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { CompaniesService } from '../companies/companies.service';
 import { LeadCrmService } from '../crm/lead-crm.service';
+import { DealsService } from '../deals/deals.service';
 import { CreateOfferDto } from './dto/offer.dto';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class OffersService {
     private readonly conversations: ConversationsService,
     private readonly companies: CompaniesService,
     private readonly crm: LeadCrmService,
+    private readonly deals: DealsService,
   ) {}
 
   async create(userId: string, dto: CreateOfferDto) {
@@ -182,6 +184,17 @@ export class OffersService {
       }),
     ]);
 
+    // Сейф-сделка: деньги покупатель заводит отдельным шагом, поэтому
+    // сделка рождается со статусом «ждём оплату».
+    const deal = await this.deals.createForAcceptedOffer({
+      offerId: offer.id,
+      requestId: offer.requestId,
+      buyerId,
+      companyId: offer.companyId,
+      amount: offer.price,
+      currency: offer.currency,
+    });
+
     const memberUserIds = await this.companies.listMemberUserIds(
       offer.companyId,
     );
@@ -201,7 +214,7 @@ export class OffersService {
       payload: { requestId: offer.requestId, offerId, conversationId: chat.id },
     });
 
-    return { offerId, conversationId: chat.id };
+    return { offerId, conversationId: chat.id, dealId: deal.id };
   }
 
   async reject(buyerId: string, offerId: string) {
