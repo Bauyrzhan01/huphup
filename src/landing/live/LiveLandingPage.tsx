@@ -90,6 +90,10 @@ export function LiveLandingPage() {
     [data?.feed],
   );
 
+  // Бэкенд отдаёт не больше feedLimit записей — не выдаём срез за весь объём.
+  const truncatedFeed =
+    typeof data?.feedTotal === 'number' && data.feedTotal > data.feed.length;
+
   const stats = data?.stats;
 
   return (
@@ -222,7 +226,12 @@ export function LiveLandingPage() {
           <h2>{t('landing.live.feedTitle')}</h2>
           {requests.length > 0 && (
             <span className="live-feed-count">
-              {t('landing.live.feedCount', { count: requests.length })}
+              {truncatedFeed
+                ? t('landing.live.feedCountOf', {
+                    shown: data?.feed.length ?? 0,
+                    total: data?.feedTotal ?? 0,
+                  })
+                : t('landing.live.feedCount', { count: requests.length })}
             </span>
           )}
         </div>

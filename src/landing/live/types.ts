@@ -28,6 +28,9 @@ export type PlatformLive = {
     acceptedTotal: number;
   };
   feed: PlatformLiveFeedItem[];
+  /** Сколько всего публичных заявок — лента отдаёт не более feedLimit из них. */
+  feedTotal?: number;
+  feedLimit?: number;
   cities: Array<{ name: string; count: number }>;
   pulse: PlatformLiveFeedItem | null;
   flow: PlatformLiveFlow | null;

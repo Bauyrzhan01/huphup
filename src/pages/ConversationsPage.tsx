@@ -248,13 +248,31 @@ export function ConversationsPage() {
     void loadMessages();
 
     setPeerTyping(false);
+
+    // A busy conversation delivers many messages a second; refreshing the
+    // sidebar on each one is a request per message. Coalesce them instead.
+    let listRefreshTimer: number | undefined;
+    const scheduleListRefresh = () => {
+      if (listRefreshTimer || cancelled) return;
+      listRefreshTimer = window.setTimeout(() => {
+        listRefreshTimer = undefined;
+        if (cancelled) return;
+        void conversationsApi
+          .list()
+          .then((next) => {
+            if (!cancelled) setItems(next);
+          })
+          .catch(() => {});
+      }, 1200);
+    };
+
     const unsubscribe = conversationsApi.subscribeStream(
       selectedId,
       (msg) => {
         setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
         stickToBottomRef.current = true;
         setPeerTyping(false);
-        void conversationsApi.list().then(setItems).catch(() => {});
+        scheduleListRefresh();
       },
       (payload) => {
         if (payload.userId === user?.id) return;
@@ -269,6 +287,7 @@ export function ConversationsPage() {
     return () => {
       cancelled = true;
       unsubscribe();
+      if (listRefreshTimer) window.clearTimeout(listRefreshTimer);
       if (peerTypingClearRef.current) window.clearTimeout(peerTypingClearRef.current);
     };
   }, [selectedId, user?.id, t]);

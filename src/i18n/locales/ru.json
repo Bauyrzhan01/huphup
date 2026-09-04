@@ -282,7 +282,8 @@
       "andMore": "и ещё {{count}}",
       "latest": "Последняя",
       "feedCount": "{{count}} заявок",
-      "onMap": "На карте"
+      "onMap": "На карте",
+      "feedCountOf": "показано {{shown}} из {{total}}"
     }
   },
   "home": {
@@ -602,6 +603,7 @@
     "crmStatOverdue": "Просрочено",
     "badgeIdle": "Давно без действий",
     "badgeOverdue": "Просрочено",
+    "timelineTitle": "История",
     "timelineEmpty": "История действий пока пуста",
     "notesTitle": "Заметки",
     "notesEmpty": "Заметок пока нет",
@@ -675,7 +677,7 @@
     "crumb": "Каталог поставщика",
     "title": "Мои товары",
     "subtitle": "Товаров в каталоге: {{count}}",
-    "subtitleGemini": "Поиск идёт по названию и описанию товаров",
+    "subtitleGemini": "Поиск по названию и описанию",
     "noCompany": "Сначала создайте компанию.",
     "createCompany": "Перейти к компании",
     "empty": "Пока нет товаров",
@@ -702,6 +704,9 @@
     "addNew": "＋ Новый",
     "addBtn": "Добавить",
     "name": "Название",
+    "namePlaceholderShort": "Гипсокартон Knauf 12.5 мм",
+    "descriptionPlaceholderShort": "Кратко: характеристики, объём, доставка",
+    "imagesAfterSaveShort": "Фото можно добавить после сохранения",
     "namePlaceholder": "Гипсокартон Knauf 12.5 мм",
     "description": "Описание",
     "descriptionPlaceholder": "Подробности для поиска и подбора",
@@ -718,6 +723,7 @@
     "delete": "Удалить",
     "deleteConfirm": "Удалить товар?",
     "created": "Товар добавлен",
+    "createdAddPhotos": "Товар добавлен",
     "updated": "Товар сохранён",
     "images": "Фото товара",
     "noPhoto": "Нет фото",
@@ -774,7 +780,6 @@
     "membersTitle": "Участники",
     "membersCount": "{{count}} чел.",
     "emptyMembers": "Пока нет участников",
-    "emptyMembersHint": "Добавьте сотрудника по email — после входа он появится в списке.",
     "you": "Вы",
     "joinedAt": "В команде с {{date}}",
     "joinedUnknown": "Дата вступления не указана",
@@ -798,8 +803,7 @@
     "inviteUsed": "Ссылка уже использована",
     "inviteExpired": "Срок ссылки истёк",
     "inviteInvalid": "Ссылка недействительна",
-    "acceptInvite": "Присоединиться",
-    "invitePageHint": "Войдите с email из приглашения. После подтверждения вы станете менеджером компании."
+    "acceptInvite": "Присоединиться"
   },
   "conversations": {
     "title": "Чаты",

@@ -142,6 +142,7 @@ export const companiesApi = {
 
 export const productsApi = {
   mine: () => api<Product[]>('/products/mine'),
+  getMine: (id: string) => api<Product>(`/products/mine/${id}`),
   get: (id: string) => api<Product>(`/products/${id}`),
   create: (body: {
     name: string;
@@ -485,6 +486,11 @@ export const conversationsApi = {
     let es: EventSource | null = null;
     let fallbackTimer: number | undefined;
 
+    const stopSse = () => {
+      es?.close();
+      es = null;
+    };
+
     const startSse = () => {
       if (cleaned || es) return;
       const url = `${API_URL}/conversations/${conversationId}/stream?access_token=${encodeURIComponent(token)}`;
@@ -509,6 +515,13 @@ export const conversationsApi = {
     }, 2500);
 
     socket.on('connect', () => {
+      // The socket is the primary channel: drop the SSE fallback opened by a
+      // previous failure, otherwise both stay alive for the whole session.
+      if (fallbackTimer) {
+        window.clearTimeout(fallbackTimer);
+        fallbackTimer = undefined;
+      }
+      stopSse();
       socket?.emit('join', { conversationId });
     });
 
@@ -541,7 +554,7 @@ export const conversationsApi = {
       activeTypingEmitters.delete(conversationId);
       socket?.emit('leave', { conversationId });
       socket?.disconnect();
-      es?.close();
+      stopSse();
     };
   },
   emitTyping: (conversationId: string, isTyping: boolean) => {

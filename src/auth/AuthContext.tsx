@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { authApi, usersApi } from '../api';
+import { ApiError } from '../api/client';
 import type { User } from '../types';
 import { readCachedUser, writeCachedUser } from './userCache';
 import { clearHomeChatStorage } from '../utils/homeChatStorage';
@@ -51,10 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await usersApi.me();
       setUser(me);
       writeCachedUser(me);
-    } catch {
-      localStorage.removeItem('huphup_token');
-      writeCachedUser(null);
-      setUser(null);
+    } catch (err) {
+      // Only an explicit rejection by the server means the session is gone.
+      // A dead network, a timeout or a 5xx must not throw the user out —
+      // keep the cached profile and let the next call try again.
+      const status = err instanceof ApiError ? err.status : 0;
+      if (status === 401 || status === 403) {
+        localStorage.removeItem('huphup_token');
+        writeCachedUser(null);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }

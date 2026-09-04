@@ -280,7 +280,8 @@
       "andMore": "және тағы {{count}}",
       "latest": "Соңғысы",
       "feedCount": "{{count}} өтінім",
-      "onMap": "Картада"
+      "onMap": "Картада",
+      "feedCountOf": "{{total}} өтінімнің {{shown}}-і"
     }
   },
   "home": {
@@ -600,6 +601,7 @@
     "crmStatOverdue": "Мерзімі өткен",
     "badgeIdle": "Ұзақ әрекетсіз",
     "badgeOverdue": "Мерзімі өткен",
+    "timelineTitle": "Тарих",
     "timelineEmpty": "Әрекет тарихы әлі бос",
     "notesTitle": "Жазбалар",
     "notesEmpty": "Жазба жоқ",
@@ -673,7 +675,7 @@
     "crumb": "Жеткізуші каталогы",
     "title": "Менің тауарларым",
     "subtitle": "Каталогтағы тауар: {{count}}",
-    "subtitleGemini": "Іздеу атау мен сипаттama бойынша жүреді",
+    "subtitleGemini": "Іздеу атау мен сипаттама бойынша",
     "noCompany": "Алдымен компания жасаңыз.",
     "createCompany": "Компанияға өту",
     "empty": "Тауар жоқ",
@@ -700,6 +702,9 @@
     "addNew": "＋ Жаңа",
     "addBtn": "Қосу",
     "name": "Атауы",
+    "namePlaceholderShort": "Гипсокартон Knauf 12.5 мм",
+    "descriptionPlaceholderShort": "Қысқаша: сипаттама, көлем, жеткізу",
+    "imagesAfterSaveShort": "Фото сақтағаннан кейін қосылады",
     "namePlaceholder": "Гипсокартон Knauf 12.5 мм",
     "description": "Сипаттама",
     "descriptionPlaceholder": "Іздеу және сәйкестік үшін толық сипаттама",
@@ -716,6 +721,7 @@
     "delete": "Жою",
     "deleteConfirm": "Тауарды жою керек пе?",
     "created": "Тауар қосылды",
+    "createdAddPhotos": "Тауар қосылды",
     "updated": "Тауар сақталды",
     "images": "Тауар фото",
     "noPhoto": "Фото жоқ",
