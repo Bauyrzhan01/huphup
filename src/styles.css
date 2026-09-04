@@ -2693,3 +2693,39 @@ body.mobile-nav-open{overflow:hidden}
   .balance-hero-amount{font-size:1.9rem}
   .balance-row-amounts{text-align:right}
 }
+
+/* ---------- Сейф-сделки ---------- */
+.deals-page{display:flex;flex-direction:column;gap:14px}
+.deals-intro{display:flex;gap:14px;align-items:flex-start;padding:18px 20px}
+.deals-intro-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:rgba(34,150,94,.14);color:#22965e;flex:0 0 auto}
+.deals-intro .section-title{margin:0 0 4px}
+.deals-intro-text{margin:0;font-size:.92rem;line-height:1.5;opacity:.72}
+
+.deals-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.deal-card{padding:16px 18px}
+.deal-head{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.deal-head-main{min-width:0}
+.deal-code{margin:0;font-size:.76rem;letter-spacing:.08em;opacity:.55;font-variant-numeric:tabular-nums}
+.deal-title{margin:2px 0 0;font-weight:600;font-size:1rem;line-height:1.3;overflow-wrap:anywhere}
+.deal-party{margin:3px 0 0;font-size:.85rem;opacity:.62;overflow-wrap:anywhere}
+.deal-head-amount{text-align:right;flex:0 0 auto}
+.deal-amount{margin:0;font-weight:700;font-size:1.1rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+.deal-status{display:inline-block;margin-top:6px;font-size:.75rem;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.deal-status.is-waiting{background:rgba(190,140,20,.16);color:#8f6a10}
+.deal-status.is-held{background:rgba(20,110,140,.14);color:#0e6b78}
+.deal-status.is-shipped{background:rgba(90,90,190,.14);color:#4a4ab4}
+.deal-status.is-done{background:rgba(34,150,94,.16);color:#22965e}
+.deal-status.is-refunded{background:rgba(128,128,128,.18);color:#5e6a6c}
+.deal-status.is-disputed{background:rgba(190,90,40,.16);color:#be5a28}
+
+.deal-hint{margin:12px 0 0;font-size:.9rem;line-height:1.5;opacity:.75}
+.deal-dispute{margin:8px 0 0;font-size:.88rem;line-height:1.45;color:#be5a28;overflow-wrap:anywhere}
+.deal-payout{margin:6px 0 0;font-size:.86rem;opacity:.7;font-variant-numeric:tabular-nums}
+.deal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.deals-error{color:#be5a28}
+
+@media (max-width:560px){
+  .deal-head-amount{text-align:left}
+  .deal-actions button{flex:1 1 100%}
+}

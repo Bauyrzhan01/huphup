@@ -15,6 +15,7 @@ import {
   Package,
   Store,
   Users,
+  ShieldCheck,
   Wallet,
   X,
 } from 'lucide-react';
@@ -184,6 +185,10 @@ export function BuyerLayout({
             <NavLink to="/suppliers" onClick={closeNav}>
               <AppIcon icon={Store} className="ico" />
               {t('nav.suppliers')}
+            </NavLink>
+            <NavLink to="/deals" onClick={closeNav}>
+              <AppIcon icon={ShieldCheck} className="ico" />
+              {t('nav.deals')}
             </NavLink>
             <NavLink to="/balance" onClick={closeNav}>
               <AppIcon icon={Wallet} className="ico" />
@@ -372,6 +377,10 @@ export function SupplierLayout({
             <NavLink to="/supplier/team" onClick={closeNav}>
               <AppIcon icon={Users} className="ico" />
               {t('nav.team')}
+            </NavLink>
+            <NavLink to="/deals" onClick={closeNav}>
+              <AppIcon icon={ShieldCheck} className="ico" />
+              {t('nav.deals')}
             </NavLink>
             <NavLink to="/balance" onClick={closeNav}>
               <AppIcon icon={Wallet} className="ico" />

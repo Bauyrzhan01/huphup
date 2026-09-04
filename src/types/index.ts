@@ -457,3 +457,35 @@ export type AdminWalletRow = {
 export type WalletAdjustResult = Wallet & {
   transaction: WalletTransaction;
 };
+
+/** Стадии сейф-сделки: деньги лежат у площадки, пока товар не получен. */
+export type DealStatus =
+  | 'AWAITING_PAYMENT'
+  | 'HELD'
+  | 'SHIPPED'
+  | 'RELEASED'
+  | 'REFUNDED'
+  | 'DISPUTED';
+
+export type Deal = {
+  id: string;
+  status: DealStatus;
+  side: 'buyer' | 'supplier' | 'admin';
+  amount: string;
+  commission: string;
+  payout: string;
+  currency: string;
+  offerId: string;
+  deliveryDays: number | null;
+  disputeReason: string | null;
+  request: { id: string; code: string; title: string; city: string | null };
+  company: { id: string; name: string; city: string | null };
+  buyer?: { id: string; fullName: string; email: string };
+  fundedAt: string | null;
+  shippedAt: string | null;
+  autoReleaseAt: string | null;
+  releasedAt: string | null;
+  refundedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};

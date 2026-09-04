@@ -35,6 +35,8 @@ import type {
   WalletAdjustResult,
   WalletTransaction,
   AdminWalletRow,
+  Deal,
+  DealStatus,
 } from '../types';
 import type { PlatformLive } from '../landing/live/types';
 
@@ -601,5 +603,34 @@ export const walletsApi = {
     api<WalletAdjustResult>(`/admin/wallets/${userId}/debit`, {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+};
+
+export const dealsApi = {
+  list: () => api<Deal[]>('/deals'),
+  one: (id: string) => api<Deal>(`/deals/${id}`),
+  pay: (id: string) => api<Deal>(`/deals/${id}/pay`, { method: 'POST' }),
+  ship: (id: string) => api<Deal>(`/deals/${id}/ship`, { method: 'POST' }),
+  confirm: (id: string) => api<Deal>(`/deals/${id}/confirm`, { method: 'POST' }),
+  cancel: (id: string, reason?: string) =>
+    api<Deal>(`/deals/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  dispute: (id: string, reason: string) =>
+    api<Deal>(`/deals/${id}/dispute`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+
+  // Доступно только роли ADMIN
+  adminList: (status?: DealStatus) =>
+    api<Deal[]>(`/admin/deals${status ? `?status=${status}` : ''}`),
+  adminRelease: (id: string) =>
+    api<Deal>(`/admin/deals/${id}/release`, { method: 'POST' }),
+  adminRefund: (id: string, reason?: string) =>
+    api<Deal>(`/admin/deals/${id}/refund`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
     }),
 };
