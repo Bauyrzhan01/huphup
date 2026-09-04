@@ -424,3 +424,36 @@ export type MessageItem = {
   sender: { id: string; fullName: string; role: string; avatarUrl?: string | null };
   attachments?: MessageAttachment[];
 };
+
+/** Направление проводки: приход или расход. */
+export type WalletTransactionType = 'CREDIT' | 'DEBIT';
+
+/** Суммы приходят строками, чтобы копейки не поехали при округлении. */
+export type Wallet = {
+  balance: string;
+  currency: string;
+};
+
+export type WalletTransaction = {
+  id: string;
+  type: WalletTransactionType;
+  amount: string;
+  balanceAfter: string;
+  comment: string | null;
+  createdAt: string;
+};
+
+export type AdminWalletRow = {
+  walletId: string;
+  userId: string;
+  email: string;
+  fullName: string;
+  role: string;
+  balance: string;
+  currency: string;
+  updatedAt: string;
+};
+
+export type WalletAdjustResult = Wallet & {
+  transaction: WalletTransaction;
+};

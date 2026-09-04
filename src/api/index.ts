@@ -31,6 +31,10 @@ import type {
   PublishResult,
   RequestItem,
   User,
+  Wallet,
+  WalletAdjustResult,
+  WalletTransaction,
+  AdminWalletRow,
 } from '../types';
 import type { PlatformLive } from '../landing/live/types';
 
@@ -564,4 +568,38 @@ export const conversationsApi = {
 
 export const platformApi = {
   live: () => api<PlatformLive>('/platform/live'),
+};
+
+function pageQuery(params?: { page?: number; limit?: number; q?: string }) {
+  const q = new URLSearchParams();
+  if (params?.q) q.set('q', params.q);
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  return q.toString() ? `?${q}` : '';
+}
+
+export const walletsApi = {
+  me: () => api<Wallet>('/wallets/me'),
+  myTransactions: (params?: { page?: number; limit?: number }) =>
+    api<PaginatedResponse<WalletTransaction>>(
+      `/wallets/me/transactions${pageQuery(params)}`,
+    ),
+
+  // Доступно только роли ADMIN
+  adminList: (params?: { q?: string; page?: number; limit?: number }) =>
+    api<PaginatedResponse<AdminWalletRow>>(`/admin/wallets${pageQuery(params)}`),
+  adminTransactions: (userId: string, params?: { page?: number; limit?: number }) =>
+    api<PaginatedResponse<WalletTransaction>>(
+      `/admin/wallets/${userId}/transactions${pageQuery(params)}`,
+    ),
+  adminCredit: (userId: string, body: { amount: number; comment?: string }) =>
+    api<WalletAdjustResult>(`/admin/wallets/${userId}/credit`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  adminDebit: (userId: string, body: { amount: number; comment?: string }) =>
+    api<WalletAdjustResult>(`/admin/wallets/${userId}/debit`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };

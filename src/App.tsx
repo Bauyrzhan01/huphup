@@ -49,6 +49,9 @@ const RequestsPage = lazy(() =>
 const SuppliersPage = lazy(() =>
   import('./pages/buyer/SuppliersPage').then((m) => ({ default: m.SuppliersPage })),
 );
+const BalancePage = lazy(() =>
+  import('./pages/BalancePage').then((m) => ({ default: m.BalancePage })),
+);
 const ConversationsPage = lazy(() =>
   import('./pages/ConversationsPage').then((m) => ({ default: m.ConversationsPage })),
 );
@@ -187,6 +190,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/balance"
+            element={
+              <ProtectedRoute>
+                <BalancePage />
               </ProtectedRoute>
             }
           />

@@ -115,7 +115,8 @@
     "company": "Компания",
     "team": "Команда",
     "noTeamMembers": "Мүше жоқ",
-    "businessCrumb": "HupHup бизнес үшін"
+    "businessCrumb": "HupHup бизнес үшін",
+    "balance": "Баланс"
   },
   "landing": {
     "openApp": "Кабинетке өту",
@@ -861,5 +862,30 @@
       "OFFERED": "КП жіберілген",
       "SKIPPED": "Өткізілген"
     }
+  },
+  "balance": {
+    "title": "Баланс",
+    "current": "Ағымдағы қалдық",
+    "topUpHint": "Шот немесе аударым бойынша төлемнен кейін әкімші толтырады.",
+    "historyTitle": "Операциялар тарихы",
+    "historyEmpty": "Әзірге операция болған жоқ.",
+    "operations": "{{count}} операция",
+    "credit": "Толтыру",
+    "debit": "Шығыс",
+    "after": "қалдық",
+    "prev": "Артқа",
+    "next": "Алға",
+    "adminTitle": "Балансты басқару",
+    "adminHint": "Қолданушыны тауып, таңдаңыз да, сома көрсетіңіз.",
+    "adminEmpty": "Әмиян табылмады.",
+    "searchPlaceholder": "Пошта немесе аты",
+    "search": "Іздеу",
+    "selected": "Таңдалды:",
+    "amount": "Сома",
+    "comment": "Түсініктеме, мысалы төлем нөмірі",
+    "doCredit": "Толтыру",
+    "doDebit": "Шығысқа жазу",
+    "amountInvalid": "Нөлден үлкен сома енгізіңіз.",
+    "adjusted": "Дайын. {{email}} балансы енді {{balance}}."
   }
 }
