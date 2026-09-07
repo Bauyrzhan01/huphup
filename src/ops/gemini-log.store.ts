@@ -18,11 +18,30 @@ let total = 0;
 let okCount = 0;
 let failCount = 0;
 
+/** UTC calendar day, e.g. "2026-09-07" — the natural reset boundary for a daily budget. */
+function utcDayKey(date = new Date()): string {
+  return date.toISOString().slice(0, 10);
+}
+
+// Cumulative token usage for the current UTC day. In-memory like the rest of
+// this store, so it resets on redeploy — acceptable since Railway restarts
+// are infrequent and the budget is a soft guard, not a billing ledger.
+let tokenDayKey = utcDayKey();
+let tokensUsedToday = 0;
+
 export const geminiLogStore = {
   push(row: Omit<GeminiCallRow, 'at'> & { at?: string }) {
     total += 1;
     if (row.ok) okCount += 1;
     else failCount += 1;
+
+    const today = utcDayKey();
+    if (today !== tokenDayKey) {
+      tokenDayKey = today;
+      tokensUsedToday = 0;
+    }
+    tokensUsedToday += (row.promptTokens ?? 0) + (row.outputTokens ?? 0);
+
     rows.unshift({
       at: row.at ?? new Date().toISOString(),
       purpose: row.purpose,
@@ -36,6 +55,11 @@ export const geminiLogStore = {
       error: row.error,
     });
     if (rows.length > MAX) rows.pop();
+  },
+  /** Prompt + output tokens billed since 00:00 UTC today. */
+  tokensToday(): number {
+    if (utcDayKey() !== tokenDayKey) return 0;
+    return tokensUsedToday;
   },
   snapshot() {
     const minuteAgo = Date.now() - 60_000;
@@ -52,6 +76,7 @@ export const geminiLogStore = {
       fail: failCount,
       lastMinute: lastMinuteRows.length,
       avgMs,
+      tokensToday: geminiLogStore.tokensToday(),
       recent: rows.slice(0, 30),
     };
   },

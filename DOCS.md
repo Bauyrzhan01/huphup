@@ -84,6 +84,7 @@ npm run start:dev
 | `CORS_ORIGINS` | **иә** | Frontend origin(ы), үтірмен |
 | `GEMINI_API_KEY` | prod үшін | AI Studio API key |
 | `GEMINI_MODEL` | жоқ | Default `gemini-flash-latest` |
+| `GEMINI_DAILY_TOKEN_BUDGET` | жоқ | Тәуліктік token лимиті (UTC). Асып кетсе — Gemini шақырылмайды, fallback іске қосылады |
 
 Мысал `.env`:
 
@@ -205,6 +206,8 @@ Publish (`POST /requests/:id/publish`) кезінде:
 5. Gemini жауап бермese — **keyword fallback** (атау/сипаттама бойынша).
 
 Analyze (`POST /requests/analyze`) — заявка мәтінін структуралау (title, category, city, quantity, deadline). Gemini жоқ болса — rule-based fallback.
+
+**Тұрақтылық:** желі/5xx/429 қатесі болса — 1 рет қайта көріледі (250 мс кейін). 4 сәтсіздік қатарынан болса — 30 секундқа "circuit breaker" ашылады, сол уақытта Gemini-ге мүлдем шақырылмайды, бірден fallback. Тәуліктік token лимиті асса (`GEMINI_DAILY_TOKEN_BUDGET`) — сол күн бойы да fallback. Барлық шақыру `geminiLogStore`-та (`/ops/snapshot`) көрінеді.
 
 ---
 

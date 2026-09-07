@@ -62,16 +62,54 @@ type CatalogProduct = {
   };
 };
 
+/** HTTP statuses worth one retry — a blip, not a real rejection of the request. */
+const TRANSIENT_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+const RETRY_DELAY_MS = 250;
+const ATTEMPT_TIMEOUT_MS = 6000;
+
+/** Consecutive failures before the breaker opens and skips calls outright. */
+const BREAKER_FAILURE_THRESHOLD = 4;
+const BREAKER_COOLDOWN_MS = 30_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+type AttemptResult = {
+  /** True only when the call returned a usable, non-empty text answer. */
+  success: boolean;
+  status: number;
+  text: string | null;
+  promptTokens?: number;
+  outputTokens?: number;
+  errorMessage?: string;
+  /** Worth retrying once — a timeout, network drop, or rate limit, not a bad request. */
+  transient: boolean;
+};
+
 @Injectable()
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
   private readonly apiKey: string;
   private readonly model: string;
+  private readonly dailyTokenBudget: number | null;
+
+  // A simple circuit breaker: after a run of real failures, stop paying the
+  // timeout on every single request and go straight to the rule-based
+  // fallback for a cooldown window instead.
+  private consecutiveFailures = 0;
+  private breakerOpenUntil = 0;
 
   constructor(private readonly config: ConfigService) {
     this.apiKey = this.config.get<string>('GEMINI_API_KEY')?.trim() ?? '';
     this.model =
       this.config.get<string>('GEMINI_MODEL')?.trim() || 'gemini-flash-latest';
+
+    const budgetRaw = Number(
+      this.config.get<string>('GEMINI_DAILY_TOKEN_BUDGET'),
+    );
+    this.dailyTokenBudget =
+      Number.isFinite(budgetRaw) && budgetRaw > 0 ? budgetRaw : null;
   }
 
   get isConfigured() {
@@ -312,29 +350,49 @@ ${JSON.stringify(catalog)}`;
     const ackOnly = parsed.ackOnly === true;
     const ready = (parsed.ready === true && questions.length === 0) || ackOnly;
 
-    const title = (asText(parsed.title) || text).slice(0, 120);
-    const rawDescription = (asText(parsed.description) || text).slice(0, 4000);
+    // On a plain "да, публикуйте" turn the model rightly leaves title/category/
+    // etc. blank — there is no new product data in that message. Falling back
+    // to the raw confirmation text (or a generic placeholder) here would make
+    // every field look "filled in", which then defeats clarifyRequest's
+    // `parsed.field || previous.field` merge below: it never sees the blanks
+    // it needs to know a field must be carried over from the prior turn.
+    const title = ackOnly
+      ? asText(parsed.title).slice(0, 120)
+      : (asText(parsed.title) || text).slice(0, 120);
+    const rawDescription = ackOnly
+      ? asText(parsed.description).slice(0, 4000)
+      : (asText(parsed.description) || text).slice(0, 4000);
+    const category = ackOnly
+      ? asText(parsed.category).slice(0, 80)
+      : (asText(parsed.category) || 'Товары и материалы').slice(0, 80);
+    const quantity = ackOnly
+      ? asText(parsed.quantity).slice(0, 80)
+      : (asText(parsed.quantity) || '—').slice(0, 80);
+    const deadline = ackOnly
+      ? asText(parsed.deadline).slice(0, 80)
+      : (asText(parsed.deadline) || 'Уточнить').slice(0, 80);
+    const city = asText(parsed.city).slice(0, 80);
+
     const description =
       normalizeRequestDescription(title, rawDescription, text) ||
-      buildRequestDescription({
-        title,
-        description: rawDescription,
-        category: (asText(parsed.category) || 'Товары и материалы').slice(
-          0,
-          80,
-        ),
-        city: asText(parsed.city).slice(0, 80),
-        quantity: (asText(parsed.quantity) || '—').slice(0, 80),
-        deadline: (asText(parsed.deadline) || 'Уточнить').slice(0, 80),
-      });
+      (ackOnly
+        ? rawDescription
+        : buildRequestDescription({
+            title,
+            description: rawDescription,
+            category: category || 'Товары и материалы',
+            city,
+            quantity: quantity || '—',
+            deadline: deadline || 'Уточнить',
+          }));
 
     return {
       title,
       description,
-      category: (asText(parsed.category) || 'Товары и материалы').slice(0, 80),
-      city: asText(parsed.city).slice(0, 80),
-      quantity: (asText(parsed.quantity) || '—').slice(0, 80),
-      deadline: (asText(parsed.deadline) || 'Уточнить').slice(0, 80),
+      category,
+      city,
+      quantity,
+      deadline,
       rawText: text,
       understanding,
       assistantMessage: ackOnly ? '' : assistantMessage,
@@ -419,19 +477,8 @@ ${JSON.stringify(catalog)}`;
     });
   }
 
-  private async generateContent(
-    contents: Array<{ role: string; parts: Array<{ text: string }> }>,
-    opts: { temperature: number; system?: string; purpose: string },
-  ): Promise<string | null> {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.model)}:generateContent`;
-    const promptChars =
-      (opts.system?.length ?? 0) +
-      contents.reduce(
-        (sum, c) =>
-          sum + c.parts.reduce((s, p) => s + (p.text?.length ?? 0), 0),
-        0,
-      );
-    const started = Date.now();
+  /** One HTTP round trip — no retry, no logging, no breaker bookkeeping. */
+  private async attempt(url: string, body: unknown): Promise<AttemptResult> {
     try {
       const res = await fetch(url, {
         method: 'POST',
@@ -441,18 +488,9 @@ ${JSON.stringify(catalog)}`;
         },
         signal:
           typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
-            ? AbortSignal.timeout(12000)
+            ? AbortSignal.timeout(ATTEMPT_TIMEOUT_MS)
             : undefined,
-        body: JSON.stringify({
-          ...(opts.system
-            ? { systemInstruction: { parts: [{ text: opts.system }] } }
-            : {}),
-          contents,
-          generationConfig: {
-            temperature: opts.temperature,
-            responseMimeType: 'application/json',
-          },
-        }),
+        body: JSON.stringify(body),
       });
       const data = (await res.json()) as {
         error?: { message?: string };
@@ -469,42 +507,135 @@ ${JSON.stringify(catalog)}`;
         ?.map((p) => p.text ?? '')
         .join('')
         .trim();
-      geminiLogStore.push({
-        purpose: opts.purpose,
-        ok: res.ok && Boolean(text),
+
+      if (!res.ok) {
+        return {
+          success: false,
+          status: res.status,
+          text: null,
+          errorMessage: (data.error?.message ?? res.statusText).slice(0, 180),
+          transient: TRANSIENT_STATUSES.has(res.status),
+        };
+      }
+      return {
+        success: Boolean(text),
         status: res.status,
-        ms: Date.now() - started,
-        promptChars,
-        responseChars: text?.length ?? 0,
+        text: text || null,
         promptTokens: data.usageMetadata?.promptTokenCount,
         outputTokens: data.usageMetadata?.candidatesTokenCount,
-        error: res.ok
-          ? text
-            ? undefined
-            : 'empty response'
-          : (data.error?.message ?? res.statusText).slice(0, 180),
-      });
-      if (!res.ok) {
+        errorMessage: text ? undefined : 'empty response',
+        transient: false,
+      };
+    } catch (err) {
+      // A thrown fetch is a network drop or our own timeout — always worth
+      // one retry, unlike an explicit rejection from the API itself.
+      return {
+        success: false,
+        status: 0,
+        text: null,
+        errorMessage: (err instanceof Error ? err.message : String(err)).slice(
+          0,
+          180,
+        ),
+        transient: true,
+      };
+    }
+  }
+
+  private async generateContent(
+    contents: Array<{ role: string; parts: Array<{ text: string }> }>,
+    opts: { temperature: number; system?: string; purpose: string },
+  ): Promise<string | null> {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.model)}:generateContent`;
+    const promptChars =
+      (opts.system?.length ?? 0) +
+      contents.reduce(
+        (sum, c) =>
+          sum + c.parts.reduce((s, p) => s + (p.text?.length ?? 0), 0),
+        0,
+      );
+
+    // A budget skip is a deliberate choice, not Gemini failing — it must
+    // never count toward the circuit breaker below.
+    if (this.dailyTokenBudget !== null) {
+      const used = geminiLogStore.tokensToday();
+      if (used >= this.dailyTokenBudget) {
+        geminiLogStore.push({
+          purpose: opts.purpose,
+          ok: false,
+          status: 0,
+          ms: 0,
+          promptChars,
+          responseChars: 0,
+          error: `daily token budget exceeded (${used}/${this.dailyTokenBudget})`,
+        });
         this.logger.warn(
-          `Gemini error ${res.status}: ${data.error?.message ?? res.statusText}`,
+          `Gemini daily token budget exceeded (${used}/${this.dailyTokenBudget}); skipping call`,
         );
         return null;
       }
-      return text || null;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+    }
+
+    if (this.breakerOpenUntil > Date.now()) {
       geminiLogStore.push({
         purpose: opts.purpose,
         ok: false,
         status: 0,
-        ms: Date.now() - started,
+        ms: 0,
         promptChars,
         responseChars: 0,
-        error: message.slice(0, 180),
+        error: `circuit breaker open after ${this.consecutiveFailures} failures in a row`,
       });
-      this.logger.warn(`Gemini request failed: ${message}`);
       return null;
     }
+
+    const body = {
+      ...(opts.system
+        ? { systemInstruction: { parts: [{ text: opts.system }] } }
+        : {}),
+      contents,
+      generationConfig: {
+        temperature: opts.temperature,
+        responseMimeType: 'application/json',
+      },
+    };
+
+    const started = Date.now();
+    let result = await this.attempt(url, body);
+    if (!result.success && result.transient) {
+      await sleep(RETRY_DELAY_MS);
+      result = await this.attempt(url, body);
+    }
+
+    geminiLogStore.push({
+      purpose: opts.purpose,
+      ok: result.success,
+      status: result.status,
+      ms: Date.now() - started,
+      promptChars,
+      responseChars: result.text?.length ?? 0,
+      promptTokens: result.promptTokens,
+      outputTokens: result.outputTokens,
+      error: result.success ? undefined : result.errorMessage,
+    });
+
+    if (result.success) {
+      this.consecutiveFailures = 0;
+      this.breakerOpenUntil = 0;
+      return result.text;
+    }
+
+    this.consecutiveFailures += 1;
+    if (this.consecutiveFailures >= BREAKER_FAILURE_THRESHOLD) {
+      this.breakerOpenUntil = Date.now() + BREAKER_COOLDOWN_MS;
+      this.logger.warn(
+        `Gemini failed ${this.consecutiveFailures} times in a row — pausing calls for ${
+          BREAKER_COOLDOWN_MS / 1000
+        }s`,
+      );
+    }
+    this.logger.warn(`Gemini error ${result.status}: ${result.errorMessage}`);
+    return null;
   }
 
   private parseJson<T>(raw: string): T | null {

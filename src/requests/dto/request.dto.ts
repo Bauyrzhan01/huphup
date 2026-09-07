@@ -1,15 +1,28 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsIn,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
+  MaxLength,
   MinLength,
   ValidateNested,
 } from 'class-validator';
+
+// Both endpoints are public and rate-limited, not authenticated — these caps
+// are the only thing standing between an anonymous caller and an unbounded
+// Gemini bill. Keep them in sync with the 4000-char per-turn slice in
+// GeminiService.generateChatJson.
+const MAX_TEXT_LEN = 4000;
+const MAX_ANSWER_LEN = 500;
+const MAX_MESSAGE_LEN = 4000;
+const MAX_ANSWERS = 20;
+const MAX_MESSAGES = 60;
 
 export class AnalyzeRequestDto {
   @ApiProperty({
@@ -17,6 +30,7 @@ export class AnalyzeRequestDto {
   })
   @IsString()
   @MinLength(2)
+  @MaxLength(MAX_TEXT_LEN)
   text!: string;
 }
 
@@ -24,11 +38,13 @@ export class ClarifyAnswerDto {
   @ApiProperty({ example: 'q1' })
   @IsString()
   @MinLength(1)
+  @MaxLength(64)
   id!: string;
 
   @ApiProperty({ example: 'М400' })
   @IsString()
   @MinLength(1)
+  @MaxLength(MAX_ANSWER_LEN)
   answer!: string;
 }
 
@@ -38,10 +54,12 @@ export class ClarifyRequestDto {
   })
   @IsString()
   @MinLength(2)
+  @MaxLength(MAX_TEXT_LEN)
   text!: string;
 
   @ApiProperty({ type: [ClarifyAnswerDto] })
   @IsArray()
+  @ArrayMaxSize(MAX_ANSWERS)
   @ValidateNested({ each: true })
   @Type(() => ClarifyAnswerDto)
   answers!: ClarifyAnswerDto[];
@@ -54,18 +72,21 @@ export class ClarifyRequestDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(MAX_MESSAGES)
   @ValidateNested({ each: true })
   @Type(() => ClarifyMessageDto)
   messages?: ClarifyMessageDto[];
 }
 
 export class ClarifyMessageDto {
-  @ApiProperty({ example: 'user' })
+  @ApiProperty({ example: 'user', enum: ['user', 'assistant'] })
   @IsString()
+  @IsIn(['user', 'assistant'])
   role!: string;
 
   @ApiProperty()
   @IsString()
+  @MaxLength(MAX_MESSAGE_LEN)
   content!: string;
 }
 
