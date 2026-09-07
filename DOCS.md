@@ -294,6 +294,7 @@ Analyze (`POST /requests/analyze`) — заявка мәтінін структ�
 | GET | `/products/mine` | JWT (supplier member) | Өз каталогы |
 | GET | `/products/catalog` | Public | Публичный каталог: `?page=1&limit=20&q=&city=` |
 | POST | `/products` | JWT (SUPPLIER) | Тауар қосу |
+| POST | `/products/ai-draft` | JWT (supplier member) | Gemini бойынша шимай жазбадан карточка жобасы (`name/description/unit/category`). Тек ұсыныс, автоматты сақтау жоқ |
 | PATCH | `/products/:id` | JWT | Жаңарту |
 | DELETE | `/products/:id` | JWT | Жою |
 
@@ -395,9 +396,29 @@ S3 орнатылса — AWS env арқылы; әйтпесе локал `./upl
 ```json
 {
   "offerId": "...",
-  "conversationId": "..."
+  "conversationId": "...",
+  "dealId": "..."
 }
 ```
+
+### Deals (сейф-сделка / escrow)
+
+КП қабылданғанда `Deal` `AWAITING_PAYMENT` статусымен құрылады. Ақша тек `pay` кезінде ауысады:
+`AWAITING_PAYMENT → HELD → SHIPPED → RELEASED`, кез келген сатыда `DISPUTED`/`REFUNDED` болуы мүмкін.
+
+| Method | Path | Auth | Сипаттама |
+|--------|------|------|-----------|
+| GET | `/deals` | JWT | Өз сделкаларым (buyer — өзінікі, supplier — компаниясының) |
+| GET | `/deals/:id` | JWT | Сделка карточкасы |
+| POST | `/deals/:id/pay` | JWT (buyer) | Ақша HupHup-та ұсталымға өтеді |
+| POST | `/deals/:id/ship` | JWT (supplier) | Жөнелту белгісі, 7 күндік автовыпуск таймері іске қосылады |
+| POST | `/deals/:id/confirm` | JWT (buyer) | Алғанын растау — ақша поставщикке өтеді |
+| POST | `/deals/:id/cancel` | JWT | Тек жөнелтуге дейін, ақша қайтады |
+| POST | `/deals/:id/dispute` | JWT | Дау ашу — автовыпуск тоқтайды |
+| GET | `/admin/deals` | JWT (ADMIN) | Барлық сделкалар, `?status=` фильтр |
+| GET | `/admin/deals/:id/ai-summary` | JWT (ADMIN) | Gemini бойынша дау түсіндірмесі мен ұсынысы (`RELEASE`/`REFUND`/`NEEDS_INFO`). Тек ұсыныс — ешнәрсе шешпейді |
+| POST | `/admin/deals/:id/release` | JWT (ADMIN) | Ақшаны поставщикке беру |
+| POST | `/admin/deals/:id/refund` | JWT (ADMIN) | Ақшаны сатып алушыға қайтару |
 
 ### Conversations
 

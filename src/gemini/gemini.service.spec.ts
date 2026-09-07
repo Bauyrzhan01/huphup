@@ -638,4 +638,141 @@ describe('GeminiService', () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('writeProductDraft', () => {
+    it('оформляет черновые заметки в карточку товара', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        jsonResponse(
+          200,
+          geminiOk({
+            name: 'Гипсокартон Knauf 12.5 мм',
+            description: 'Влагостойкий лист, остатки со склада',
+            unit: 'м²',
+            category: 'Стройматериалы',
+          }),
+        ),
+      );
+      globalThis.fetch = fetchMock;
+      const service = buildService();
+
+      const result = await service.writeProductDraft({
+        text: 'гипсокартон кнауф 12.5 остатки со склада',
+        city: 'Алматы',
+      });
+
+      expect(result).toEqual({
+        name: 'Гипсокартон Knauf 12.5 мм',
+        description: 'Влагостойкий лист, остатки со склада',
+        unit: 'м²',
+        category: 'Стройматериалы',
+      });
+    });
+
+    it('без названия в ответе считает результат непригодным', async () => {
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValue(jsonResponse(200, geminiOk({ name: '' })));
+      globalThis.fetch = fetchMock;
+      const service = buildService();
+
+      const result = await service.writeProductDraft({ text: 'что-то' });
+
+      expect(result).toBeNull();
+    });
+
+    it('без ключа API не ходит в сеть', async () => {
+      const fetchMock = jest.fn();
+      globalThis.fetch = fetchMock;
+      const service = buildService({ GEMINI_API_KEY: '' });
+
+      const result = await service.writeProductDraft({ text: 'товар' });
+
+      expect(result).toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('triageDispute', () => {
+    const disputeInput = {
+      requestTitle: 'Цемент М400 10 тонн',
+      category: 'Стройматериалы',
+      city: 'Алматы',
+      amount: '450000.00',
+      currency: 'KZT',
+      deliveryDays: 3,
+      disputeReason: 'Привезли 8 тонн вместо 10, часть мешков порвана',
+      shippedAt: '2026-09-01T10:00:00.000Z',
+      autoReleaseAt: '2026-09-08T10:00:00.000Z',
+    };
+
+    it('разбирает спор и возвращает рекомендацию', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        jsonResponse(
+          200,
+          geminiOk({
+            summary: 'Поставщик привёз меньше товара, чем заказано.',
+            recommendation: 'REFUND',
+            reasoning: 'Недопоставка подтверждена описанием покупателя.',
+          }),
+        ),
+      );
+      globalThis.fetch = fetchMock;
+      const service = buildService();
+
+      const result = await service.triageDispute(disputeInput);
+
+      expect(result).toEqual({
+        summary: 'Поставщик привёз меньше товара, чем заказано.',
+        recommendation: 'REFUND',
+        reasoning: 'Недопоставка подтверждена описанием покупателя.',
+      });
+    });
+
+    it('незнакомое значение recommendation откатывается на NEEDS_INFO', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        jsonResponse(
+          200,
+          geminiOk({
+            summary: 'Ситуация неоднозначная.',
+            recommendation: 'MAYBE_SOMETHING',
+            reasoning: '',
+          }),
+        ),
+      );
+      globalThis.fetch = fetchMock;
+      const service = buildService();
+
+      const result = await service.triageDispute(disputeInput);
+
+      expect(result?.recommendation).toBe('NEEDS_INFO');
+    });
+
+    it('без summary в ответе считает результат непригодным', async () => {
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(
+            200,
+            geminiOk({ summary: '', recommendation: 'RELEASE' }),
+          ),
+        );
+      globalThis.fetch = fetchMock;
+      const service = buildService();
+
+      const result = await service.triageDispute(disputeInput);
+
+      expect(result).toBeNull();
+    });
+
+    it('без ключа API не ходит в сеть и ничего не рекомендует', async () => {
+      const fetchMock = jest.fn();
+      globalThis.fetch = fetchMock;
+      const service = buildService({ GEMINI_API_KEY: '' });
+
+      const result = await service.triageDispute(disputeInput);
+
+      expect(result).toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
 });

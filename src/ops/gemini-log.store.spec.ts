@@ -122,4 +122,39 @@ describe('geminiLogStore', () => {
     expect(after.recent[0]).toMatchObject({ ok: false, error: 'boom' });
     expect(after.recent[1]).toMatchObject({ ok: true });
   });
+
+  describe('setBreakerState', () => {
+    it('отражает открытый предохранитель в снимке', () => {
+      freshDay();
+      const openUntil = Date.now() + 30_000;
+
+      geminiLogStore.setBreakerState(4, openUntil);
+
+      const snap = geminiLogStore.snapshot();
+      expect(snap.breakerOpen).toBe(true);
+      expect(snap.consecutiveFailures).toBe(4);
+      expect(snap.breakerOpenUntil).toBe(new Date(openUntil).toISOString());
+    });
+
+    it('снимок больше не считает предохранитель открытым после остывания', () => {
+      freshDay();
+      const openUntil = Date.now() + 30_000;
+      geminiLogStore.setBreakerState(4, openUntil);
+
+      jest.setSystemTime(openUntil + 1);
+
+      const snap = geminiLogStore.snapshot();
+      expect(snap.breakerOpen).toBe(false);
+      expect(snap.breakerOpenUntil).toBeNull();
+    });
+
+    it('нулевой openUntil означает закрытый предохранитель', () => {
+      freshDay();
+      geminiLogStore.setBreakerState(0, 0);
+
+      const snap = geminiLogStore.snapshot();
+      expect(snap.breakerOpen).toBe(false);
+      expect(snap.consecutiveFailures).toBe(0);
+    });
+  });
 });

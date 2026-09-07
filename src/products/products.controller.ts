@@ -13,9 +13,14 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { UserRole } from '@prisma/client';
 import { ProductsService } from './products.service';
-import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import {
+  CreateProductDto,
+  ProductDraftDto,
+  UpdateProductDto,
+} from './dto/product.dto';
 import { CreateProductReviewDto } from './dto/review.dto';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { SupplierMember } from '../common/decorators/supplier-member.decorator';
@@ -64,6 +69,14 @@ export class ProductsController {
   @ApiBearerAuth()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateProductDto) {
     return this.productsService.create(user.id, dto);
+  }
+
+  @Post('ai-draft')
+  @SupplierMember()
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 15, ttl: 60_000 } })
+  aiDraft(@CurrentUser() user: AuthUser, @Body() dto: ProductDraftDto) {
+    return this.productsService.aiDraft(user.id, dto);
   }
 
   @Public()

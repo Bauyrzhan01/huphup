@@ -278,11 +278,17 @@ export class OpsService {
     const key = this.config.get<string>('GEMINI_API_KEY')?.trim() ?? '';
     const model =
       this.config.get<string>('GEMINI_MODEL')?.trim() || 'gemini-flash-latest';
+    const budgetRaw = Number(
+      this.config.get<string>('GEMINI_DAILY_TOKEN_BUDGET'),
+    );
+    const dailyTokenBudget =
+      Number.isFinite(budgetRaw) && budgetRaw > 0 ? budgetRaw : null;
     const calls = geminiLogStore.snapshot();
     if (!key) {
       return {
         configured: false,
         model,
+        dailyTokenBudget,
         probe: {
           ok: false,
           status: 0,
@@ -308,6 +314,7 @@ export class OpsService {
       return {
         configured: true,
         model,
+        dailyTokenBudget,
         probe: {
           ok: res.ok,
           status: res.status,
@@ -323,6 +330,7 @@ export class OpsService {
       return {
         configured: true,
         model,
+        dailyTokenBudget,
         probe: {
           ok: false,
           status: 0,

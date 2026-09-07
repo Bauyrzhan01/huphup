@@ -14,6 +14,7 @@ import {
 } from '@prisma/client';
 import { BillingService } from '../billing/billing.service';
 import { CompaniesService } from '../companies/companies.service';
+import { GeminiDisputeTriage, GeminiService } from '../gemini/gemini.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -21,7 +22,9 @@ import { PrismaService } from '../prisma/prisma.service';
 export const AUTO_RELEASE_DAYS = 7;
 
 const dealInclude = {
-  request: { select: { id: true, code: true, title: true, city: true } },
+  request: {
+    select: { id: true, code: true, title: true, city: true, category: true },
+  },
   company: { select: { id: true, name: true, city: true } },
   buyer: { select: { id: true, fullName: true, email: true } },
   offer: {
@@ -39,6 +42,7 @@ export class DealsService {
     private readonly prisma: PrismaService,
     private readonly billing: BillingService,
     private readonly companies: CompaniesService,
+    private readonly gemini: GeminiService,
     private readonly notifications: NotificationsService,
   ) {}
 
@@ -260,6 +264,50 @@ export class DealsService {
     }
     const updated = await this.refund(deal, reason, adminId);
     return serializeDeal(updated, 'admin');
+  }
+
+  /**
+   * Advisory-only read for the admin resolving a dispute: a plain-language
+   * summary and a suggested direction. Never moves money and never blocks
+   * the admin — release/refund stay separate manual actions either way.
+   */
+  async adminAiSummary(
+    dealId: string,
+  ): Promise<
+    | { available: true; triage: GeminiDisputeTriage }
+    | { available: false; reason: string }
+  > {
+    const deal = await this.prisma.deal.findUnique({
+      where: { id: dealId },
+      include: dealInclude,
+    });
+    if (!deal) throw new NotFoundException('Сделка не найдена');
+    if (deal.status !== DealStatus.DISPUTED) {
+      throw new BadRequestException(
+        'Разбор доступен только по спорным сделкам',
+      );
+    }
+
+    const triage = await this.gemini.triageDispute({
+      requestTitle: deal.request.title,
+      category: deal.request.category,
+      city: deal.request.city,
+      amount: deal.amount.toString(),
+      currency: deal.currency,
+      deliveryDays: deal.offer.deliveryDays,
+      disputeReason: deal.disputeReason ?? '',
+      shippedAt: deal.shippedAt?.toISOString() ?? null,
+      autoReleaseAt: deal.autoReleaseAt?.toISOString() ?? null,
+    });
+
+    if (!triage) {
+      return {
+        available: false,
+        reason:
+          'ИИ-разбор сейчас недоступен — решите спор по описанию вручную.',
+      };
+    }
+    return { available: true, triage };
   }
 
   /**

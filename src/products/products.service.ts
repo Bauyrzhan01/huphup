@@ -8,8 +8,13 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
+import { GeminiService, GeminiProductDraft } from '../gemini/gemini.service';
 import { StorageService } from '../storage/storage.service';
-import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import {
+  CreateProductDto,
+  ProductDraftDto,
+  UpdateProductDto,
+} from './dto/product.dto';
 import { CreateProductReviewDto } from './dto/review.dto';
 import { toDisplayText } from '../common/text.util';
 
@@ -33,6 +38,7 @@ export class ProductsService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => CompaniesService))
     private readonly companies: CompaniesService,
+    private readonly gemini: GeminiService,
     private readonly storage: StorageService,
   ) {}
 
@@ -137,6 +143,33 @@ export class ProductsService {
         p.images.map(({ id, url, sortOrder }) => ({ id, url, sortOrder })),
       ),
     );
+  }
+
+  /**
+   * Turns a supplier's rough notes into a suggested listing (name,
+   * description, unit, category) for the frontend to prefill — never
+   * applied silently, the supplier still reviews and saves it themselves.
+   * Falls back to a trivial, honest draft if Gemini is unavailable, so the
+   * button never just breaks.
+   */
+  async aiDraft(
+    userId: string,
+    dto: ProductDraftDto,
+  ): Promise<GeminiProductDraft> {
+    const company = await this.getMemberCompany(userId);
+    const draft = await this.gemini.writeProductDraft({
+      text: dto.text,
+      city: company.city,
+    });
+    if (draft) return draft;
+
+    const firstLine = dto.text.split('\n')[0]?.trim() ?? dto.text.trim();
+    return {
+      name: firstLine.slice(0, 80) || 'Новый товар',
+      description: dto.text.trim().slice(0, 2000),
+      unit: '',
+      category: '',
+    };
   }
 
   async create(userId: string, dto: CreateProductDto) {

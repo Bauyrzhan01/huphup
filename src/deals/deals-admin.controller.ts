@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { UserRole } from '@prisma/client';
 import {
   AuthUser,
@@ -22,6 +23,16 @@ export class DealsAdminController {
   @Get()
   list(@Query() query: DealsQueryDto) {
     return this.deals.adminList(query.status);
+  }
+
+  @ApiOperation({
+    summary:
+      'ИИ-разбор спора: краткое резюме и рекомендация, ничего не решает сам',
+  })
+  @Get(':id/ai-summary')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  aiSummary(@Param('id') id: string) {
+    return this.deals.adminAiSummary(id);
   }
 
   @ApiOperation({ summary: 'Решение спора в пользу поставщика: выдать деньги' })

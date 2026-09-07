@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'Гипсокартон Knauf 12.5 мм' })
@@ -49,4 +55,14 @@ export class UpdateProductDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+}
+
+export class ProductDraftDto {
+  @ApiProperty({
+    example: 'гипсокартон кнауф 12.5 остатки со склада, отдам недорого',
+  })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(2000)
+  text!: string;
 }

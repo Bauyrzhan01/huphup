@@ -29,6 +29,12 @@ function utcDayKey(date = new Date()): string {
 let tokenDayKey = utcDayKey();
 let tokensUsedToday = 0;
 
+// Mirrors GeminiService's own circuit-breaker fields so ops/monitor can show
+// "Gemini is paused" without the ops module needing a dependency on
+// GeminiService itself — same reasoning as the rest of this store.
+let breakerOpenUntil = 0;
+let consecutiveFailures = 0;
+
 export const geminiLogStore = {
   push(row: Omit<GeminiCallRow, 'at'> & { at?: string }) {
     total += 1;
@@ -61,6 +67,11 @@ export const geminiLogStore = {
     if (utcDayKey() !== tokenDayKey) return 0;
     return tokensUsedToday;
   },
+  /** Called by GeminiService whenever its breaker state changes. */
+  setBreakerState(nextConsecutiveFailures: number, nextOpenUntil: number) {
+    consecutiveFailures = nextConsecutiveFailures;
+    breakerOpenUntil = nextOpenUntil;
+  },
   snapshot() {
     const minuteAgo = Date.now() - 60_000;
     const lastMinuteRows = rows.filter(
@@ -70,6 +81,7 @@ export const geminiLogStore = {
     const avgMs = lat.length
       ? Math.round(lat.reduce((a, b) => a + b, 0) / lat.length)
       : null;
+    const breakerOpen = breakerOpenUntil > Date.now();
     return {
       totalSinceBoot: total,
       ok: okCount,
@@ -77,6 +89,11 @@ export const geminiLogStore = {
       lastMinute: lastMinuteRows.length,
       avgMs,
       tokensToday: geminiLogStore.tokensToday(),
+      breakerOpen,
+      breakerOpenUntil: breakerOpen
+        ? new Date(breakerOpenUntil).toISOString()
+        : null,
+      consecutiveFailures,
       recent: rows.slice(0, 30),
     };
   },

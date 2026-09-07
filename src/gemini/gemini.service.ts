@@ -50,6 +50,21 @@ export type GeminiProductMatch = {
   reason?: string;
 };
 
+export type GeminiProductDraft = {
+  name: string;
+  description: string;
+  unit: string;
+  category: string;
+};
+
+export type GeminiDisputeRecommendation = 'RELEASE' | 'REFUND' | 'NEEDS_INFO';
+
+export type GeminiDisputeTriage = {
+  summary: string;
+  recommendation: GeminiDisputeRecommendation;
+  reasoning: string;
+};
+
 type CatalogProduct = {
   id: string;
   name: string;
@@ -286,6 +301,122 @@ ${JSON.stringify(catalog)}`;
     }
 
     return [...byCompany.values()].sort((a, b) => b.score - a.score);
+  }
+
+  /**
+   * Turns a supplier's rough notes ("гипсокартон кнауф 12.5 остатки со
+   * склада") into a proper catalog listing. Advisory only — the caller
+   * shows this as a suggestion, never applies it silently.
+   */
+  async writeProductDraft(input: {
+    text: string;
+    city?: string | null;
+  }): Promise<GeminiProductDraft | null> {
+    if (!this.isConfigured) return null;
+
+    const prompt = `Ты помогаешь поставщику B2B-площадки HupHup оформить карточку товара.
+По черновым заметкам составь аккуратную карточку каталога.
+Верни ТОЛЬКО JSON без markdown:
+{
+  "name": "короткое название товара, как в каталоге",
+  "description": "1-3 предложения: характеристики, объём, состояние, условия продажи",
+  "unit": "единица измерения (шт, т, м², м³, компл и т.п.) или пустая строка",
+  "category": "одна общая категория товара (например: Стройматериалы, Мебель, Электроника)"
+}
+
+Правила:
+- не выдумывай характеристики, которых нет в заметках
+- название — не длиннее 80 символов
+- пиши на том языке, на котором написаны заметки
+- если заметок совсем мало — верни короткую честную карточку без домыслов
+
+Город поставщика (для контекста, не для текста): ${input.city ?? ''}
+Заметки поставщика:
+"""${input.text.slice(0, 2000)}"""`;
+
+    const raw = await this.generateText(prompt, 'product-draft');
+    if (!raw) return null;
+
+    const parsed = this.parseJson<Record<string, unknown>>(raw);
+    if (!parsed) return null;
+
+    const name = asText(parsed.name).trim().slice(0, 80);
+    if (!name) return null;
+
+    return {
+      name,
+      description: asText(parsed.description).trim().slice(0, 2000),
+      unit: asText(parsed.unit).trim().slice(0, 20),
+      category: asText(parsed.category).trim().slice(0, 80),
+    };
+  }
+
+  /**
+   * Advisory read on a disputed escrow deal — a summary and a suggested
+   * direction for the admin who is about to click release or refund.
+   * Never decides anything on its own: nothing here moves money, and a
+   * failed or unconfigured call must not look like a real recommendation.
+   */
+  async triageDispute(input: {
+    requestTitle: string;
+    category?: string | null;
+    city?: string | null;
+    amount: string;
+    currency: string;
+    deliveryDays?: number | null;
+    disputeReason: string;
+    shippedAt?: string | null;
+    autoReleaseAt?: string | null;
+  }): Promise<GeminiDisputeTriage | null> {
+    if (!this.isConfigured) return null;
+
+    const prompt = `Ты помогаешь администратору B2B-площадки HupHup разобрать спор по сделке.
+Деньги покупателя удерживает площадка (escrow); поставщик отгрузил товар,
+покупатель оспорил получение. Реши, что ЛОГИЧНЕЕ ВСЕГО порекомендовать
+администратору — сам ты ничего не решаешь и не переводишь деньги.
+Верни ТОЛЬКО JSON без markdown:
+{
+  "summary": "2-3 предложения: в чём суть спора простыми словами",
+  "recommendation": "RELEASE" | "REFUND" | "NEEDS_INFO",
+  "reasoning": "1-2 предложения: почему именно такая рекомендация"
+}
+
+Правила:
+- RELEASE — если жалоба явно надуманная или не про сам товар (например, просто передумал)
+- REFUND — если из описания ясно, что товар не соответствует заказу или не доехал
+- NEEDS_INFO — если фактов недостаточно, чтобы решить однозначно (чаще всего так)
+- не выдумывай факты, которых нет в описании спора
+- это рекомендация человеку, а не автоматическое решение — пиши соответственно
+
+Заявка: ${input.requestTitle}
+Категория: ${input.category ?? '—'}
+Город: ${input.city ?? '—'}
+Сумма сделки: ${input.amount} ${input.currency}
+Срок поставки по КП: ${input.deliveryDays ?? '—'} дней
+Отгружено: ${input.shippedAt ?? '—'}
+Автовыпуск денег поставщику назначен на: ${input.autoReleaseAt ?? '—'}
+
+Причина спора от участника сделки:
+"""${input.disputeReason.slice(0, 1000)}"""`;
+
+    const raw = await this.generateText(prompt, 'dispute-triage');
+    if (!raw) return null;
+
+    const parsed = this.parseJson<Record<string, unknown>>(raw);
+    if (!parsed) return null;
+
+    const summary = asText(parsed.summary).trim().slice(0, 600);
+    if (!summary) return null;
+
+    const rec = asText(parsed.recommendation).trim().toUpperCase();
+    const recommendation: GeminiDisputeRecommendation =
+      rec === 'RELEASE' || rec === 'REFUND' ? rec : 'NEEDS_INFO';
+
+    return {
+      summary,
+      recommendation,
+      reasoning: asText(parsed.reasoning).trim().slice(0, 600),
+    };
   }
 
   private normalizeAnalyze(
@@ -622,6 +753,7 @@ ${JSON.stringify(catalog)}`;
     if (result.success) {
       this.consecutiveFailures = 0;
       this.breakerOpenUntil = 0;
+      geminiLogStore.setBreakerState(0, 0);
       return result.text;
     }
 
@@ -634,6 +766,10 @@ ${JSON.stringify(catalog)}`;
         }s`,
       );
     }
+    geminiLogStore.setBreakerState(
+      this.consecutiveFailures,
+      this.breakerOpenUntil,
+    );
     this.logger.warn(`Gemini error ${result.status}: ${result.errorMessage}`);
     return null;
   }

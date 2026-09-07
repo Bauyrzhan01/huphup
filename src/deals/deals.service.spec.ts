@@ -2,6 +2,10 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { BillingReason, DealStatus, Prisma } from '@prisma/client';
 import type { BillingService } from '../billing/billing.service';
 import type { CompaniesService } from '../companies/companies.service';
+import type {
+  GeminiDisputeTriage,
+  GeminiService,
+} from '../gemini/gemini.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { AUTO_RELEASE_DAYS, DealsService } from './deals.service';
@@ -139,14 +143,21 @@ function build(initial: Partial<DealRow> = {}, commissionPercent?: number) {
     notifyUsers: jest.fn(() => Promise.resolve({ count: 1 })),
   };
 
+  const gemini = {
+    triageDispute: jest.fn<Promise<GeminiDisputeTriage | null>, []>(() =>
+      Promise.resolve(null),
+    ),
+  };
+
   const service = new DealsService(
     prisma as unknown as PrismaService,
     billing as unknown as BillingService,
     companies as unknown as CompaniesService,
+    gemini as unknown as GeminiService,
     notifications as unknown as NotificationsService,
   );
 
-  return { service, state, billing, notifications };
+  return { service, state, billing, notifications, gemini };
 }
 
 describe('DealsService — сейф-сделка', () => {
@@ -331,6 +342,67 @@ describe('DealsService — сейф-сделка', () => {
       await expect(
         service.adminRefund('deal-1', 'admin-1'),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('ИИ-разбор спора', () => {
+    it('отдаёт рекомендацию модели, не трогая деньги и статус', async () => {
+      const { service, state, gemini } = build({
+        status: DealStatus.DISPUTED,
+        disputeReason: 'Привезли меньше, чем заказано',
+      });
+      gemini.triageDispute.mockResolvedValue({
+        summary: 'Недопоставка товара.',
+        recommendation: 'REFUND',
+        reasoning: 'Покупатель описал нехватку количества.',
+      });
+
+      const result = await service.adminAiSummary('deal-1');
+
+      expect(result).toEqual({
+        available: true,
+        triage: {
+          summary: 'Недопоставка товара.',
+          recommendation: 'REFUND',
+          reasoning: 'Покупатель описал нехватку количества.',
+        },
+      });
+      expect(state.moves).toHaveLength(0);
+      expect(state.deal.status).toBe(DealStatus.DISPUTED);
+    });
+
+    it('передаёт сумму, срок и причину спора в запрос к модели', async () => {
+      const { service, gemini } = build({
+        status: DealStatus.DISPUTED,
+        disputeReason: 'Товар пришёл повреждённым',
+      });
+
+      await service.adminAiSummary('deal-1');
+
+      expect(gemini.triageDispute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: '450000',
+          currency: 'KZT',
+          disputeReason: 'Товар пришёл повреждённым',
+        }),
+      );
+    });
+
+    it('честно сообщает, когда модель недоступна, а не выдумывает рекомендацию', async () => {
+      const { service, gemini } = build({ status: DealStatus.DISPUTED });
+      gemini.triageDispute.mockResolvedValue(null);
+
+      const result = await service.adminAiSummary('deal-1');
+
+      expect(result.available).toBe(false);
+      expect(!result.available && result.reason.length > 0).toBe(true);
+    });
+
+    it('доступен только для спорных сделок', async () => {
+      const { service } = build({ status: DealStatus.HELD });
+      await expect(service.adminAiSummary('deal-1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
   });
 });
