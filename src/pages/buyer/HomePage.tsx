@@ -24,6 +24,21 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function todayIso() {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+// Показываем выбранную дату на пилюле как ДД.ММ.ГГГГ; если это не
+// ISO-дата (старое значение или AI написал текстом), просто выводим как есть.
+function formatDeadlineDisplay(value: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return value;
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
 type ChatTurn = {
   role: 'user' | 'assistant';
   text: string;
@@ -625,12 +640,14 @@ export function HomePage() {
                         className={`tool-pill${deadline ? ' is-on' : ''}`}
                         onClick={() => openToolPopover('deadline')}
                       >
-                        {deadline ? `◷ ${deadline}` : t('home.deadline')}
+                        {deadline ? `◷ ${formatDeadlineDisplay(deadline)}` : t('home.deadline')}
                       </button>
                       {openTool === 'deadline' ? (
                         <div className="tool-popover" ref={toolPopoverRef}>
                           <input
                             autoFocus
+                            type="date"
+                            min={todayIso()}
                             value={deadlineDraft}
                             onChange={(e) => setDeadlineDraft(e.target.value)}
                             onKeyDown={(e) => {
@@ -639,7 +656,6 @@ export function HomePage() {
                                 confirmDeadline();
                               }
                             }}
-                            placeholder={t('home.deadlinePlaceholder')}
                           />
                           <button
                             type="button"
