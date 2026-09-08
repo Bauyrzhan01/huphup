@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HupHup Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="layout">
+      <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <div class="logo">H</div>
+          HupHup
+          <button type="button" id="sidebar-close" class="icon-btn sidebar-close" aria-label="Менюны жабу">×</button>
+        </div>
+        <div class="side-label">Мониторинг</div>
+        <nav class="nav">
+          <a href="#" class="active" data-tab="dashboard">📊 Dashboard</a>
+          <a href="#" data-tab="backend">⚙️ Backend</a>
+          <a href="#" data-tab="database">🗄️ База</a>
+          <a href="#" data-tab="frontend">🖥️ Frontend</a>
+          <a href="#" data-tab="gemini">✦ Gemini</a>
+          <a href="#" data-tab="history">📋 Тарих</a>
+          <a href="#" data-tab="endpoints">🔗 Endpoints</a>
+        </nav>
+        <div class="side-bottom">
+          <div class="user-card">
+            <div class="avatar">M</div>
+            <div>
+              <div class="user-name">Monitor</div>
+              <div class="user-role" id="side-status">Тексеруде…</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button type="button" id="menu-btn" class="icon-btn menu-btn" aria-label="Меню" aria-expanded="false" aria-controls="sidebar">
+              <span></span><span></span><span></span>
+            </button>
+            <div class="crumb">HupHup · <span id="crumb-tab">Dashboard</span></div>
+          </div>
+          <div class="top-actions">
+            <span id="poll-label" class="chip">—</span>
+            <span id="overall-badge" class="badge">—</span>
+            <input id="secret-input" class="secret-input" type="password" placeholder="MONITOR_SECRET" autocomplete="off" />
+            <button id="secret-save" type="button" class="ghost">Кілт</button>
+            <button id="refresh-btn" type="button" class="primary">Тексеру</button>
+          </div>
+        </header>
+
+        <div class="page">
+          <p id="ops-banner" class="notice" style="display: none; margin-bottom: 14px"></p>
+          <!-- Dashboard -->
+          <section id="tab-dashboard" class="tab-panel is-on">
+            <div class="page-head">
+              <div>
+                <h1>Мониторинг инфраструктуры</h1>
+                <p>Базадан қандай дерек шығады, API-ге не келеді, фронт қалай жауап береді</p>
+              </div>
+              <div class="head-time">
+                <small>Соңғы тексеру</small>
+                <b id="last-check">—</b>
+              </div>
+            </div>
+
+            <div class="stat-grid">
+              <article class="stat" id="stat-api">
+                <small>Backend API</small>
+                <b id="api-status">—</b>
+                <span id="api-detail" class="stat-meta">—</span>
+              </article>
+              <article class="stat" id="stat-db">
+                <small>PostgreSQL</small>
+                <b id="db-status">—</b>
+                <span id="db-detail" class="stat-meta">—</span>
+              </article>
+              <article class="stat" id="stat-frontend">
+                <small>Frontend (Vercel)</small>
+                <b id="frontend-status">—</b>
+                <span id="frontend-detail" class="stat-meta">—</span>
+              </article>
+              <article class="stat" id="stat-uptime">
+                <small>Uptime (сессия)</small>
+                <b id="uptime-status">—</b>
+                <span id="uptime-detail" class="stat-meta">—</span>
+              </article>
+              <article class="stat" id="stat-gemini">
+                <small>Gemini API</small>
+                <b id="gemini-status">—</b>
+                <span id="gemini-detail" class="stat-meta">—</span>
+              </article>
+            </div>
+
+            <div class="detail-grid monitor-grid">
+              <div class="detail-main">
+                <div class="panel">
+                  <h3 class="section-title">Latency — API vs Database (ms)</h3>
+                  <canvas id="chart-latency" height="220"></canvas>
+                  <div class="chart-legend">
+                    <span><i class="dot blue"></i> API round-trip</span>
+                    <span><i class="dot green"></i> DB query</span>
+                  </div>
+                </div>
+                <div class="panel">
+                  <h3 class="section-title">Статус тексерулер (timeline)</h3>
+                  <canvas id="chart-status" height="100"></canvas>
+                </div>
+              </div>
+              <div class="detail-side">
+                <div class="panel">
+                  <h3 class="section-title">Uptime diagram</h3>
+                  <div class="donut-wrap">
+                    <canvas id="chart-donut" width="180" height="180"></canvas>
+                    <div class="donut-center">
+                      <b id="donut-pct">—</b>
+                      <small>OK</small>
+                    </div>
+                  </div>
+                  <div class="donut-legend">
+                    <span><i class="dot green"></i> OK <b id="leg-ok">0</b></span>
+                    <span><i class="dot red"></i> Fail <b id="leg-fail">0</b></span>
+                  </div>
+                </div>
+                <div class="panel">
+                  <h3 class="section-title">Latency stats</h3>
+                  <div class="kv"><span>API avg</span><b id="stat-api-avg">—</b></div>
+                  <div class="kv"><span>API min / max</span><b id="stat-api-range">—</b></div>
+                  <div class="kv"><span>DB avg</span><b id="stat-db-avg">—</b></div>
+                  <div class="kv"><span>DB min / max</span><b id="stat-db-range">—</b></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel" style="margin-top: 18px">
+              <h3 class="section-title">Server metrics (Railway)</h3>
+              <div class="ai-grid">
+                <div class="ai-cell"><small>Service</small><b id="info-service">—</b></div>
+                <div class="ai-cell"><small>Server time</small><b id="info-time">—</b></div>
+                <div class="ai-cell"><small>Process uptime</small><b id="info-uptime">—</b></div>
+                <div class="ai-cell"><small>Memory RSS</small><b id="info-memory">—</b></div>
+                <div class="ai-cell"><small>Node.js</small><b id="info-node">—</b></div>
+                <div class="ai-cell"><small>Overall</small><b id="info-overall">—</b></div>
+              </div>
+            </div>
+            <p id="ops-lock" class="notice" style="margin-top: 14px">
+              Нақты трафик пен база үшін жоғарғы жақта <b>MONITOR_SECRET</b> енгізіңіз.
+            </p>
+          </section>
+
+          <section id="tab-backend" class="tab-panel">
+            <div class="page-head">
+              <div>
+                <h1>Backend кірісі</h1>
+                <p>NestJS-ке келіп жатқан HTTP сұраулар (процесс жадында)</p>
+              </div>
+            </div>
+            <div class="stat-grid" id="traffic-stats">
+              <article class="stat"><small>Boot бері</small><b id="tr-total">—</b></article>
+              <article class="stat"><small>Соңғы 1 мин</small><b id="tr-min">—</b></article>
+              <article class="stat"><small>2xx / 4xx / 5xx</small><b id="tr-codes">—</b></article>
+              <article class="stat"><small>SQL / мин</small><b id="tr-sql">—</b></article>
+            </div>
+            <div class="panel">
+              <h3 class="section-title">Соңғы API hit-тер</h3>
+              <div class="table-wrap">
+                <table class="history-table">
+                  <thead>
+                    <tr>
+                      <th>Уақыт</th>
+                      <th>Method</th>
+                      <th>Path</th>
+                      <th>HTTP</th>
+                      <th>ms</th>
+                      <th>user</th>
+                    </tr>
+                  </thead>
+                  <tbody id="traffic-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section id="tab-database" class="tab-panel">
+            <div class="page-head">
+              <div>
+                <h1>База (Neon / Prisma)</h1>
+                <p>COUNT + соңғы жолдар. Email/пароль көрсетілмейді</p>
+              </div>
+            </div>
+            <div class="count-grid" id="table-counts"></div>
+            <div class="panel" style="margin-top: 14px">
+              <h3 class="section-title">Prisma SQL (параметрсіз)</h3>
+              <div class="table-wrap">
+                <table class="history-table">
+                  <thead>
+                    <tr>
+                      <th>Уақыт</th>
+                      <th>ms</th>
+                      <th>Query</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sql-body"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="split-tables">
+              <div class="panel">
+                <h3 class="section-title">Requests</h3>
+                <div id="db-requests" class="feed"></div>
+              </div>
+              <div class="panel">
+                <h3 class="section-title">Offers / leads</h3>
+                <div id="db-leads" class="feed"></div>
+              </div>
+            </div>
+            <div class="split-tables">
+              <div class="panel">
+                <h3 class="section-title">Products / companies</h3>
+                <div id="db-catalog" class="feed"></div>
+              </div>
+              <div class="panel">
+                <h3 class="section-title">Activities</h3>
+                <div id="db-act" class="feed"></div>
+              </div>
+            </div>
+          </section>
+
+          <section id="tab-frontend" class="tab-panel">
+            <div class="page-head">
+              <div>
+                <h1>Frontend (Vercel)</h1>
+                <p>Сервер Railway-ден HTML беттерді ашып көреді</p>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="kv"><span>Base</span><b id="fe-base" class="mono">—</b></div>
+            </div>
+            <div class="table-wrap" style="margin-top: 14px">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>Path</th>
+                    <th>OK</th>
+                    <th>HTTP</th>
+                    <th>ms</th>
+                    <th>bytes</th>
+                    <th>title</th>
+                    <th>қате</th>
+                  </tr>
+                </thead>
+                <tbody id="frontend-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="tab-gemini" class="tab-panel">
+            <div class="page-head">
+              <div>
+                <h1>Gemini API</h1>
+                <p>analyze / clarify / match шақырулары · ключ пен модель тірі ме</p>
+              </div>
+            </div>
+            <div class="stat-grid">
+              <article class="stat" id="ge-configured-card">
+                <small>Ключ</small>
+                <b id="ge-configured">—</b>
+                <span id="ge-model" class="stat-meta">—</span>
+              </article>
+              <article class="stat" id="ge-probe-card">
+                <small>Google API</small>
+                <b id="ge-probe">—</b>
+                <span id="ge-probe-meta" class="stat-meta">—</span>
+              </article>
+              <article class="stat">
+                <small>OK / fail</small>
+                <b id="ge-okfail">—</b>
+                <span class="stat-meta" id="ge-total">boot бері</span>
+              </article>
+              <article class="stat">
+                <small>Орташа latency</small>
+                <b id="ge-avg">—</b>
+                <span class="stat-meta" id="ge-min">соңғы 1 мин: —</span>
+              </article>
+            </div>
+            <div class="panel">
+              <h3 class="section-title">Соңғы generateContent</h3>
+              <div class="table-wrap">
+                <table class="history-table">
+                  <thead>
+                    <tr>
+                      <th>Уақыт</th>
+                      <th>purpose</th>
+                      <th>OK</th>
+                      <th>HTTP</th>
+                      <th>ms</th>
+                      <th>prompt</th>
+                      <th>tokens</th>
+                      <th>қате</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gemini-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- History -->
+          <section id="tab-history" class="tab-panel">
+            <div class="page-head">
+              <div>
+                <h1>Тарих тексерулер</h1>
+                <p id="history-count">0 checks</p>
+              </div>
+            </div>
+            <div class="panel">
+              <canvas id="chart-history-bar" height="160"></canvas>
+            </div>
+            <div class="panel" style="margin-top: 14px">
+              <div class="table-wrap">
+                <table class="history-table">
+                  <thead>
+                    <tr>
+                      <th>Уақыт</th>
+                      <th>Overall</th>
+                      <th>API</th>
+                      <th>DB</th>
+                      <th>Frontend</th>
+                      <th>API ms</th>
+                      <th>DB ms</th>
+                      <th>HTTP</th>
+                      <th>Қате</th>
+                    </tr>
+                  </thead>
+                  <tbody id="history-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Endpoints -->
+          <section id="tab-endpoints" class="tab-panel">
+            <div class="page-head">
+              <div>
+                <h1>Endpoints</h1>
+                <p>Бақыланатын URL-дар мен конфигурация</p>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="kv"><span>Health API</span><b id="ep-api" class="mono">—</b></div>
+              <div class="kv"><span>Frontend</span><b id="ep-frontend" class="mono">—</b></div>
+              <div class="kv"><span>Poll interval</span><b id="ep-poll">—</b></div>
+              <div class="kv"><span>History limit</span><b id="ep-history">—</b></div>
+              <div class="kv"><span>Swagger</span><b id="ep-swagger" class="mono">—</b></div>
+            </div>
+            <p id="last-error" class="notice is-error" style="margin-top: 14px; display: none"></p>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
