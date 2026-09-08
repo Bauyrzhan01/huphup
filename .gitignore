@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# env — keep only .env.example
+.env
+.env.*
+!.env.example
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# deploy
+.vercel/
+.railway/
+
+# local API/debug dumps
+*.local.json

@@ -1,0 +1,26 @@
+{
+  "name": "huphup",
+  "private": true,
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm --filter @huphup/backend run prisma:migrate",
+    "db:seed": "pnpm --filter @huphup/backend run prisma:seed",
+    "backend": "pnpm --filter @huphup/backend",
+    "frontend": "pnpm --filter @huphup/frontend",
+    "admin": "pnpm --filter @huphup/admin",
+    "monitor": "pnpm --filter @huphup/monitor"
+  },
+  "devDependencies": {
+    "turbo": "^2.10.12"
+  }
+}

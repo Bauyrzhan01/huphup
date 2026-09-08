@@ -1,0 +1,36 @@
+# Local infrastructure for the whole platform.
+#   pnpm db:up     # start
+#   pnpm db:down   # stop
+#
+# Credentials match apps/backend/.env.example, so a fresh
+# `cp apps/backend/.env.example apps/backend/.env` works out of the box.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: huphup-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: huphup
+    volumes:
+      - huphup_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d huphup"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Optional. Backend only needs it for the multi-instance Socket.IO
+  # adapter (REDIS_URL). A single dev instance works without it.
+  redis:
+    image: redis:7-alpine
+    container_name: huphup-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  huphup_pg_data:

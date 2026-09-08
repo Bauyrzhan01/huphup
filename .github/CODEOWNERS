@@ -1,0 +1,44 @@
+# A code owner is auto-requested for review when a PR touches their files.
+# Owner = required reviewer, not the only person allowed to edit.
+#
+# Today there is one owner. As teammates join, uncomment the zone lines
+# below and swap in their GitHub handles. See CONTRIBUTING.md.
+
+# Default owner for everything
+*                         @Bauyrzhan01
+
+# --- Cross-cutting: schema, auth, shared code, infra — always the lead ---
+/apps/backend/prisma/     @Bauyrzhan01
+/apps/backend/src/auth/   @Bauyrzhan01
+/apps/backend/src/common/ @Bauyrzhan01
+/apps/backend/src/prisma/ @Bauyrzhan01
+/packages/                @Bauyrzhan01
+/.github/                 @Bauyrzhan01
+/turbo.json               @Bauyrzhan01
+/pnpm-workspace.yaml      @Bauyrzhan01
+/docker-compose.yml       @Bauyrzhan01
+
+# --- Zone: Deal flow (requests, matching, gemini, offers, billing, deals) ---
+# /apps/backend/src/requests/   @teammate-2
+# /apps/backend/src/matching/   @teammate-2
+# /apps/backend/src/gemini/     @teammate-2
+# /apps/backend/src/offers/     @teammate-2
+# /apps/backend/src/billing/    @teammate-2
+# /apps/backend/src/deals/      @teammate-2
+# /apps/backend/src/platform/   @teammate-2
+
+# --- Zone: Communication (crm, conversations, notifications) ---
+# /apps/backend/src/crm/           @teammate-3
+# /apps/backend/src/conversations/ @teammate-3
+# /apps/backend/src/notifications/ @teammate-3
+
+# --- Zone: Catalog (companies, products, attachments, storage) ---
+# /apps/backend/src/companies/   @teammate-4
+# /apps/backend/src/products/    @teammate-4
+# /apps/backend/src/attachments/ @teammate-4
+# /apps/backend/src/storage/     @teammate-4
+
+# --- Frontend apps ---
+# /apps/frontend/  @frontend-lead
+# /apps/admin/     @frontend-lead
+# /apps/monitor/   @frontend-lead
