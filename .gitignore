@@ -4,3 +4,9 @@ dist
 .env.local
 .DS_Store
 .vercel
+
+# local API/debug dumps
+*.local.json
+health.json
+ops*.json
+snap.json
