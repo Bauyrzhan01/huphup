@@ -1,19 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Send } from 'lucide-react';
-import { requestsApi } from '../../api';
+import { Paperclip, Send, X } from 'lucide-react';
+import { attachmentsApi, requestsApi } from '../../api';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import { AppIcon } from '../../components/AppIcon';
 import { MatchedSupplierCard } from '../../components/MatchedSupplierCard';
 import { BuyerLayout } from '../../layouts/AppLayouts';
+import { useDirectoryMeta } from '../../hooks/useDirectoryMeta';
 import {
   homeChatKey,
   LEGACY_HOME_CHAT_KEY,
 } from '../../utils/homeChatStorage';
 import { shouldSkipAssistantReply } from '../../utils/requestChat';
 import type { AnalyzeResult, PublishResult, RequestItem } from '../../types';
+
+const MAX_DRAFT_FILES = 5;
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 type ChatTurn = {
   role: 'user' | 'assistant';
@@ -25,12 +34,14 @@ export function HomePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { cities } = useDirectoryMeta();
   const [q, setQ] = useState('');
   const [recent, setRecent] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [originalText, setOriginalText] = useState('');
   const [analyzed, setAnalyzed] = useState<AnalyzeResult | null>(null);
   const [city, setCity] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [chat, setChat] = useState<ChatTurn[]>([]);
@@ -42,6 +53,18 @@ export function HomePage() {
   const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
+
+  // Ручной выбор пользователя — приоритетнее того, что распознает ИИ из текста.
+  const cityIsManual = useRef(false);
+  const deadlineIsManual = useRef(false);
+
+  const [openTool, setOpenTool] = useState<'city' | 'deadline' | null>(null);
+  const [cityDraft, setCityDraft] = useState('');
+  const [deadlineDraft, setDeadlineDraft] = useState('');
+  const toolPopoverRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState('');
 
   const ready = Boolean(analyzed?.ready || (analyzed && !(analyzed.questions ?? []).length));
 
@@ -71,6 +94,9 @@ export function HomePage() {
         setTitle('');
         setDescription('');
         setCity('');
+        setDeadline('');
+        cityIsManual.current = false;
+        deadlineIsManual.current = false;
         setPublishResult(null);
         return;
       }
@@ -82,6 +108,7 @@ export function HomePage() {
         title?: string;
         description?: string;
         city?: string;
+        deadline?: string;
       };
       if (saved.chat?.length) {
         startedRef.current = true;
@@ -92,6 +119,7 @@ export function HomePage() {
         setTitle(saved.title ?? '');
         setDescription(saved.description ?? '');
         setCity(saved.city || '');
+        setDeadline(saved.deadline || '');
       }
     } catch {
       sessionStorage.removeItem(homeChatKey(user.id));
@@ -110,9 +138,39 @@ export function HomePage() {
         title,
         description,
         city,
+        deadline,
       }),
     );
-  }, [user?.id, chat, originalText, analyzed, collectedAnswers, title, description, city]);
+  }, [
+    user?.id,
+    chat,
+    originalText,
+    analyzed,
+    collectedAnswers,
+    title,
+    description,
+    city,
+    deadline,
+  ]);
+
+  // Закрыть попап выбора города/срока по клику снаружи или по Escape.
+  useEffect(() => {
+    if (!openTool) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!toolPopoverRef.current?.contains(e.target as Node)) {
+        setOpenTool(null);
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpenTool(null);
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [openTool]);
 
   useEffect(() => {
     void requestsApi
@@ -148,7 +206,8 @@ export function HomePage() {
       const res = await requestsApi.analyze(trimmed);
       setAnalyzed(res);
       setTitle(res.title);
-      setCity(res.city || '');
+      if (!cityIsManual.current) setCity(res.city || '');
+      if (!deadlineIsManual.current) setDeadline(res.deadline || '');
       setDescription(res.description || trimmed);
       const ask = res.questions?.[0];
       setChat([
@@ -201,7 +260,8 @@ export function HomePage() {
       );
       setAnalyzed(res);
       setTitle(res.title);
-      setCity(res.city || city || '');
+      if (!cityIsManual.current) setCity(res.city || city || '');
+      if (!deadlineIsManual.current) setDeadline(res.deadline || deadline || '');
       setDescription(res.description || originalText);
       const ask = res.questions?.[0];
       const done = res.ready === true || !ask;
@@ -246,9 +306,26 @@ export function HomePage() {
         category: analyzed?.category,
         city,
         quantity: analyzed?.quantity,
-        deadline: analyzed?.deadline,
+        deadline: deadline || analyzed?.deadline,
         rawText: originalText,
       });
+      // Файлы прикреплены к черновику ещё до того, как у заявки появился id —
+      // грузим их сейчас. Одна неудачная загрузка не должна откатывать уже
+      // созданную и готовую к публикации заявку.
+      if (files.length) {
+        const failed: string[] = [];
+        for (const file of files) {
+          try {
+            await attachmentsApi.upload(created.id, file);
+          } catch {
+            failed.push(file.name);
+          }
+        }
+        if (failed.length) {
+          setFileError(t('home.fileUploadFailed', { files: failed.join(', ') }));
+        }
+        setFiles([]);
+      }
       const result = await requestsApi.publish(created.id);
       setPublishResult(result);
     } catch (err) {
@@ -271,6 +348,11 @@ export function HomePage() {
     setQ('');
     setError('');
     setPublishResult(null);
+    // Файлы — не переносим на новую заявку, город и срок оставляем: часто
+    // следующая заявка от того же покупателя про тот же город и срок.
+    setFiles([]);
+    setFileError('');
+    setOpenTool(null);
   }
 
   function retryLast() {
@@ -288,6 +370,50 @@ export function HomePage() {
       return copy;
     });
     void sendChat(lastUser.text);
+  }
+
+  function onPickFiles(list: FileList | null) {
+    if (!list?.length) return;
+    setFileError('');
+    setFiles((prev) => {
+      const room = MAX_DRAFT_FILES - prev.length;
+      if (room <= 0) {
+        setFileError(t('home.fileLimit', { count: MAX_DRAFT_FILES }));
+        return prev;
+      }
+      const picked = Array.from(list).slice(0, room);
+      if (list.length > picked.length) {
+        setFileError(t('home.fileLimit', { count: MAX_DRAFT_FILES }));
+      }
+      return [...prev, ...picked];
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function openToolPopover(tool: 'city' | 'deadline') {
+    if (openTool === tool) {
+      setOpenTool(null);
+      return;
+    }
+    setCityDraft(city);
+    setDeadlineDraft(deadline);
+    setOpenTool(tool);
+  }
+
+  function confirmCity() {
+    setCity(cityDraft.trim());
+    cityIsManual.current = true;
+    setOpenTool(null);
+  }
+
+  function confirmDeadline() {
+    setDeadline(deadlineDraft.trim());
+    deadlineIsManual.current = true;
+    setOpenTool(null);
   }
 
   if (publishResult) {
@@ -411,6 +537,28 @@ export function HomePage() {
                 }
               }}
             />
+
+            {!chatting && files.length > 0 ? (
+              <div className="draft-files">
+                {files.map((file, i) => (
+                  <span key={`${file.name}-${i}`} className="file-chip">
+                    <Paperclip size={12} className="ico" />
+                    <span className="file-chip-name">{file.name}</span>
+                    <span className="file-chip-size">{formatFileSize(file.size)}</span>
+                    <button
+                      type="button"
+                      className="file-chip-remove"
+                      onClick={() => removeFile(i)}
+                      aria-label={t('common.remove')}
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            {fileError ? <p className="draft-file-error">{fileError}</p> : null}
+
             <div className="composer-footer">
               <div className="composer-tools">
                 {chatting ? (
@@ -419,15 +567,90 @@ export function HomePage() {
                   </button>
                 ) : (
                   <>
-                    <button type="button" className="tool-pill">
-                      {t('home.file')}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      hidden
+                      onChange={(e) => onPickFiles(e.target.files)}
+                    />
+                    <button
+                      type="button"
+                      className={`tool-pill${files.length ? ' is-on' : ''}`}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {files.length
+                        ? t('home.fileCount', { count: files.length })
+                        : t('home.file')}
                     </button>
-                    <button type="button" className="tool-pill">
-                      {t('home.city')}
-                    </button>
-                    <button type="button" className="tool-pill">
-                      {t('home.deadline')}
-                    </button>
+
+                    <div className="tool-pill-wrap">
+                      <button
+                        type="button"
+                        className={`tool-pill${city ? ' is-on' : ''}`}
+                        onClick={() => openToolPopover('city')}
+                      >
+                        {city ? `⌖ ${city}` : t('home.city')}
+                      </button>
+                      {openTool === 'city' ? (
+                        <div className="tool-popover" ref={toolPopoverRef}>
+                          <input
+                            autoFocus
+                            value={cityDraft}
+                            onChange={(e) => setCityDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                confirmCity();
+                              }
+                            }}
+                            list="home-cities"
+                            placeholder={t('home.cityPlaceholder')}
+                          />
+                          <datalist id="home-cities">
+                            {cities.map((c) => (
+                              <option key={c} value={c} />
+                            ))}
+                          </datalist>
+                          <button type="button" className="tool-popover-ok" onClick={confirmCity}>
+                            {t('common.ok')}
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="tool-pill-wrap">
+                      <button
+                        type="button"
+                        className={`tool-pill${deadline ? ' is-on' : ''}`}
+                        onClick={() => openToolPopover('deadline')}
+                      >
+                        {deadline ? `◷ ${deadline}` : t('home.deadline')}
+                      </button>
+                      {openTool === 'deadline' ? (
+                        <div className="tool-popover" ref={toolPopoverRef}>
+                          <input
+                            autoFocus
+                            value={deadlineDraft}
+                            onChange={(e) => setDeadlineDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                confirmDeadline();
+                              }
+                            }}
+                            placeholder={t('home.deadlinePlaceholder')}
+                          />
+                          <button
+                            type="button"
+                            className="tool-popover-ok"
+                            onClick={confirmDeadline}
+                          >
+                            {t('common.ok')}
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
                   </>
                 )}
               </div>

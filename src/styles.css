@@ -2145,6 +2145,87 @@ body.mobile-nav-open{overflow:hidden}
   color:#fff;
   border-color:#111;
 }
+.tool-pill-wrap{
+  position:relative;
+  display:inline-flex;
+}
+.tool-popover{
+  position:absolute;
+  bottom:calc(100% + 8px);
+  left:0;
+  z-index:20;
+  display:flex;
+  gap:6px;
+  align-items:center;
+  background:#fff;
+  border:1px solid #d7d7da;
+  border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+  padding:8px;
+  min-width:220px;
+}
+.tool-popover input{
+  flex:1;
+  min-width:0;
+  border:1px solid #e2e2e5;
+  border-radius:8px;
+  padding:7px 9px;
+  font-size:13px;
+  outline:0;
+}
+.tool-popover input:focus{border-color:#111}
+.tool-popover-ok{
+  border:0;
+  background:#111;
+  color:#fff;
+  border-radius:8px;
+  padding:7px 11px;
+  font-size:12px;
+  font-weight:650;
+  flex-shrink:0;
+}
+.draft-files{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:8px 2px 0;
+}
+.file-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#f5f5f6;
+  border-radius:999px;
+  padding:5px 6px 5px 10px;
+  font-size:12px;
+  color:#444;
+  max-width:220px;
+}
+.file-chip .ico{flex-shrink:0;color:#888}
+.file-chip-name{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.file-chip-size{color:#9a9a9f;flex-shrink:0}
+.file-chip-remove{
+  border:0;
+  background:transparent;
+  color:#888;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+  padding:0;
+}
+.file-chip-remove:hover{background:#e6e6e8;color:#111}
+.draft-file-error{
+  margin:6px 2px 0;
+  font-size:12px;
+  color:#b3452f;
+}
 .clarify-chat{
   padding:0;
   overflow:hidden;
