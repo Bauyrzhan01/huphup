@@ -548,19 +548,17 @@ function renderSummary(row: CheckRow) {
 async function checkFrontend(): Promise<boolean | null> {
   if (!FRONTEND_URL) return null;
   try {
-    const res = await fetch(FRONTEND_URL, {
-      method: 'HEAD',
-      mode: 'cors',
-      cache: 'no-store',
-    });
-    return res.ok;
+    // no-cors on purpose: a plain static site (Vite dev, plain Vercel
+    // hosting) sends no Access-Control-Allow-Origin header, so a `cors`
+    // fetch is blocked by the browser before any response is seen — every
+    // check would report DOWN regardless of whether the site is actually
+    // up. We don't need to read the response, only confirm the host
+    // answers: an opaque response means the request reached the server;
+    // a thrown error means it didn't (DNS failure, connection refused).
+    await fetch(FRONTEND_URL, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
+    return true;
   } catch {
-    try {
-      const res = await fetch(FRONTEND_URL, { method: 'GET', cache: 'no-store' });
-      return res.ok;
-    } catch {
-      return false;
-    }
+    return false;
   }
 }
 

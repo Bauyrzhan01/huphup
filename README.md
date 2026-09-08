@@ -2,6 +2,10 @@
 
 Бөлек Vercel сайт — backend API мен PostgreSQL статусын бақылайды.
 
+**[DOCUMENTATION.md](./DOCUMENTATION.md)** — толық құжаттама.
+
+Платформа бойынша толық гайд: `../huphup-backend/DOCUMENTATION.md`
+
 ## Не көрсетеді
 
 - **Backend API** — `/api/v1/health` жауабы
