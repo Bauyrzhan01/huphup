@@ -4,8 +4,8 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start:prod
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build
+    startCommand: pnpm run start:prod
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV

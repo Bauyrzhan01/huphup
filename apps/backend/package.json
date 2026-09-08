@@ -1,5 +1,5 @@
 {
-  "name": "huphup-backend",
+  "name": "@huphup/backend",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -9,6 +9,7 @@
     "build": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
+    "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main.js",
