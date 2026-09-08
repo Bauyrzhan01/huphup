@@ -50,6 +50,15 @@ export type GeminiProductMatch = {
   reason?: string;
 };
 
+/** An image or PDF read straight from the request's attachments — no OCR
+ * step of our own: Gemini is multimodal and reads specs out of the file
+ * itself (a spec sheet, a photo of a nameplate, a datasheet PDF). */
+export type GeminiInlineFile = {
+  mimeType: string;
+  /** Base64-encoded file bytes. */
+  data: string;
+};
+
 export type GeminiProductDraft = {
   name: string;
   description: string;
@@ -89,6 +98,10 @@ const BREAKER_COOLDOWN_MS = 30_000;
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/** A Gemini request part: text, or a file's raw bytes (image/PDF, base64). */
+type ContentPart =
+  { text: string } | { inlineData: { mimeType: string; data: string } };
 
 type AttemptResult = {
   /** True only when the call returned a usable, non-empty text answer. */
@@ -230,6 +243,8 @@ export class GeminiService {
     category?: string | null;
     city?: string | null;
     products: CatalogProduct[];
+    /** Спецификации/фото товара, приложенные к заявке — см. GeminiInlineFile. */
+    attachments?: GeminiInlineFile[];
   }): Promise<GeminiProductMatch[]> {
     if (!this.isConfigured || input.products.length === 0) {
       return [];
@@ -244,6 +259,7 @@ export class GeminiService {
       city: p.city || p.company.city || '',
     }));
 
+    const hasFiles = Boolean(input.attachments?.length);
     const prompt = `Ты матчер B2B-площадки HupHup.
 Найди поставщиков/товары, которые реально подходят под заявку заказчика.
 Верни ТОЛЬКО JSON без markdown:
@@ -258,7 +274,14 @@ export class GeminiService {
 - score >= 55 только если товар действительно релевантен
 - максимум 12 matches
 - разные компании предпочтительнее дублей одной компании (оставь лучший товар компании)
-- если ничего не подходит — { "matches": [] }
+- если ничего не подходит — { "matches": [] }${
+      hasFiles
+        ? `
+- к заявке приложены файлы (фото товара, спецификация, datasheet) — это
+  самый точный источник: марка, модель, точные характеристики оттуда
+  важнее, чем то, что клиент написал словами в тексте заявки`
+        : ''
+    }
 
 Заявка:
 title: ${input.title}
@@ -269,7 +292,10 @@ text: """${input.requestText.slice(0, 3000)}"""
 Каталог:
 ${JSON.stringify(catalog)}`;
 
-    const raw = await this.generateText(prompt, 'match');
+    const extraParts = (input.attachments ?? []).map((file) => ({
+      inlineData: { mimeType: file.mimeType, data: file.data },
+    }));
+    const raw = await this.generateText(prompt, 'match', extraParts);
     if (!raw) return [];
 
     const parsed = this.parseJson<{ matches?: GeminiProductMatch[] }>(raw);
@@ -601,11 +627,12 @@ ${JSON.stringify(catalog)}`;
   private async generateText(
     prompt: string,
     purpose = 'match',
+    extraParts: ContentPart[] = [],
   ): Promise<string | null> {
-    return this.generateContent([{ role: 'user', parts: [{ text: prompt }] }], {
-      temperature: 0.2,
-      purpose,
-    });
+    return this.generateContent(
+      [{ role: 'user', parts: [{ text: prompt }, ...extraParts] }],
+      { temperature: 0.2, purpose },
+    );
   }
 
   /** One HTTP round trip — no retry, no logging, no breaker bookkeeping. */
@@ -674,15 +701,18 @@ ${JSON.stringify(catalog)}`;
   }
 
   private async generateContent(
-    contents: Array<{ role: string; parts: Array<{ text: string }> }>,
+    contents: Array<{ role: string; parts: ContentPart[] }>,
     opts: { temperature: number; system?: string; purpose: string },
   ): Promise<string | null> {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.model)}:generateContent`;
+    // Files carry their own cost via the real promptTokens the API returns —
+    // this count is just an at-a-glance observability figure for text.
     const promptChars =
       (opts.system?.length ?? 0) +
       contents.reduce(
         (sum, c) =>
-          sum + c.parts.reduce((s, p) => s + (p.text?.length ?? 0), 0),
+          sum +
+          c.parts.reduce((s, p) => s + ('text' in p ? p.text.length : 0), 0),
         0,
       );
 

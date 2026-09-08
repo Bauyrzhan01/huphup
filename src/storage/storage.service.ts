@@ -99,6 +99,44 @@ export class StorageService {
     return { key: `db:${stored.id}`, url: `/api/v1/media/${stored.id}` };
   }
 
+  /**
+   * Reads a file's raw bytes back given the URL saved on an Attachment —
+   * regardless of whether it landed in S3 or in the local/DB fallback.
+   * Used to hand an attached spec sheet or product photo to Gemini; never
+   * throws, a broken/slow file must not break the caller's whole flow.
+   */
+  async readAttachmentBytes(fileUrl: string): Promise<Buffer | null> {
+    // /api/v1/media/:id — local/DB mode: read the bytes directly, no HTTP
+    // round trip to our own server (and no dependency on knowing our own
+    // public base URL, which local/DB mode never configures).
+    const mediaMatch = fileUrl.match(/\/media\/([^/?]+)/);
+    if (mediaMatch) {
+      const file = await this.prisma.storedFile
+        .findUnique({ where: { id: mediaMatch[1] } })
+        .catch(() => null);
+      return file?.data ? Buffer.from(file.data) : null;
+    }
+
+    if (!/^https?:\/\//i.test(fileUrl)) return null;
+    try {
+      const res = await fetch(fileUrl, {
+        signal:
+          typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
+            ? AbortSignal.timeout(8000)
+            : undefined,
+      });
+      if (!res.ok) return null;
+      return Buffer.from(await res.arrayBuffer());
+    } catch (err) {
+      this.logger.warn(
+        `Failed to read attachment bytes from ${fileUrl}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      return null;
+    }
+  }
+
   async delete(key: string) {
     if (key.startsWith('db:')) {
       await this.prisma.storedFile

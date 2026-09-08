@@ -8,7 +8,8 @@ import {
 import { LeadActivityType, LeadStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
-import { GeminiService } from '../gemini/gemini.service';
+import { GeminiInlineFile, GeminiService } from '../gemini/gemini.service';
+import { StorageService } from '../storage/storage.service';
 import { LeadCrmService } from '../crm/lead-crm.service';
 import type {
   BulkLeadsDto,
@@ -16,6 +17,11 @@ import type {
   SetNextStepDto,
   UpdateLeadTaskDto,
 } from '../crm/dto/crm.dto';
+
+/** Только эти типы Gemini умеет читать напрямую — не рискуем слать остальное. */
+const GEMINI_READABLE_MIME = /^image\/|^application\/pdf$/;
+const MAX_ATTACHMENT_FILES = 3;
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
 const leadRequestSelect = {
   id: true,
@@ -63,6 +69,7 @@ export class MatchingService {
     private readonly companies: CompaniesService,
     private readonly gemini: GeminiService,
     private readonly crm: LeadCrmService,
+    private readonly storage: StorageService,
   ) {}
 
   async createLeadsForRequest(requestId: string) {
@@ -95,12 +102,15 @@ export class MatchingService {
       .filter(Boolean)
       .join('\n');
 
+    const attachments = await this.loadGeminiAttachments(requestId);
+
     let matches = await this.gemini.matchProducts({
       requestText,
       title: request.title,
       category: request.category,
       city: request.city,
       products,
+      attachments,
     });
 
     if (!matches.length) {
@@ -210,6 +220,56 @@ export class MatchingService {
       productId,
       reason,
     };
+  }
+
+  /**
+   * Loads the request's attached spec files (photos/PDFs) as base64 for
+   * Gemini's multimodal matching, so it can read exact specs off the file
+   * instead of relying only on the buyer's free-text description. Caps
+   * count and size to keep the prompt cheap; skips unreadable types and
+   * any file that fails to download rather than failing the whole match.
+   */
+  private async loadGeminiAttachments(
+    requestId: string,
+  ): Promise<GeminiInlineFile[]> {
+    const attachments = await this.prisma.attachment.findMany({
+      where: { requestId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const candidates = attachments
+      .filter(
+        (a) =>
+          a.mimeType &&
+          GEMINI_READABLE_MIME.test(a.mimeType) &&
+          (a.sizeBytes == null || a.sizeBytes <= MAX_ATTACHMENT_BYTES),
+      )
+      .slice(0, MAX_ATTACHMENT_FILES);
+
+    const files: GeminiInlineFile[] = [];
+    for (const attachment of candidates) {
+      try {
+        const bytes = await this.storage.readAttachmentBytes(
+          attachment.fileUrl,
+        );
+        // sizeBytes on the record can be missing or stale; re-check the
+        // actual downloaded size before it goes anywhere near the prompt.
+        if (!bytes || !bytes.length || bytes.length > MAX_ATTACHMENT_BYTES) {
+          continue;
+        }
+        files.push({
+          mimeType: attachment.mimeType as string,
+          data: bytes.toString('base64'),
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Skipping attachment ${attachment.id} for Gemini matching: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      }
+    }
+    return files;
   }
 
   private keywordMatch(
