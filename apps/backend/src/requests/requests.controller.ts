@@ -1,0 +1,113 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { RequestsService } from './requests.service';
+import {
+  AnalyzeRequestDto,
+  ClarifyRequestDto,
+  CreateRequestDto,
+  DirectRequestDto,
+  FavoriteRequestDto,
+  UpdateRequestDto,
+} from './dto/request.dto';
+import {
+  AuthUser,
+  CurrentUser,
+} from '../common/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
+
+@ApiTags('requests')
+@ApiBearerAuth()
+@Controller('requests')
+export class RequestsController {
+  constructor(private readonly requestsService: RequestsService) {}
+
+  // Unauthenticated and backed by the paid Gemini API — tighter than the
+  // global 120/min so an open endpoint cannot burn the quota.
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('analyze')
+  analyze(@Body() dto: AnalyzeRequestDto) {
+    return this.requestsService.analyze(dto);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Post('analyze/clarify')
+  clarify(@Body() dto: ClarifyRequestDto) {
+    return this.requestsService.clarify(dto);
+  }
+
+  @Post()
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateRequestDto) {
+    return this.requestsService.create(user.id, dto);
+  }
+
+  @Post('direct')
+  createDirect(@CurrentUser() user: AuthUser, @Body() dto: DirectRequestDto) {
+    return this.requestsService.createDirectFromProduct(user.id, dto);
+  }
+
+  @Get()
+  listMine(@CurrentUser() user: AuthUser) {
+    return this.requestsService.listMine(user.id);
+  }
+
+  @Get(':id')
+  getById(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requestsService.getById(id, user.id, user.role);
+  }
+
+  @Patch(':id')
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateRequestDto,
+  ) {
+    return this.requestsService.update(user.id, id, dto);
+  }
+
+  @Post(':id/publish')
+  publish(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requestsService.publish(user.id, id);
+  }
+
+  @Post(':id/cancel')
+  cancel(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requestsService.cancel(user.id, id);
+  }
+
+  @Post(':id/close')
+  close(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requestsService.close(user.id, id);
+  }
+
+  @Post(':id/favorite')
+  favorite(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: FavoriteRequestDto,
+  ) {
+    return this.requestsService.setFavorite(user.id, id, dto?.isFavorite);
+  }
+
+  @Post(':id/hide')
+  @HttpCode(200)
+  hidePost(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requestsService.hide(user.id, id);
+  }
+
+  @Delete(':id')
+  hide(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.requestsService.hide(user.id, id);
+  }
+}

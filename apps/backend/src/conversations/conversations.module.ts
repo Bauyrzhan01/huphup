@@ -1,0 +1,33 @@
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConversationsService } from './conversations.service';
+import { ConversationsController } from './conversations.controller';
+import { ChatEventsService } from './chat-events.service';
+import { ChatGateway } from './chat.gateway';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { StorageModule } from '../storage/storage.module';
+
+@Module({
+  imports: [
+    NotificationsModule,
+    StorageModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const expiresIn = config.get<string>('JWT_EXPIRES_IN') ?? '7d';
+        return {
+          secret: config.getOrThrow<string>('JWT_SECRET'),
+          signOptions: {
+            expiresIn: expiresIn as `${number}d`,
+          },
+        };
+      },
+    }),
+  ],
+  controllers: [ConversationsController],
+  providers: [ConversationsService, ChatEventsService, ChatGateway],
+  exports: [ConversationsService],
+})
+export class ConversationsModule {}
