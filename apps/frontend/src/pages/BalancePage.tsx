@@ -66,6 +66,11 @@ export function BalancePage() {
                 <span className="balance-hero-currency">{wallet.currency}</span>
               ) : null}
             </p>
+            {wallet?.scope === 'company' && wallet.companyName ? (
+              <p className="balance-hero-scope">
+                {t('balance.companyWallet', { company: wallet.companyName })}
+              </p>
+            ) : null}
             <p className="balance-hero-hint">{t('balance.topUpHint')}</p>
           </div>
         </section>
@@ -117,7 +122,9 @@ export function BalancePage() {
                           className={`balance-row-amount${credit ? ' is-credit' : ' is-debit'}`}
                         >
                           {credit ? '+' : '−'}
-                          {formatMoney(row.amount)}
+                          {/* сумма приходит знаковой (расход отрицателен) —
+                              знак рисуем сами, поэтому берём модуль */}
+                          {formatMoney(row.amount.replace('-', ''))}
                         </p>
                         <p className="balance-row-after">
                           {t('balance.after')} {formatMoney(row.balanceAfter)}

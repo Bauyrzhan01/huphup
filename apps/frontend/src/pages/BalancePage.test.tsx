@@ -101,6 +101,43 @@ describe('BalancePage', () => {
     expect(screen.getByText('−2000.00 ₸')).toBeDefined();
   });
 
+  it('знаковая сумма расхода (из сейф-сделок) не даёт двойной минус', async () => {
+    myTransactions.mockResolvedValue({
+      ...history,
+      items: [
+        {
+          id: 'hold',
+          type: 'DEBIT' as const,
+          amount: '-1575000.00', // billing.move хранит расход со знаком
+          balanceAfter: '48000.00',
+          comment: 'Оплата сделки',
+          createdAt: '2026-09-03T10:00:00.000Z',
+        },
+      ],
+    });
+
+    render(<BalancePage />);
+
+    await waitFor(() => expect(screen.getByText('−1575000.00 ₸')).toBeDefined());
+    expect(screen.queryByText('−−1575000.00 ₸')).toBeNull();
+  });
+
+  it('поставщику показывает, что это кошелёк компании', async () => {
+    role = 'SUPPLIER';
+    me.mockResolvedValue({
+      balance: '1200000.00',
+      currency: 'KZT',
+      scope: 'company',
+      companyName: 'КровляПро KZ',
+    });
+
+    render(<BalancePage />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/balance.companyWallet/)).toBeDefined(),
+    );
+  });
+
   it('показывает комментарий операции, когда он есть', async () => {
     render(<BalancePage />);
 

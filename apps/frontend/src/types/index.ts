@@ -432,11 +432,15 @@ export type WalletTransactionType = 'CREDIT' | 'DEBIT';
 export type Wallet = {
   balance: string;
   currency: string;
+  /** 'company' — кошелёк компании поставщика, 'user' — персональный. */
+  scope?: 'company' | 'user';
+  companyName?: string | null;
 };
 
 export type WalletTransaction = {
   id: string;
   type: WalletTransactionType;
+  /** Знаковая сумма: у расхода отрицательная (в UI берём модуль). */
   amount: string;
   balanceAfter: string;
   comment: string | null;

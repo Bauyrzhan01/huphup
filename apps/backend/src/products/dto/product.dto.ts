@@ -6,6 +6,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'Гипсокартон Knauf 12.5 мм' })
@@ -55,6 +56,25 @@ export class UpdateProductDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+}
+
+/**
+ * Query for the public catalog. Extends pagination so a single `@Query()`
+ * covers `q`/`city`/`page`/`limit` — a bare `@Query('q')` alongside
+ * `@Query() pagination` trips the global `forbidNonWhitelisted` pipe.
+ */
+export class ProductCatalogQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ description: 'Поиск по названию/описанию товара' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  q?: string;
+
+  @ApiPropertyOptional({ example: 'Алматы' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  city?: string;
 }
 
 export class ProductDraftDto {

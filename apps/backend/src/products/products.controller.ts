@@ -18,11 +18,11 @@ import { UserRole } from '@prisma/client';
 import { ProductsService } from './products.service';
 import {
   CreateProductDto,
+  ProductCatalogQueryDto,
   ProductDraftDto,
   UpdateProductDto,
 } from './dto/product.dto';
 import { CreateProductReviewDto } from './dto/review.dto';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { SupplierMember } from '../common/decorators/supplier-member.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import {
@@ -44,16 +44,12 @@ export class ProductsController {
 
   @Public()
   @Get('catalog')
-  catalog(
-    @Query('q') q?: string,
-    @Query('city') city?: string,
-    @Query() pagination?: PaginationQueryDto,
-  ) {
+  catalog(@Query() query: ProductCatalogQueryDto) {
     return this.productsService.listPublicCatalog({
-      q,
-      city,
-      page: pagination?.page,
-      limit: pagination?.limit,
+      q: query.q,
+      city: query.city,
+      page: query.page,
+      limit: query.limit,
     });
   }
 

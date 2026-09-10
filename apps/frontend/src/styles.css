@@ -2726,6 +2726,7 @@ body.mobile-nav-open{overflow:hidden}
 .balance-hero-label{margin:0 0 6px;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;opacity:.6}
 .balance-hero-amount{margin:0;font-size:2.4rem;font-weight:700;line-height:1.05;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .balance-hero-currency{font-size:1rem;font-weight:600;opacity:.55}
+.balance-hero-scope{margin:8px 0 0;font-size:.9rem;font-weight:600;opacity:.8;line-height:1.45}
 .balance-hero-hint{margin:10px 0 0;font-size:.9rem;opacity:.65;line-height:1.45}
 
 .balance-history{padding:18px 20px 20px}

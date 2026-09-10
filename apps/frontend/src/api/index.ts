@@ -581,10 +581,12 @@ function pageQuery(params?: { page?: number; limit?: number; q?: string }) {
 }
 
 export const walletsApi = {
-  me: () => api<Wallet>('/wallets/me'),
+  // /billing/* — единый кошелёк: поставщику отдаёт кошелёк его компании
+  // (туда приходят деньги по сейф-сделкам), остальным — персональный.
+  me: () => api<Wallet>('/billing/wallet'),
   myTransactions: (params?: { page?: number; limit?: number }) =>
     api<PaginatedResponse<WalletTransaction>>(
-      `/wallets/me/transactions${pageQuery(params)}`,
+      `/billing/transactions${pageQuery(params)}`,
     ),
 
   // Доступно только роли ADMIN

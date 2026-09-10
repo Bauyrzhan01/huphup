@@ -18,7 +18,14 @@ function build() {
       Promise.resolve(null),
     ),
   };
-  const prisma = {};
+  const prisma = {
+    product: {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
+    },
+    productImage: { findMany: jest.fn().mockResolvedValue([]) },
+    productReview: { groupBy: jest.fn().mockResolvedValue([]) },
+  };
   const storage = {};
 
   const service = new ProductsService(
@@ -28,7 +35,7 @@ function build() {
     storage as unknown as StorageService,
   );
 
-  return { service, companies, gemini };
+  return { service, companies, gemini, prisma };
 }
 
 describe('ProductsService.aiDraft', () => {
@@ -85,5 +92,41 @@ describe('ProductsService.aiDraft', () => {
     const result = await service.aiDraft('u1', { text: '   ' });
 
     expect(result.name).toBe('Новый товар');
+  });
+});
+
+describe('ProductsService.listPublicCatalog', () => {
+  const whereOf = (findMany: jest.Mock): Record<string, unknown> => {
+    const [[arg]] = findMany.mock.calls as [
+      [{ where: Record<string, unknown> }],
+    ];
+    return arg.where;
+  };
+
+  it('текстовый запрос q превращается в поиск по названию и описанию', async () => {
+    const { service, prisma } = build();
+
+    await service.listPublicCatalog({
+      q: 'профнастил',
+      city: 'Алматы',
+      page: 1,
+      limit: 20,
+    });
+
+    const where = whereOf(prisma.product.findMany);
+    expect(where.isActive).toBe(true);
+    expect(where.city).toEqual({ contains: 'Алматы', mode: 'insensitive' });
+    expect(where.OR).toEqual([
+      { name: { contains: 'профнастил', mode: 'insensitive' } },
+      { description: { contains: 'профнастил', mode: 'insensitive' } },
+    ]);
+  });
+
+  it('без q ищет весь активный каталог', async () => {
+    const { service, prisma } = build();
+
+    await service.listPublicCatalog({});
+
+    expect(whereOf(prisma.product.findMany)).toEqual({ isActive: true });
   });
 });
