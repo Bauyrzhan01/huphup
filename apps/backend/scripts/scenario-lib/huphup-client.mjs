@@ -62,6 +62,25 @@ export async function apiUpload(path, token, filePath, filename) {
   return { status: res.status, ok: res.ok, data };
 }
 
+export async function apiUploadBuffer(path, token, buf, filename, type, fields = {}) {
+  const fd = new FormData();
+  fd.append('file', new Blob([buf], { type }), filename);
+  for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : undefined;
+  } catch {
+    data = text;
+  }
+  return { status: res.status, ok: res.ok, data };
+}
+
 export function must(res, what) {
   if (!res.ok) {
     throw new Error(`${what}: HTTP ${res.status} ${JSON.stringify(res.data)}`);

@@ -58,6 +58,10 @@ async function main() {
   del.push(['wallet', prisma.wallet.deleteMany({
     where: { OR: [{ userId: { in: userIds } }, { companyId: { in: companyIds } }] },
   })]);
+  // Платформенные цены/комиссии — глобальные; сценарий S14 их трогает,
+  // возвращаем площадку к «бесплатно».
+  del.push(['platformPrice', prisma.platformPrice.deleteMany({})]);
+  del.push(['companyPrice', prisma.companyPrice.deleteMany({ where: { companyId: { in: companyIds } } })]);
 
   if (wipeAll) {
     del.push(['product', prisma.product.deleteMany({ where: { companyId: { in: companyIds } } })]);

@@ -220,6 +220,30 @@ export async function capture(outDir, shots) {
         await sleep(shot.clickWait ?? 1800);
       }
 
+      // необязательный ввод текста: [{ into: 'placeholder или label', text }]
+      for (const step of shot.type ?? []) {
+        const expr = `(() => {
+          const q = ${JSON.stringify(step.into)};
+          const fields = [...document.querySelectorAll('input,textarea')];
+          const el = fields.find((e) =>
+            (e.placeholder && e.placeholder.includes(q)) ||
+            (e.getAttribute('aria-label') || '').includes(q) ||
+            (e.name || '') === q,
+          ) || fields[0];
+          if (!el) return 'no-field';
+          const proto = el.tagName === 'TEXTAREA'
+            ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+          const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+          setter.call(el, ${JSON.stringify(step.text)});
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          return 'typed';
+        })()`;
+        const r = await cdp.eval(expr, sessionId);
+        if (process.env.SHOT_DEBUG) console.log(`     type(${JSON.stringify(step.into)}) -> ${r.result?.value}`);
+        await sleep(step.wait ?? 700);
+      }
+
       const m = await cdp.send('Page.getLayoutMetrics', {}, sessionId);
       const h = Math.min(shot.maxHeight ?? 4600, Math.ceil(m.cssContentSize?.height || VIEWPORT.height));
       const w = Math.ceil(m.cssContentSize?.width || VIEWPORT.width);

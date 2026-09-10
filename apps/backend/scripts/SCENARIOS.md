@@ -4,12 +4,22 @@
 проверяет инварианты и снимает страницы фронта/админки в `screenshots/` через
 headless Chrome (CDP, без npm-зависимостей).
 
-| папка | что | скринов |
-|---|---|---|
-| [`scenario-5-suppliers`](scenario-5-suppliers/README.md) | **S1.** 1 заказчик · заявка с PDF · 5 поставщиков одного товара → лид всем 5 во «Входящие» | 6 |
-| [`scenario-marketplace-funnel`](scenario-marketplace-funnel/README.md) | **S2–S4.** 5 КП → выбор → чат → escrow-сделка (оплата→отгрузка→выплата); спор → возврат админом | 11 |
-| [`scenario-direct-product`](scenario-direct-product/README.md) | **S5.** Прямой запрос по карточке товара → адресный лид одному поставщику (score 100) | 3 |
-| [`scenario-lib`](scenario-lib/) | общий код: `huphup-client.mjs` (обёртка API), `ensure-admin.mjs` (ADMIN + пополнение кошелька), `screenshot-lib.mjs` (CDP-скриншотилка), `reset.mjs` (очистка сценарных данных) | — |
+| папка | что |
+|---|---|
+| [`scenario-5-suppliers`](scenario-5-suppliers/README.md) | **S1.** 1 заказчик · заявка с PDF · 5 поставщиков одного товара → лид всем 5 |
+| [`scenario-marketplace-funnel`](scenario-marketplace-funnel/README.md) | **S2–S4.** 5 КП → выбор → чат → escrow-сделка; спор → возврат админом |
+| [`scenario-direct-product`](scenario-direct-product/README.md) | **S5.** Прямой запрос по карточке товара → адресный лид (score 100) |
+| `scenario-onboarding` | **S6.** Онбординг поставщика: регистрация → компания → товар + 2 фото → публичный каталог |
+| `scenario-ai-request` | **S7.** ИИ-чат собирает заявку из свободного текста (analyze → clarify → publish) |
+| `scenario-crm-lifecycle` | **S8.** Лид в CRM: open → claim → следующий шаг → заметка → задача → статус → лента активности |
+| `scenario-team-invite` | **S9.** Инвайт менеджера в компанию по email → приём по ссылке → назначение лида менеджеру |
+| `scenario-chat-files` | **S10.** Файлы в чате сделки: фото замера + PDF счёта, видны обеим сторонам |
+| `scenario-offer-lifecycle` | **S11.** Жизненный цикл КП: отклонение заказчиком + отзыв поставщиком + акцепт |
+| `scenario-deal-autorelease` | **S12.** Автовыпуск денег поставщику через 7 дней после отгрузки (молчание покупателя) |
+| `scenario-deal-cancel` | **S13.** Отмена сделки до отгрузки → возврат покупателю |
+| `scenario-commission` | **S14.** Комиссия площадки: админ включает DEAL_COMMISSION 5% → к выплате = сумма − комиссия |
+| `scenario-insufficient-funds` | **S15.** Оплата без денег → 402 без движения средств; после пополнения проходит |
+| [`scenario-lib`](scenario-lib/) | общий код: `huphup-client`, `flows` (заявка/КП/акцепт), `ensure-admin`, `db` (backdate/zero-wallet), `png`/`pdf` (генераторы вложений), `screenshot-lib` (CDP), `reset` (`--all` — полная очистка) |
 
 ## Что нужно поднять
 
