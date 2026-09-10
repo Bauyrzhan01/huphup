@@ -177,3 +177,235 @@ describe('MatchingService — Gemini attachment matching', () => {
     expect(attachmentsArgOf(gemini.matchProducts)).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Резервный keyword-матчинг: путь, по которому идёт подбор, когда Gemini не
+// настроен (GEMINI_API_KEY пуст) или вернул пусто. Именно он работает на
+// локальном стенде и в сценарных прогонах.
+// ---------------------------------------------------------------------------
+
+type CatProduct = {
+  id: string;
+  name: string;
+  description: string | null;
+  city: string | null;
+  company: {
+    id: string;
+    name: string;
+    city: string | null;
+    verified: boolean;
+    rating: number;
+  };
+};
+
+function product(
+  over: Partial<CatProduct> & { companyId: string },
+): CatProduct {
+  return {
+    id: `p-${over.companyId}`,
+    name: 'Товар',
+    description: null,
+    city: null,
+    ...over,
+    company: {
+      id: over.companyId,
+      name: `Компания ${over.companyId}`,
+      city: null,
+      verified: false,
+      rating: 0,
+      ...(over.company ?? {}),
+    },
+  };
+}
+
+describe('MatchingService — keyword fallback (без Gemini)', () => {
+  let prisma: {
+    request: { findUnique: jest.Mock };
+    product: { findMany: jest.Mock };
+    attachment: { findMany: jest.Mock };
+    lead: { upsert: jest.Mock };
+  };
+  let gemini: { matchProducts: jest.Mock };
+  let companies: { listMemberUserIds: jest.Mock };
+  let crm: { logActivity: jest.Mock };
+  let service: MatchingService;
+
+  type UpsertArg = {
+    where: { requestId_companyId: { companyId: string } };
+    create: { matchedProductId?: string | null; score?: number };
+  };
+  const upsertCalls = () =>
+    prisma.lead.upsert.mock.calls as unknown as [UpsertArg][];
+  const upsertedCompanyIds = () =>
+    upsertCalls().map(([arg]) => arg.where.requestId_companyId.companyId);
+
+  function setup(
+    request: Partial<{
+      title: string;
+      description: string;
+      rawText: string | null;
+      category: string | null;
+      city: string | null;
+    }>,
+    products: CatProduct[],
+  ) {
+    prisma = {
+      request: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'request-1',
+          code: 'HH-1',
+          title: 'Заявка',
+          description: '',
+          rawText: null,
+          category: null,
+          city: null,
+          ...request,
+        }),
+      },
+      product: { findMany: jest.fn().mockResolvedValue(products) },
+      attachment: { findMany: jest.fn().mockResolvedValue([]) },
+      lead: {
+        upsert: jest.fn().mockImplementation((arg: UpsertArg) =>
+          Promise.resolve({
+            id: `lead-${arg.where.requestId_companyId.companyId}`,
+          }),
+        ),
+      },
+    };
+    // Gemini "выключен": возвращает пусто -> включается keywordMatch
+    gemini = { matchProducts: jest.fn().mockResolvedValue([]) };
+    companies = { listMemberUserIds: jest.fn().mockResolvedValue(['user-1']) };
+    crm = { logActivity: jest.fn().mockResolvedValue(undefined) };
+    service = new MatchingService(
+      prisma as unknown as PrismaService,
+      companies as unknown as CompaniesService,
+      gemini as unknown as GeminiService,
+      crm as unknown as LeadCrmService,
+      {} as unknown as StorageService,
+    );
+  }
+
+  it('заводит лид каждой компании, чей товар совпал по словам заявки', async () => {
+    setup(
+      { description: 'Нужен профнастил С8 оцинкованный для кровли склада' },
+      [
+        product({
+          companyId: 'a',
+          name: 'Профнастил С8',
+          description: 'оцинкованный лист для кровли',
+        }),
+        product({
+          companyId: 'b',
+          name: 'Профнастил С8 усиленный',
+          description: 'оцинкованный, склад',
+        }),
+        product({
+          companyId: 'c',
+          name: 'Цемент М400',
+          description: 'мешок 50 кг',
+        }),
+      ],
+    );
+
+    const created = await service.createLeadsForRequest('request-1');
+
+    expect(upsertedCompanyIds().sort()).toEqual(['a', 'b']);
+    expect(created).toHaveLength(2);
+    expect(created.every((l) => l.score >= 55)).toBe(true);
+  });
+
+  it('берёт лучший товар компании, а не плодит дубли по одной компании', async () => {
+    setup({ description: 'профнастил оцинкованный кровля склад' }, [
+      product({
+        id: 'weak',
+        companyId: 'a',
+        name: 'профнастил',
+        description: '',
+      }),
+      product({
+        id: 'strong',
+        companyId: 'a',
+        name: 'профнастил оцинкованный',
+        description: 'кровля склад',
+      }),
+    ]);
+
+    const created = await service.createLeadsForRequest('request-1');
+
+    expect(created).toHaveLength(1);
+    expect(prisma.lead.upsert).toHaveBeenCalledTimes(1);
+    expect(upsertCalls()[0][0].create.matchedProductId).toBe('strong');
+  });
+
+  it('совпадение города поднимает score', async () => {
+    setup({ description: 'профнастил оцинкованный', city: 'Алматы' }, [
+      product({
+        companyId: 'far',
+        name: 'профнастил оцинкованный',
+        city: 'Астана',
+      }),
+      product({
+        companyId: 'near',
+        name: 'профнастил оцинкованный',
+        city: 'Алматы',
+      }),
+    ]);
+
+    const created = await service.createLeadsForRequest('request-1');
+    const byCompany = Object.fromEntries(
+      created.map((l) => [l.companyId, l.score]),
+    );
+
+    expect(byCompany.near).toBeGreaterThan(byCompany.far);
+  });
+
+  it('ничего не совпало по словам — лидов нет', async () => {
+    setup({ description: 'нужен погрузчик дизельный 3 тонны' }, [
+      product({
+        companyId: 'a',
+        name: 'Профнастил С8',
+        description: 'оцинкованный',
+      }),
+    ]);
+
+    const created = await service.createLeadsForRequest('request-1');
+
+    expect(created).toEqual([]);
+    expect(prisma.lead.upsert).not.toHaveBeenCalled();
+  });
+
+  it('пустой запрос (нет заявки) — пустой результат, без обращения к каталогу', async () => {
+    setup({}, []);
+    prisma.request.findUnique.mockResolvedValue(null);
+
+    const created = await service.createLeadsForRequest('missing');
+
+    expect(created).toEqual([]);
+    expect(prisma.product.findMany).not.toHaveBeenCalled();
+  });
+
+  it('createDirectLead: адресный лид одной компании со score 100 и привязкой к товару', async () => {
+    setup({}, []);
+
+    const lead = await service.createDirectLead(
+      'request-1',
+      'company-x',
+      'product-x',
+      'Профнастил С8',
+    );
+
+    expect(lead).toMatchObject({
+      companyId: 'company-x',
+      productId: 'product-x',
+      score: 100,
+    });
+    expect(prisma.lead.upsert).toHaveBeenCalledTimes(1);
+    expect(upsertCalls()[0][0].create).toMatchObject({
+      score: 100,
+      matchedProductId: 'product-x',
+    });
+    expect(crm.logActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Direct product request' }),
+    );
+  });
+});

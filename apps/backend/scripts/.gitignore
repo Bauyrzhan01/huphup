@@ -1,0 +1,4 @@
+# Генерируется прогонами сценариев — не коммитим
+scenario-*/screenshots/
+scenario-*/assets/
+scenario-*/state.json
