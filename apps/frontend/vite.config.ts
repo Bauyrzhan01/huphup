@@ -8,6 +8,7 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    host: true, // also bind LAN interfaces so other devices on the same Wi-Fi can connect
   },
   test: {
     environment: 'jsdom',
