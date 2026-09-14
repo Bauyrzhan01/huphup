@@ -1,40 +1,48 @@
-// Production entrypoint (render.yaml startCommand): tidy the database URLs,
+// Production entrypoint (render.yaml startCommand): find the database URLs,
 // apply migrations, then start the API.
 //
 // The URLs are pasted by hand into the Render dashboard, and Neon's Connect
-// dialog offers them as `psql '…'` or `DATABASE_URL=…` snippets that Prisma
-// rejects with P1013. Accept those forms. DIRECT_URL (unpooled, used only by
-// migrations) is the same URL without `-pooler` in the host, so derive it when
-// it is empty or unusable.
+// dialog offers them wrapped in snippets (`psql '…'`, `DATABASE_URL=…`, or the
+// whole multi-line Prisma block with both variables). Prisma rejects anything
+// that isn't a bare URL (P1013), so pull the postgres:// URLs out of whatever
+// was pasted into DATABASE_URL / DIRECT_URL. The pooled URL (`-pooler` host)
+// serves queries; the direct one runs migrations and is derived when absent.
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
-const SCHEME = /^postgres(ql)?:\/\//;
+const URL_RE = /postgres(?:ql)?:\/\/[^\s'"`]+/g;
 
-function cleanDbUrl(raw) {
-  return String(raw ?? '')
-    .trim()
-    .replace(/^[A-Z_]+\s*=\s*/, '')
-    .replace(/^psql\s+/, '')
-    .replace(/^(['"])([\s\S]*)\1$/, '$2')
-    .trim();
+function labelled(text, key) {
+  const m = text.match(new RegExp(`\b${key}\s*[=:]\s*['"]?(postgres(?:ql)?://[^\s'"\`]+)`));
+  return m ? m[1] : undefined;
 }
 
 function resolveDbUrls(env) {
-  const url = cleanDbUrl(env.DATABASE_URL);
-  let direct = cleanDbUrl(env.DIRECT_URL);
-  if (!SCHEME.test(direct) && SCHEME.test(url)) {
-    direct = url.replace('-pooler.', '.');
-  }
+  const text = [env.DATABASE_URL, env.DIRECT_URL].map((v) => String(v ?? '')).join('\n');
+  const urls = text.match(URL_RE) ?? [];
+  const url =
+    labelled(text, 'DATABASE_URL') ?? urls.find((u) => u.includes('-pooler.')) ?? urls[0] ?? '';
+  const direct =
+    labelled(text, 'DIRECT_URL') ??
+    urls.find((u) => !u.includes('-pooler.')) ??
+    url.replace('-pooler.', '.');
   return { url, direct };
+}
+
+// Shape of a value without revealing it, for the deploy log.
+function describe(name, value) {
+  if (value == null) return `${name}: not set`;
+  const s = String(value);
+  if (!s.trim()) return `${name}: empty`;
+  return `${name}: ${s.length} chars, ${s.split(/\r?\n/).length} line(s), no postgres:// URL inside`;
 }
 
 function main() {
   const { url, direct } = resolveDbUrls(process.env);
-  if (!SCHEME.test(url)) {
-    console.error(
-      'DATABASE_URL is not a postgresql:// URL — fix it in the Render dashboard (Environment).',
-    );
+  if (!url) {
+    console.error('No postgresql:// URL found in DATABASE_URL or DIRECT_URL — fix them in the Render dashboard (Environment).');
+    console.error(describe('DATABASE_URL', process.env.DATABASE_URL));
+    console.error(describe('DIRECT_URL', process.env.DIRECT_URL));
     process.exit(1);
   }
   process.env.DATABASE_URL = url;
@@ -52,4 +60,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { cleanDbUrl, resolveDbUrls };
+module.exports = { resolveDbUrls, describe };
