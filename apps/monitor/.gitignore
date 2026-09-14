@@ -10,3 +10,6 @@ dist
 health.json
 ops*.json
 snap.json
+
+.vercel
+.env*.local
