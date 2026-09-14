@@ -11,8 +11,9 @@ services:
     # pnpm-workspace.yaml and .nvmrc (Node 24). npx pins pnpm to the root
     # `packageManager` version — keep the two in sync when upgrading pnpm.
     buildCommand: npx --yes pnpm@12.3.4 install --frozen-lockfile && npx --yes pnpm@12.3.4 --filter @huphup/backend build
-    # pnpm isn't needed at runtime, and skipping it keeps cold starts short.
-    startCommand: cd apps/backend && node_modules/.bin/prisma migrate deploy && node dist/src/main.js
+    # scripts/start-prod.js tidies hand-pasted DB URLs, runs `prisma migrate
+    # deploy`, then starts the API — no pnpm at runtime keeps cold starts short.
+    startCommand: cd apps/backend && node scripts/start-prod.js
     # Liveness doesn't touch the DB, so a Neon cold start can't fail a deploy.
     healthCheckPath: /api/v1/health/live
     autoDeployTrigger: commit
@@ -43,6 +44,7 @@ services:
       - key: DATABASE_URL
         sync: false
       # Neon: direct URL (no `-pooler`) — only `prisma migrate` uses it.
+      # Optional: derived from DATABASE_URL when left empty.
       - key: DIRECT_URL
         sync: false
       # Must equal MONITOR_SECRET in the huphup-monitor Vercel project.

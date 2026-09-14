@@ -20,7 +20,8 @@ and the first request after that takes about a minute.
 1. https://console.neon.tech → project `huphup`, Postgres 16, region Frankfurt.
 2. **Connect** gives two URLs, both with `?sslmode=require`:
    - pooling **on** (host contains `-pooler`) → `DATABASE_URL`
-   - pooling **off** → `DIRECT_URL` (migrations can't run through the pooler)
+   - pooling **off** → `DIRECT_URL` (migrations can't run through the pooler;
+     optional — derived from `DATABASE_URL` when left empty)
 
 Migrations run automatically on every API start (`prisma migrate deploy`).
 Free Neon storage is 0.5 GB and uploaded files are stored in Postgres unless
