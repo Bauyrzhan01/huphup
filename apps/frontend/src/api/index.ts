@@ -148,7 +148,6 @@ export const companiesApi = {
 
 export const productsApi = {
   mine: () => api<Product[]>('/products/mine'),
-  getMine: (id: string) => api<Product>(`/products/mine/${id}`),
   get: (id: string) => api<Product>(`/products/${id}`),
   create: (body: {
     name: string;

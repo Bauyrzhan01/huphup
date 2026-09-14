@@ -12,6 +12,7 @@ import { useWorkspaceMode } from '../hooks/useWorkspaceMode';
 import { BuyerLayout, SupplierLayout } from '../layouts/AppLayouts';
 import { useAppLocale } from '../i18n/useAppLocale';
 import type { ConversationItem, MessageAttachment, MessageItem } from '../types';
+import { mapApiError } from '../utils/apiErrors';
 
 type PreviewMessage = ConversationItem['messages'][number];
 
@@ -167,7 +168,7 @@ export function ConversationsPage() {
         setError('');
       } catch (err) {
         if (!cancelled && initial) {
-          setError(err instanceof Error ? err.message : t('common.error'));
+          setError(mapApiError(err, t));
         }
       } finally {
         if (!cancelled && initial) setLoading(false);
@@ -238,7 +239,7 @@ export function ConversationsPage() {
           } else {
             setMessages([]);
           }
-          setError(err instanceof Error ? err.message : t('common.error'));
+          setError(mapApiError(err, t));
         }
       } finally {
         if (!cancelled) setMessagesLoading(false);
@@ -346,7 +347,7 @@ export function ConversationsPage() {
       const list = await conversationsApi.list();
       setItems(list);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setSending(false);
     }

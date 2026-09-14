@@ -6,6 +6,7 @@ import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAuth } from '../../auth/AuthContext';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import type { CompanyMember, Lead, LeadTask, LeadTaskComment } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 const STATUSES: LeadTask['status'][] = ['TODO', 'IN_PROGRESS', 'DONE'];
 
@@ -46,7 +47,7 @@ export function SupplierTasksPage() {
 
   useEffect(() => {
     void refresh().catch((err) =>
-      setError(err instanceof Error ? err.message : t('common.error')),
+      setError(mapApiError(err, t)),
     );
   }, [refresh, t]);
 
@@ -89,7 +90,7 @@ export function SupplierTasksPage() {
       await leadsApi.updateTask(task.lead.id, task.id, { status });
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }
@@ -113,7 +114,7 @@ export function SupplierTasksPage() {
       setDescription('');
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }
@@ -131,7 +132,7 @@ export function SupplierTasksPage() {
       setSelected(updated);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }
@@ -147,7 +148,7 @@ export function SupplierTasksPage() {
       setComment('');
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }

@@ -36,7 +36,7 @@ export function SupplierDashboardPage() {
     >
       <div className="page">
         {error ? <p className="notice" style={{ color: '#b45309' }}>{error}</p> : null}
-        <SupplierDashboard analytics={analytics} />
+        <SupplierDashboard analytics={analytics} failed={Boolean(error)} />
       </div>
     </SupplierLayout>
   );

@@ -5,6 +5,7 @@ import { offersApi } from '../../api';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
 import type { Offer } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 export function SupplierOffersPage() {
   const { t } = useTranslation();
@@ -22,7 +23,7 @@ export function SupplierOffersPage() {
 
   useEffect(() => {
     void load()
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
+      .catch((err) => setError(mapApiError(err, t)))
       .finally(() => setLoading(false));
   }, [t]);
 
@@ -33,7 +34,7 @@ export function SupplierOffersPage() {
       setMsg(t('supplier.withdrawn'));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 

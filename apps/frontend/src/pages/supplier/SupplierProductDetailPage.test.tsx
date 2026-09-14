@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { ApiError } from '../../api/client';
 
 const companiesMe = vi.fn();
 const productsCreate = vi.fn();
@@ -114,6 +115,24 @@ describe('SupplierProductDetailPage', () => {
     );
     await waitFor(() => expect(productsGet).toHaveBeenCalledWith('p1'));
     expect(await screen.findByRole('heading', { name: 'Цемент М500' })).toBeTruthy();
+  });
+
+  it('keeps «Добавить» usable when loading the company times out', async () => {
+    companiesMe.mockRejectedValue(new ApiError(0, 'timeout'));
+    renderAt('/supplier/products/new');
+
+    expect(await screen.findByText('requests.timeoutError')).toBeTruthy();
+    const add = screen.getByRole('button', { name: 'products.addBtn' });
+    expect((add as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('blocks «Добавить» only when the user really has no company', async () => {
+    companiesMe.mockRejectedValue(new ApiError(404, 'Company not found'));
+    renderAt('/supplier/products/new');
+
+    expect(await screen.findByText('products.noCompany')).toBeTruthy();
+    const add = screen.getByRole('button', { name: 'products.addBtn' });
+    expect((add as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('still loads an existing product by id', async () => {

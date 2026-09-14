@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../../api';
 import { AuthLayout } from './AuthLayout';
+import { mapApiError } from '../../utils/apiErrors';
 
 export function ForgotPasswordPage() {
   const { t } = useTranslation();
@@ -21,7 +22,7 @@ export function ForgotPasswordPage() {
       const res = await authApi.forgotPassword(email.trim());
       if (res.resetToken) setResetToken(res.resetToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }

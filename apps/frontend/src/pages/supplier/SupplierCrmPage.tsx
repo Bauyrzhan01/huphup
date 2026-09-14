@@ -136,7 +136,7 @@ export function SupplierCrmPage() {
       await leadsApi.updateStatus(leadId, status);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 
@@ -147,7 +147,7 @@ export function SupplierCrmPage() {
       setSelectedIds([]);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 

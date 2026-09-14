@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 import { BuyerLayout, SupplierLayout } from '../layouts/AppLayouts';
 import { useAppLocale } from '../i18n/useAppLocale';
 import type { Deal, DealStatus } from '../types';
+import { mapApiError } from '../utils/apiErrors';
 
 /** Порядок соответствует машине состояний на бэкенде. */
 const STATUS_TONE: Record<DealStatus, string> = {
@@ -40,7 +41,7 @@ export function DealsPage() {
         setError('');
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : t('common.error')),
+        setError(mapApiError(err, t)),
       )
       .finally(() => setLoading(false));
   }, [t]);
@@ -56,7 +57,7 @@ export function DealsPage() {
       const updated = await action();
       setDeals((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusyId('');
     }
@@ -85,7 +86,7 @@ export function DealsPage() {
         {loading && !deals.length ? (
           <p className="assist-note">{t('common.loading')}</p>
         ) : !deals.length ? (
-          <p className="assist-note">{t('deals.empty')}</p>
+          error ? null : <p className="assist-note">{t('deals.empty')}</p>
         ) : (
           <ul className="deals-list">
             {deals.map((deal) => {

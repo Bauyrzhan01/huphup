@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
+import { ApiError } from '../api/client';
 
 const me = vi.fn();
 const myTransactions = vi.fn();
@@ -144,6 +145,15 @@ describe('BalancePage', () => {
     await waitFor(() =>
       expect(screen.getByText(/Перевод №142/)).toBeDefined(),
     );
+  });
+
+  it('ошибку сервера не выдаёт за пустую историю операций', async () => {
+    myTransactions.mockRejectedValue(new ApiError(500, 'Internal server error'));
+
+    render(<BalancePage />);
+
+    await waitFor(() => expect(screen.getByText('apiErrors.server')).toBeDefined());
+    expect(screen.queryByText('balance.historyEmpty')).toBeNull();
   });
 
   it('пишет, что операций нет, когда история пуста', async () => {

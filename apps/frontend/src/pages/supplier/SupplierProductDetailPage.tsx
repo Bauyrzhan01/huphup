@@ -10,7 +10,7 @@ import { ProductImagesEditor } from '../../components/ProductImagesEditor';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import { useDirectoryMeta } from '../../hooks/useDirectoryMeta';
-import { mapApiError } from '../../utils/apiErrors';
+import { isNoCompanyError, mapApiError } from '../../utils/apiErrors';
 import type { Product, ProductReview } from '../../types';
 
 const emptyForm = {
@@ -66,7 +66,9 @@ export function SupplierProductDetailPage() {
           setForm((f) => ({ ...f, city: f.city || company.city || '' }));
         })
         .catch((err) => {
-          setHasCompany(false);
+          // Only a real no-company answer blocks adding: a timeout while the API
+          // wakes up must not lock the button until the page is reloaded.
+          setHasCompany(!isNoCompanyError(err));
           setError(mapApiError(err, t));
         });
       return;
@@ -165,7 +167,7 @@ export function SupplierProductDetailPage() {
 
         {loading ? (
           <p className="assist-note">{t('common.loading')}</p>
-        ) : (
+        ) : !isNew && !product ? null : (
           <div className="product-detail-shell">
             <div className="product-detail-top">
               <div className="product-detail-title-wrap">

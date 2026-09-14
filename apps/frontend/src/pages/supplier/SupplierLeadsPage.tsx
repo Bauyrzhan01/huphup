@@ -15,6 +15,7 @@ import { LeadTasksPanel } from '../../components/crm/LeadTasksPanel';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
 import type { CompanyMember, Lead, LeadActivity, LeadNote, LeadTask } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 function scoreTone(score: number) {
   if (score >= 85) return 'high';
@@ -64,7 +65,7 @@ export function SupplierLeadsPage() {
 
   useEffect(() => {
     void load().catch((err) =>
-      setError(err instanceof Error ? err.message : t('supplier.loadLeadsError')),
+      setError(mapApiError(err, t)),
     );
   }, [t]);
 
@@ -135,7 +136,7 @@ export function SupplierLeadsPage() {
       setMsg(t('supplier.leadClaimed'));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }
@@ -150,7 +151,7 @@ export function SupplierLeadsPage() {
       setMsg(t('supplier.leadReassigned'));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }
@@ -165,7 +166,7 @@ export function SupplierLeadsPage() {
       setSearchParams({}, { replace: true });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 
@@ -186,7 +187,7 @@ export function SupplierLeadsPage() {
       setComment('');
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('supplier.sendError'));
+      setError(mapApiError(err, t));
     } finally {
       setSending(false);
     }

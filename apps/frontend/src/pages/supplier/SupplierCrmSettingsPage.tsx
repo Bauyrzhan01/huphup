@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { crmApi } from '../../api';
 import { SupplierLayout } from '../../layouts/AppLayouts';
 import type { CrmAutomationRule, CrmStage } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 export function SupplierCrmSettingsPage() {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export function SupplierCrmSettingsPage() {
         setStages(s);
         setRules(r);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.error')));
+      .catch((err) => setError(mapApiError(err, t)));
   }, [t]);
 
   async function saveStages() {
@@ -37,7 +38,7 @@ export function SupplierCrmSettingsPage() {
       setStages(updated);
       setMsg(t('supplier.crmStagesSaved'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }
@@ -49,7 +50,7 @@ export function SupplierCrmSettingsPage() {
     try {
       await crmApi.updateAutomation(next.map((r) => ({ id: r.id, enabled: r.enabled })));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 

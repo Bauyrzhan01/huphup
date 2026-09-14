@@ -15,6 +15,7 @@ import {
 } from '../../utils/homeChatStorage';
 import { shouldSkipAssistantReply } from '../../utils/requestChat';
 import type { AnalyzeResult, PublishResult, RequestItem } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 const MAX_DRAFT_FILES = 5;
 
@@ -91,7 +92,7 @@ export function HomePage() {
     if (err instanceof Error && /failed to fetch/i.test(err.message)) {
       return t('requests.networkError');
     }
-    return err instanceof Error ? err.message : t('common.error');
+    return mapApiError(err, t);
   }
 
   useEffect(() => {

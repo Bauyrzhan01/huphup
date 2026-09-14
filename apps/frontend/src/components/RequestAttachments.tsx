@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { attachmentsApi } from '../api';
 import { resolvePrivateMediaUrl } from '../api/client';
 import type { Attachment } from '../types';
+import { mapApiError } from '../utils/apiErrors';
 
 type Props = {
   requestId: string;
@@ -32,7 +33,7 @@ export function RequestAttachments({ requestId, editable = false }: Props) {
         if (!cancelled) setItems(list);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : t('common.error'));
+        if (!cancelled) setError(mapApiError(err, t));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -50,7 +51,7 @@ export function RequestAttachments({ requestId, editable = false }: Props) {
       const created = await attachmentsApi.upload(requestId, file);
       setItems((prev) => [created, ...prev]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -63,7 +64,7 @@ export function RequestAttachments({ requestId, editable = false }: Props) {
       await attachmentsApi.remove(requestId, id);
       setItems((prev) => prev.filter((a) => a.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
+import { mapApiError } from '../utils/apiErrors';
 
 export function LoginScreen() {
   const { t } = useTranslation();
@@ -23,7 +24,7 @@ export function LoginScreen() {
       const next = await login(email, password);
       navigate(next.role === 'SUPPLIER' ? '/supplier' : '/app');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('auth.loginError'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }

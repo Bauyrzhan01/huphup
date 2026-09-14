@@ -8,6 +8,7 @@ import { UserAvatar } from '../../components/UserAvatar';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import type { Company, PublicProduct } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 const PAGE_SIZE = 12;
 
@@ -29,7 +30,7 @@ export function SupplierDetailPage() {
     void companiesApi
       .get(id)
       .then(setCompany)
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.error')));
+      .catch((err) => setError(mapApiError(err, t)));
   }, [id, t]);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export function SupplierDetailPage() {
         setTotal(res.total);
         setTotalPages(res.totalPages);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
+      .catch((err) => setError(mapApiError(err, t)))
       .finally(() => setLoading(false));
   }, [id, page, t]);
 

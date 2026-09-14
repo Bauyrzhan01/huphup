@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
+import { ApiError } from '../api/client';
 import type { Deal, DealStatus } from '../types';
 
 const list = vi.fn();
@@ -141,6 +142,15 @@ describe('DealsPage', () => {
     expect(screen.getByText('Цемент М400')).toBeDefined();
     expect(screen.getByText(/Алматы Цемент Опт/)).toBeDefined();
     expect(screen.getByText('450000.00 KZT')).toBeDefined();
+  });
+
+  it('ошибку сервера не выдаёт за пустой список сделок', async () => {
+    list.mockRejectedValue(new ApiError(500, 'Internal server error'));
+
+    render(<DealsPage />);
+
+    await waitFor(() => expect(screen.getByText('apiErrors.server')).toBeDefined());
+    expect(screen.queryByText('deals.empty')).toBeNull();
   });
 
   it('пустой список объясняет, откуда берутся сделки', async () => {

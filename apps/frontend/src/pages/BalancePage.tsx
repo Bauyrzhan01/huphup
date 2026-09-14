@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 import { BuyerLayout, SupplierLayout } from '../layouts/AppLayouts';
 import { useAppLocale } from '../i18n/useAppLocale';
 import type { AdminWalletRow, Wallet, WalletTransaction } from '../types';
+import { mapApiError } from '../utils/apiErrors';
 
 const PAGE_SIZE = 20;
 
@@ -43,7 +44,7 @@ export function BalancePage() {
           setError('');
         })
         .catch((err) =>
-          setError(err instanceof Error ? err.message : t('common.error')),
+          setError(mapApiError(err, t)),
         )
         .finally(() => setLoading(false));
     },
@@ -90,7 +91,7 @@ export function BalancePage() {
           {loading && !items.length ? (
             <p className="assist-note">{t('common.loading')}</p>
           ) : !items.length ? (
-            <p className="assist-note">{t('balance.historyEmpty')}</p>
+            error ? null : <p className="assist-note">{t('balance.historyEmpty')}</p>
           ) : (
             <>
               <ul className="balance-list">
@@ -222,7 +223,7 @@ function AdminWallets({ onChanged }: { onChanged: () => void }) {
       search(query);
       onChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }

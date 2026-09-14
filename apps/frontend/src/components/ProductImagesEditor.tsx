@@ -5,6 +5,7 @@ import { productsApi } from '../api';
 import { resolveMediaUrl } from '../api/client';
 import { AppIcon } from './AppIcon';
 import type { ProductImage } from '../types';
+import { mapApiError } from '../utils/apiErrors';
 
 type Props = {
   productId: string;
@@ -29,7 +30,7 @@ export function ProductImagesEditor({ productId, images, onChange }: Props) {
       }
       onChange();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -42,7 +43,7 @@ export function ProductImagesEditor({ productId, images, onChange }: Props) {
       await productsApi.removeImage(productId, imageId);
       onChange();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 

@@ -5,6 +5,7 @@ import { invitesApi } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import type { InvitePreview } from '../types';
+import { mapApiError } from '../utils/apiErrors';
 
 export function InviteAcceptPage() {
   const { t } = useTranslation();
@@ -23,7 +24,7 @@ export function InviteAcceptPage() {
       .get(token)
       .then(setInvite)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : t('common.error')),
+        setError(mapApiError(err, t)),
       )
       .finally(() => setLoading(false));
   }, [token, t]);
@@ -38,7 +39,7 @@ export function InviteAcceptPage() {
       setDone(true);
       navigate('/supplier', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }

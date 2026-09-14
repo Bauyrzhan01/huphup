@@ -152,11 +152,18 @@ function Lines({ a, b }: { a: number[]; b: number[] }) {
   );
 }
 
-export function SupplierDashboard({ analytics }: { analytics: CrmAnalytics | null }) {
+export function SupplierDashboard({
+  analytics,
+  failed = false,
+}: {
+  analytics: CrmAnalytics | null;
+  /** Loading analytics failed: the page shows the error, so stop showing «loading». */
+  failed?: boolean;
+}) {
   const { t } = useTranslation();
   const { formatMoney } = useAppLocale();
   if (!analytics) {
-    return <p className="meta">{t('common.loadingFromDb')}</p>;
+    return failed ? null : <p className="meta">{t('common.loadingFromDb')}</p>;
   }
 
   const series = analytics.series ?? [];

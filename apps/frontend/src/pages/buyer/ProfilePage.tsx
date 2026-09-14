@@ -10,6 +10,7 @@ import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useRoleLabel } from '../../i18n/useAppLocale';
 import { getNotificationHref } from '../../utils/notificationNavigation';
 import type { NotificationItem } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 function initials(name: string) {
   return name
@@ -64,7 +65,7 @@ export function ProfilePage() {
       await refresh();
       setMsg(t('profile.saved'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setSaving(false);
     }
@@ -84,7 +85,7 @@ export function ProfilePage() {
       setNewPassword('');
       setPwdMsg(t('profile.passwordSaved'));
     } catch (err) {
-      setPwdError(err instanceof Error ? err.message : t('common.error'));
+      setPwdError(mapApiError(err, t));
     } finally {
       setPwdSaving(false);
     }
@@ -101,7 +102,7 @@ export function ProfilePage() {
       patchUser(updated);
       setMsg(t('profile.avatarSaved'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setAvatarSaving(false);
       if (avatarInputRef.current) avatarInputRef.current.value = '';
@@ -118,7 +119,7 @@ export function ProfilePage() {
       if (user) patchUser({ ...user, avatarUrl: null });
       setMsg(t('profile.avatarRemoved'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setAvatarSaving(false);
     }

@@ -21,6 +21,7 @@ import type { Offer, RequestItem } from '../../types';
 
 
 
+import { mapApiError } from '../../utils/apiErrors';
 export function RequestDetailPage() {
 
   const { t } = useTranslation();
@@ -66,7 +67,7 @@ export function RequestDetailPage() {
 
     void reload().catch((err) =>
 
-      setError(err instanceof Error ? err.message : t('common.error')),
+      setError(mapApiError(err, t)),
 
     );
 
@@ -88,7 +89,7 @@ export function RequestDetailPage() {
 
     } catch (err) {
 
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
 
     }
 
@@ -108,7 +109,7 @@ export function RequestDetailPage() {
 
     } catch (err) {
 
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
 
     }
 
@@ -130,7 +131,7 @@ export function RequestDetailPage() {
 
     } catch (err) {
 
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
 
     }
 
@@ -152,7 +153,7 @@ export function RequestDetailPage() {
 
     } catch (err) {
 
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
 
     }
 
@@ -172,7 +173,7 @@ export function RequestDetailPage() {
 
     } catch (err) {
 
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
 
     }
 
@@ -240,7 +241,13 @@ export function RequestDetailPage() {
 
         {!request ? (
 
-          <p className="assist-note">{t('common.loading')}</p>
+          error ? (
+            <Link className="ghost" to="/requests">
+              {t('common.back')}
+            </Link>
+          ) : (
+            <p className="assist-note">{t('common.loading')}</p>
+          )
 
         ) : (
 

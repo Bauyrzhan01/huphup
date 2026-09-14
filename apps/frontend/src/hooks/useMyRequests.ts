@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { requestsApi } from '../api';
+import { mapApiError } from '../utils/apiErrors';
 import type { RequestItem } from '../types';
 
 export function useMyRequests() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,11 +18,11 @@ export function useMyRequests() {
       setItems(list);
     } catch (err) {
       setItems([]);
-      setError(err instanceof Error ? err.message : '');
+      setError(mapApiError(err, t));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void reload();

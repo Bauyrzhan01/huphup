@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { authApi } from '../../api';
 import { PasswordInput } from '../../components/PasswordInput';
 import { AuthLayout } from './AuthLayout';
+import { mapApiError } from '../../utils/apiErrors';
 
 export function ResetPasswordPage() {
   const { t } = useTranslation();
@@ -24,7 +25,7 @@ export function ResetPasswordPage() {
       setDone(true);
       window.setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }

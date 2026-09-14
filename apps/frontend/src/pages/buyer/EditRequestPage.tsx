@@ -7,6 +7,7 @@ import { RequestAttachments } from '../../components/RequestAttachments';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useDirectoryMeta } from '../../hooks/useDirectoryMeta';
 import type { RequestItem } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 export function EditRequestPage() {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ export function EditRequestPage() {
         setBudgetMax(req.budgetMax != null ? String(req.budgetMax) : '');
       })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : t('common.error')),
+        setError(mapApiError(err, t)),
       );
   }, [id, t]);
 
@@ -66,7 +67,7 @@ export function EditRequestPage() {
       });
       navigate(`/requests/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }
@@ -78,11 +79,11 @@ export function EditRequestPage() {
         <div className="page-head">
           <div>
             <h1>{t('requests.editTitle')}</h1>
-            <p>{request?.code ?? t('common.loading')}</p>
+            <p>{request?.code ?? (error ? '' : t('common.loading'))}</p>
           </div>
-          {request ? (
-            <Link className="ghost" to={`/requests/${request.id}`}>
-              {t('common.cancel')}
+          {id ? (
+            <Link className="ghost" to={`/requests/${id}`}>
+              {request ? t('common.cancel') : t('common.back')}
             </Link>
           ) : null}
         </div>

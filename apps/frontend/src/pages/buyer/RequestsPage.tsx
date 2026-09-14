@@ -5,6 +5,7 @@ import { requestsApi } from '../../api';
 import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useAppLocale, useStatusLabel } from '../../i18n/useAppLocale';
 import type { RequestItem } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 export function RequestsPage() {
   const { t } = useTranslation();
@@ -18,7 +19,7 @@ export function RequestsPage() {
     void requestsApi
       .list()
       .then(setItems)
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
+      .catch((err) => setError(mapApiError(err, t)))
       .finally(() => setLoading(false));
   }, [t]);
 

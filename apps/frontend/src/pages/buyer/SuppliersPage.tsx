@@ -8,6 +8,7 @@ import { BuyerLayout } from '../../layouts/AppLayouts';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useDirectoryMeta } from '../../hooks/useDirectoryMeta';
 import type { Company } from '../../types';
+import { mapApiError } from '../../utils/apiErrors';
 
 const PAGE_SIZE = 12;
 
@@ -49,7 +50,7 @@ export function SuppliersPage() {
         setTotalPages(res.totalPages);
         setTotal(res.total);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
+      .catch((err) => setError(mapApiError(err, t)))
       .finally(() => setLoading(false));
   }, [debouncedQ, city, page, t]);
 

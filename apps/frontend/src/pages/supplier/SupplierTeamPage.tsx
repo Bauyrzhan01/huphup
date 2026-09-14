@@ -9,6 +9,7 @@ import { SupplierLayout } from '../../layouts/AppLayouts';
 import { useAppLocale } from '../../i18n/useAppLocale';
 import { isUserOnline } from '../../utils/presence';
 import type { Company, CompanyMember, CompanyMemberRole, PendingInvite } from '../../types';
+import { isNoCompanyError, mapApiError } from '../../utils/apiErrors';
 
 export function SupplierTeamPage() {
   const { t } = useTranslation();
@@ -51,10 +52,15 @@ export function SupplierTeamPage() {
       setCompany(c);
       setMembers(c.members ?? (await companiesApi.members()));
       setPendingInvites(invites);
-    } catch {
+    } catch (err) {
       if (!silent) {
-        setCompany(null);
-        setMembers([]);
+        if (isNoCompanyError(err)) {
+          setCompany(null);
+          setMembers([]);
+        } else {
+          // A server/network failure is not "no company": say what went wrong.
+          setError(mapApiError(err, t));
+        }
       }
     } finally {
       if (!silent) setLoading(false);
@@ -91,7 +97,7 @@ export function SupplierTeamPage() {
       setMsg(t('team.inviteCreated'));
       await load(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setBusy(false);
     }
@@ -113,7 +119,7 @@ export function SupplierTeamPage() {
       setMsg(t('team.inviteRevoked'));
       await load(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 
@@ -125,7 +131,7 @@ export function SupplierTeamPage() {
       setMsg(t('team.removed'));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     }
   }
 
@@ -144,7 +150,9 @@ export function SupplierTeamPage() {
                 ? t('common.loadingFromDb')
                 : company
                   ? t('team.subtitle', { name: company.name, count: members.length })
-                  : t('team.noCompany')}
+                  : error
+                    ? ''
+                    : t('team.noCompany')}
             </p>
           </div>
           {company ? (
@@ -154,7 +162,13 @@ export function SupplierTeamPage() {
           ) : null}
         </div>
 
-        {!company && !loading ? (
+        {!company && !loading && error ? (
+          <p className="notice" style={{ color: '#b45309' }}>
+            {error}
+          </p>
+        ) : null}
+
+        {!company && !loading && !error ? (
           <div className="notice">
             {t('team.noCompany')}{' '}
             <Link to="/supplier/company">{t('products.createCompany')}</Link>

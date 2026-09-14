@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useAppLocale } from '../i18n/useAppLocale';
 import type { ProductReview } from '../types';
 import { AppIcon } from './AppIcon';
+import { mapApiError } from '../utils/apiErrors';
 
 export function ProductStars({ value, size = 'md' }: { value: number; size?: 'sm' | 'md' }) {
   const rounded = Math.round(value * 2) / 2;
@@ -79,7 +80,7 @@ export function ProductReviews({ productId }: { productId: string }) {
       });
       setComment('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      setError(mapApiError(err, t));
     } finally {
       setSaving(false);
     }

@@ -6,6 +6,7 @@ import { ProductImageGallery } from './ProductImageGallery';
 import { RatingStar } from './RatingIcons';
 import { UserAvatar } from './UserAvatar';
 import type { PublicProduct } from '../types';
+import { mapApiError } from '../utils/apiErrors';
 
 type Props = {
   companyId: string;
@@ -55,7 +56,7 @@ export function MatchedSupplierCard({
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : t('common.error'));
+          setError(mapApiError(err, t));
         }
       })
       .finally(() => {

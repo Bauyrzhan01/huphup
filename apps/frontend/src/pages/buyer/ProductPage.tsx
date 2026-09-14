@@ -33,7 +33,7 @@ export function ProductPage() {
     void productsApi
       .get(id)
       .then(setProduct)
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.error')))
+      .catch((err) => setError(mapApiError(err, t)))
       .finally(() => setLoading(false));
   }, [id, t]);
 
