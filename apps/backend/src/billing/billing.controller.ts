@@ -4,8 +4,11 @@ import {
   AuthUser,
   CurrentUser,
 } from '../common/decorators/current-user.decorator';
-import { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { BillingService } from './billing.service';
+import {
+  WalletScopeQueryDto,
+  WalletTransactionsQueryDto,
+} from './dto/wallet-scope.dto';
 
 @ApiTags('billing')
 @ApiBearerAuth()
@@ -14,18 +17,19 @@ export class BillingController {
   constructor(private readonly billing: BillingService) {}
 
   @ApiOperation({
-    summary: 'Balance of my wallet — company wallet for suppliers',
+    summary:
+      'Balance of my wallet — company wallet for suppliers, personal with scope=user',
   })
   @Get('wallet')
-  wallet(@CurrentUser() user: AuthUser) {
-    return this.billing.myWallet(user.id);
+  wallet(@CurrentUser() user: AuthUser, @Query() query: WalletScopeQueryDto) {
+    return this.billing.myWallet(user.id, query.scope);
   }
 
   @ApiOperation({ summary: 'Money movements on my wallet, newest first' })
   @Get('transactions')
   transactions(
     @CurrentUser() user: AuthUser,
-    @Query() query: PaginationQueryDto,
+    @Query() query: WalletTransactionsQueryDto,
   ) {
     return this.billing.myTransactions(user.id, query);
   }

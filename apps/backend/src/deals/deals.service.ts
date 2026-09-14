@@ -78,22 +78,28 @@ export class DealsService {
 
   // ------------------------------------------------------------------ чтение
 
+  /**
+   * Один аккаунт — оба режима: свои покупки и сделки своей компании приходят
+   * вместе, у каждой сделки своя сторона. Какие показать, решает фронтенд.
+   */
   async listMine(userId: string) {
     await this.releaseDueDeals();
 
     const company = await this.companies.resolveCompanyForUser(userId);
-    const where: Prisma.DealWhereInput = company
-      ? { companyId: company.company.id }
-      : { buyerId: userId };
-
     const deals = await this.prisma.deal.findMany({
-      where,
+      where: {
+        OR: [
+          { buyerId: userId },
+          ...(company ? [{ companyId: company.company.id }] : []),
+        ],
+      },
       orderBy: { updatedAt: 'desc' },
       include: dealInclude,
     });
 
+    // Как в requireAccess: кто купил, тот и покупатель.
     return deals.map((deal) =>
-      serializeDeal(deal, company ? 'supplier' : 'buyer'),
+      serializeDeal(deal, deal.buyerId === userId ? 'buyer' : 'supplier'),
     );
   }
 

@@ -571,19 +571,23 @@ export const platformApi = {
   live: () => api<PlatformLive>('/platform/live'),
 };
 
-function pageQuery(params?: { page?: number; limit?: number; q?: string }) {
+function pageQuery(params?: { page?: number; limit?: number; q?: string; scope?: string }) {
   const q = new URLSearchParams();
   if (params?.q) q.set('q', params.q);
   if (params?.page) q.set('page', String(params.page));
   if (params?.limit) q.set('limit', String(params.limit));
+  if (params?.scope) q.set('scope', params.scope);
   return q.toString() ? `?${q}` : '';
 }
 
+type WalletScope = 'user' | 'company';
+
 export const walletsApi = {
-  // /billing/* — единый кошелёк: поставщику отдаёт кошелёк его компании
-  // (туда приходят деньги по сейф-сделкам), остальным — персональный.
-  me: () => api<Wallet>('/billing/wallet'),
-  myTransactions: (params?: { page?: number; limit?: number }) =>
+  // /billing/* — без scope поставщику отдаёт кошелёк его компании (туда приходят
+  // деньги по сейф-сделкам), остальным — персональный. scope=user — личный кошелёк,
+  // с него оплачиваются свои покупки даже у владельца компании.
+  me: (scope?: WalletScope) => api<Wallet>(`/billing/wallet${pageQuery({ scope })}`),
+  myTransactions: (params?: { page?: number; limit?: number; scope?: WalletScope }) =>
     api<PaginatedResponse<WalletTransaction>>(
       `/billing/transactions${pageQuery(params)}`,
     ),

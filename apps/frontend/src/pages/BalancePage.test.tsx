@@ -8,11 +8,12 @@ const myTransactions = vi.fn();
 const adminList = vi.fn();
 
 let role = 'BUYER';
+let mode: 'buyer' | 'supplier' = 'buyer';
 
 vi.mock('../api', () => ({
   walletsApi: {
-    me: () => me(),
-    myTransactions: () => myTransactions(),
+    me: (scope?: string) => me(scope),
+    myTransactions: (params?: unknown) => myTransactions(params),
     adminList: () => adminList(),
     adminCredit: vi.fn(),
     adminDebit: vi.fn(),
@@ -21,6 +22,10 @@ vi.mock('../api', () => ({
 
 vi.mock('../auth/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'u1', role } }),
+}));
+
+vi.mock('../hooks/useWorkspaceMode', () => ({
+  useWorkspaceMode: () => ({ mode, isSupplier: mode === 'supplier' }),
 }));
 
 vi.mock('../layouts/AppLayouts', () => ({
@@ -72,6 +77,7 @@ const history = {
 describe('BalancePage', () => {
   beforeEach(() => {
     role = 'BUYER';
+    mode = 'buyer';
     me.mockResolvedValue({ balance: '48000.00', currency: 'KZT' });
     myTransactions.mockResolvedValue(history);
     adminList.mockResolvedValue({
@@ -123,8 +129,8 @@ describe('BalancePage', () => {
     expect(screen.queryByText('−−1575000.00 ₸')).toBeNull();
   });
 
-  it('поставщику показывает, что это кошелёк компании', async () => {
-    role = 'SUPPLIER';
+  it('в режиме поставщика показывает кошелёк компании', async () => {
+    mode = 'supplier';
     me.mockResolvedValue({
       balance: '1200000.00',
       currency: 'KZT',
@@ -137,6 +143,19 @@ describe('BalancePage', () => {
     await waitFor(() =>
       expect(screen.getByText(/balance.companyWallet/)).toBeDefined(),
     );
+    expect(me).toHaveBeenCalledWith('company');
+    expect(myTransactions).toHaveBeenCalledWith(expect.objectContaining({ scope: 'company' }));
+  });
+
+  it('в режиме заказчика показывает личный кошелёк, даже если у аккаунта есть компания', async () => {
+    role = 'SUPPLIER';
+
+    render(<BalancePage />);
+
+    await waitFor(() => expect(screen.getByText('48000.00 ₸')).toBeDefined());
+    expect(me).toHaveBeenCalledWith('user');
+    expect(myTransactions).toHaveBeenCalledWith(expect.objectContaining({ scope: 'user' }));
+    expect(screen.queryByText(/balance.companyWallet/)).toBeNull();
   });
 
   it('показывает комментарий операции, когда он есть', async () => {

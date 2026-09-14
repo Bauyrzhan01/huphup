@@ -186,11 +186,11 @@ export function BuyerLayout({
               <AppIcon icon={Store} className="ico" />
               {t('nav.suppliers')}
             </NavLink>
-            <NavLink to="/deals" onClick={closeNav}>
+            <NavLink to="/deals?workspace=buyer" onClick={closeNav}>
               <AppIcon icon={ShieldCheck} className="ico" />
               {t('nav.deals')}
             </NavLink>
-            <NavLink to="/balance" onClick={closeNav}>
+            <NavLink to="/balance?workspace=buyer" onClick={closeNav}>
               <AppIcon icon={Wallet} className="ico" />
               {t('nav.balance')}
             </NavLink>
@@ -378,11 +378,11 @@ export function SupplierLayout({
               <AppIcon icon={Users} className="ico" />
               {t('nav.team')}
             </NavLink>
-            <NavLink to="/deals" onClick={closeNav}>
+            <NavLink to="/deals?workspace=supplier" onClick={closeNav}>
               <AppIcon icon={ShieldCheck} className="ico" />
               {t('nav.deals')}
             </NavLink>
-            <NavLink to="/balance" onClick={closeNav}>
+            <NavLink to="/balance?workspace=supplier" onClick={closeNav}>
               <AppIcon icon={Wallet} className="ico" />
               {t('nav.balance')}
             </NavLink>

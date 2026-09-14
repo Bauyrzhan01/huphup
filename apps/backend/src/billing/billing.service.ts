@@ -124,14 +124,24 @@ export class BillingService {
     }
   }
 
-  /** Suppliers get their company wallet, everyone else a personal one. */
-  async ownerForUser(userId: string): Promise<{
+  /**
+   * Suppliers get their company wallet, everyone else a personal one.
+   * `scope: 'user'` asks for the personal wallet even when the user has a
+   * company — that is the wallet their own purchases are paid from.
+   */
+  async ownerForUser(
+    userId: string,
+    scope?: 'user' | 'company',
+  ): Promise<{
     owner: WalletOwner;
     scope: 'company' | 'user';
     companyId?: string;
     companyName?: string;
   }> {
-    const resolved = await this.companies.resolveCompanyForUser(userId);
+    const resolved =
+      scope === 'user'
+        ? null
+        : await this.companies.resolveCompanyForUser(userId);
     if (resolved) {
       return {
         owner: { companyId: resolved.company.id },
@@ -143,13 +153,13 @@ export class BillingService {
     return { owner: { userId }, scope: 'user' };
   }
 
-  async myWallet(userId: string) {
-    const { owner, scope, companyName } = await this.ownerForUser(userId);
-    const wallet = await this.getOrCreateWallet(owner);
+  async myWallet(userId: string, scope?: 'user' | 'company') {
+    const resolved = await this.ownerForUser(userId, scope);
+    const wallet = await this.getOrCreateWallet(resolved.owner);
     return {
       ...serializeWallet(wallet),
-      scope,
-      companyName,
+      scope: resolved.scope,
+      companyName: resolved.companyName,
       lowBalance: wallet.balance.lessThan(this.lowBalanceThreshold),
       lowBalanceThreshold: this.lowBalanceThreshold.toString(),
     };
@@ -157,11 +167,12 @@ export class BillingService {
 
   async myTransactions(
     userId: string,
-    query: { page?: number; limit?: number },
+    query: { page?: number; limit?: number; scope?: 'user' | 'company' },
   ) {
-    const { owner } = await this.ownerForUser(userId);
+    const { scope, ...paging } = query;
+    const { owner } = await this.ownerForUser(userId, scope);
     const wallet = await this.getOrCreateWallet(owner);
-    return this.listTransactions({ walletId: wallet.id, ...query });
+    return this.listTransactions({ walletId: wallet.id, ...paging });
   }
 
   async listTransactions(query: {

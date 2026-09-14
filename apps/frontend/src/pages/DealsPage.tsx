@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ShieldCheck } from 'lucide-react';
 import { dealsApi } from '../api';
 import { AppIcon } from '../components/AppIcon';
-import { useAuth } from '../auth/AuthContext';
+import { useWorkspaceMode } from '../hooks/useWorkspaceMode';
 import { BuyerLayout, SupplierLayout } from '../layouts/AppLayouts';
 import { useAppLocale } from '../i18n/useAppLocale';
 import type { Deal, DealStatus } from '../types';
@@ -21,7 +21,7 @@ const STATUS_TONE: Record<DealStatus, string> = {
 
 export function DealsPage() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { isSupplier, mode } = useWorkspaceMode();
   const { formatMoney, formatDateTime } = useAppLocale();
 
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -29,7 +29,6 @@ export function DealsPage() {
   const [busyId, setBusyId] = useState('');
   const [error, setError] = useState('');
 
-  const isSupplier = user?.role === 'SUPPLIER';
   const Layout = isSupplier ? SupplierLayout : BuyerLayout;
 
   const load = useCallback(() => {
@@ -37,14 +36,15 @@ export function DealsPage() {
     void dealsApi
       .list()
       .then((items) => {
-        setDeals(items);
+        // API отдаёт сделки обеих сторон; в каждом режиме — только свою сторону.
+        setDeals(items.filter((deal) => deal.side === mode));
         setError('');
       })
       .catch((err) =>
         setError(mapApiError(err, t)),
       )
       .finally(() => setLoading(false));
-  }, [t]);
+  }, [t, mode]);
 
   useEffect(() => {
     load();

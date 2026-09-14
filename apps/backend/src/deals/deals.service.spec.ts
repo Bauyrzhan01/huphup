@@ -157,10 +157,53 @@ function build(initial: Partial<DealRow> = {}, commissionPercent?: number) {
     notifications as unknown as NotificationsService,
   );
 
-  return { service, state, billing, notifications, gemini };
+  return { service, state, billing, notifications, gemini, prisma };
 }
 
 describe('DealsService — сейф-сделка', () => {
+  describe('список', () => {
+    it('владельцу компании отдаёт и его покупки, и сделки компании', async () => {
+      const { service, prisma } = build();
+      prisma.deal.findMany
+        .mockResolvedValueOnce([]) // автовыпуск: просроченных нет
+        .mockResolvedValueOnce([
+          {
+            ...buildDeal({
+              id: 'deal-bought',
+              buyerId: MANAGER,
+              companyId: 'company-2',
+            }),
+            ...relations,
+          },
+          { ...buildDeal({ id: 'deal-sold' }), ...relations },
+        ]);
+
+      const deals = await service.listMine(MANAGER);
+
+      expect(prisma.deal.findMany).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          where: { OR: [{ buyerId: MANAGER }, { companyId: COMPANY }] },
+        }),
+      );
+      expect(deals.map((d) => [d.id, d.side])).toEqual([
+        ['deal-bought', 'buyer'],
+        ['deal-sold', 'supplier'],
+      ]);
+    });
+
+    it('покупателю без компании отдаёт только его покупки', async () => {
+      const { service, prisma } = build();
+
+      const deals = await service.listMine(BUYER);
+
+      expect(prisma.deal.findMany).toHaveBeenLastCalledWith(
+        expect.objectContaining({ where: { OR: [{ buyerId: BUYER }] } }),
+      );
+      expect(deals.map((d) => d.side)).toEqual(['buyer']);
+      expect(deals[0].buyer).toBeUndefined();
+    });
+  });
+
   describe('оплата', () => {
     it('замораживает деньги покупателя и переводит сделку в удержание', async () => {
       const { service, state } = build();

@@ -487,5 +487,14 @@ describe('BillingService', () => {
       expect(wallet.scope).toBe('user');
       expect(wallet.lowBalance).toBe(true);
     });
+
+    it('по запросу отдаёт личный кошелёк и владельцу компании — с него оплачиваются покупки', async () => {
+      const { service, companies } = buildService(0);
+
+      const wallet = await service.myWallet('user-1', 'user');
+      expect(wallet.scope).toBe('user');
+      expect(wallet.companyName).toBeUndefined();
+      expect(companies.resolveCompanyForUser).not.toHaveBeenCalled();
+    });
   });
 });

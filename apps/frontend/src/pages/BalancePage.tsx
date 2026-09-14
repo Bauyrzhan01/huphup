@@ -4,6 +4,7 @@ import { ArrowDownLeft, ArrowUpRight, Search } from 'lucide-react';
 import { walletsApi } from '../api';
 import { AppIcon } from '../components/AppIcon';
 import { useAuth } from '../auth/AuthContext';
+import { useWorkspaceMode } from '../hooks/useWorkspaceMode';
 import { BuyerLayout, SupplierLayout } from '../layouts/AppLayouts';
 import { useAppLocale } from '../i18n/useAppLocale';
 import type { AdminWalletRow, Wallet, WalletTransaction } from '../types';
@@ -14,6 +15,7 @@ const PAGE_SIZE = 20;
 export function BalancePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { isSupplier } = useWorkspaceMode();
   const { formatMoney, formatDateTime } = useAppLocale();
 
   const [wallet, setWallet] = useState<Wallet | null>(null);
@@ -24,16 +26,17 @@ export function BalancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const isSupplier = user?.role === 'SUPPLIER';
   const isAdmin = user?.role === 'ADMIN';
   const Layout = isSupplier ? SupplierLayout : BuyerLayout;
+  // Покупки оплачиваются с личного кошелька, выплаты по сделкам идут на кошелёк компании.
+  const scope = isSupplier ? 'company' : 'user';
 
   const load = useCallback(
     (nextPage: number) => {
       setLoading(true);
       void Promise.all([
-        walletsApi.me(),
-        walletsApi.myTransactions({ page: nextPage, limit: PAGE_SIZE }),
+        walletsApi.me(scope),
+        walletsApi.myTransactions({ page: nextPage, limit: PAGE_SIZE, scope }),
       ])
         .then(([balance, history]) => {
           setWallet(balance);
@@ -48,7 +51,7 @@ export function BalancePage() {
         )
         .finally(() => setLoading(false));
     },
-    [t],
+    [t, scope],
   );
 
   useEffect(() => {

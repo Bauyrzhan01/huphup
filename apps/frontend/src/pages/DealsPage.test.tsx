@@ -9,7 +9,7 @@ const pay = vi.fn();
 const ship = vi.fn();
 const confirm = vi.fn();
 
-let role = 'BUYER';
+let mode: 'buyer' | 'supplier' = 'buyer';
 
 vi.mock('../api', () => ({
   dealsApi: {
@@ -22,8 +22,8 @@ vi.mock('../api', () => ({
   },
 }));
 
-vi.mock('../auth/AuthContext', () => ({
-  useAuth: () => ({ user: { id: 'u1', role } }),
+vi.mock('../hooks/useWorkspaceMode', () => ({
+  useWorkspaceMode: () => ({ mode, isSupplier: mode === 'supplier' }),
 }));
 
 vi.mock('../layouts/AppLayouts', () => ({
@@ -44,9 +44,13 @@ vi.mock('react-i18next', () => ({
 
 import { DealsPage } from './DealsPage';
 
-function deal(status: DealStatus, side: 'buyer' | 'supplier'): Deal {
+function deal(
+  status: DealStatus,
+  side: 'buyer' | 'supplier',
+  over: { id?: string; code?: string } = {},
+): Deal {
   return {
-    id: 'deal-1',
+    id: over.id ?? 'deal-1',
     status,
     side,
     amount: '450000.00',
@@ -56,7 +60,7 @@ function deal(status: DealStatus, side: 'buyer' | 'supplier'): Deal {
     offerId: 'offer-1',
     deliveryDays: 3,
     disputeReason: null,
-    request: { id: 'r1', code: 'HH-1001', title: 'Цемент М400', city: 'Алматы' },
+    request: { id: 'r1', code: over.code ?? 'HH-1001', title: 'Цемент М400', city: 'Алматы' },
     company: { id: 'c1', name: 'Алматы Цемент Опт', city: 'Алматы' },
     buyer: { id: 'u1', fullName: 'Айгуль', email: 'buyer@huphup.test' },
     fundedAt: null,
@@ -71,7 +75,7 @@ function deal(status: DealStatus, side: 'buyer' | 'supplier'): Deal {
 
 describe('DealsPage', () => {
   beforeEach(() => {
-    role = 'BUYER';
+    mode = 'buyer';
   });
 
   afterEach(() => {
@@ -90,12 +94,41 @@ describe('DealsPage', () => {
   });
 
   it('поставщику предлагает отгрузку, когда деньги на удержании', async () => {
-    role = 'SUPPLIER';
+    mode = 'supplier';
     list.mockResolvedValue([deal('HELD', 'supplier')]);
 
     render(<DealsPage />);
 
     await waitFor(() => expect(screen.getByText('deals.ship')).toBeDefined());
+    expect(screen.queryByText('deals.pay')).toBeNull();
+  });
+
+  it('в режиме заказчика показывает свои покупки, даже если у аккаунта есть компания', async () => {
+    list.mockResolvedValue([
+      deal('AWAITING_PAYMENT', 'buyer', { id: 'bought', code: 'HH-1001' }),
+      deal('HELD', 'supplier', { id: 'sold', code: 'HH-2002' }),
+    ]);
+
+    render(<DealsPage />);
+
+    await waitFor(() => expect(screen.getByText('HH-1001')).toBeDefined());
+    expect(screen.getByText('deals.pay')).toBeDefined();
+    expect(screen.queryByText('HH-2002')).toBeNull();
+    expect(screen.queryByText('deals.ship')).toBeNull();
+  });
+
+  it('в режиме поставщика показывает только сделки компании', async () => {
+    mode = 'supplier';
+    list.mockResolvedValue([
+      deal('AWAITING_PAYMENT', 'buyer', { id: 'bought', code: 'HH-1001' }),
+      deal('HELD', 'supplier', { id: 'sold', code: 'HH-2002' }),
+    ]);
+
+    render(<DealsPage />);
+
+    await waitFor(() => expect(screen.getByText('HH-2002')).toBeDefined());
+    expect(screen.getByText('deals.ship')).toBeDefined();
+    expect(screen.queryByText('HH-1001')).toBeNull();
     expect(screen.queryByText('deals.pay')).toBeNull();
   });
 
@@ -122,7 +155,7 @@ describe('DealsPage', () => {
   });
 
   it('поставщик не видит кнопку оплаты по неоплаченной сделке', async () => {
-    role = 'SUPPLIER';
+    mode = 'supplier';
     list.mockResolvedValue([deal('AWAITING_PAYMENT', 'supplier')]);
 
     render(<DealsPage />);
