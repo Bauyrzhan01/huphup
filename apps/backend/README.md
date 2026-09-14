@@ -9,11 +9,11 @@ B2B маркетплейс API (NestJS + PostgreSQL + Prisma).
 | Файл | Мазмұны |
 |------|---------|
 | **[DOCS.md](./DOCS.md)** | Толық API, flow, модельдер, Gemini, env |
-| **[DEPLOY.md](./DEPLOY.md)** | Neon + Railway + Vercel deploy |
+| **[DEPLOY.md](./DEPLOY.md)** | Neon + Render + Vercel deploy |
 | **Swagger** | `/docs` (интерактивті API) |
 
-**Live API:** https://api-production-8ac1f.up.railway.app/api/v1  
-**Live Swagger:** https://api-production-8ac1f.up.railway.app/docs
+**Live API:** https://huphup-api.onrender.com/api/v1  
+**Live Swagger:** https://huphup-api.onrender.com/docs
 
 ## Архитектура
 

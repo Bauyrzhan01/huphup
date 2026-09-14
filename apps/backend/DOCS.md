@@ -3,7 +3,7 @@
 B2B маркетплейс: заказчик заявка жариялайды → Gemini поставщиктерді тауар каталогы бойынша таңдайды → поставщик КП жібереді → чат ашылады.
 
 **Интерактивті Swagger:** `/docs`  
-**Production API:** `https://api-production-8ac1f.up.railway.app/api/v1`
+**Production API:** `https://huphup-api.onrender.com/api/v1`
 
 ---
 
@@ -528,8 +528,8 @@ Production орнату: [DEPLOY.md](./DEPLOY.md)
 Қысқаша:
 
 - **DB:** Neon PostgreSQL
-- **API:** Railway (`npm run start:prod` → migrate + start)
-- **Frontend:** Vercel → `VITE_API_URL` → Railway API
+- **API:** Render (`render.yaml` → migrate + start)
+- **Frontend:** Vercel → `VITE_API_URL` → Render API
 
 ---
 
@@ -559,6 +559,6 @@ npm run db:up          # docker postgres
 ## Swagger
 
 Локаль: http://localhost:3000/docs  
-Production: https://api-production-8ac1f.up.railway.app/docs
+Production: https://huphup-api.onrender.com/docs
 
 Swagger-да **Authorize** → `Bearer <token>` қойып, барлық endpoint-терді тікелей тест жасауға болады.

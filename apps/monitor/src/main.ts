@@ -33,7 +33,7 @@ type CheckRow = {
 
 const API_URL =
   import.meta.env.VITE_API_HEALTH_URL ??
-  'https://api-production-8ac1f.up.railway.app/api/v1/health';
+  'https://huphup-api.onrender.com/api/v1/health';
 const OPS_URL =
   import.meta.env.VITE_API_OPS_URL ??
   API_URL.replace(/\/health\/?$/, '/ops/snapshot');
@@ -357,7 +357,7 @@ async function fetchOps() {
       if (!res.ok) {
         const body = await res.text().catch(() => '');
         lastError = body.includes('502') || body.includes('failed to respond')
-          ? 'Railway API өшіп тұр (502). Бекенд redeploy керек.'
+          ? 'Render API өшіп тұр (502). Бекенд redeploy керек.'
           : `Ops HTTP ${res.status}`;
         continue;
       }

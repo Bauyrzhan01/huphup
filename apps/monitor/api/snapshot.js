@@ -3,7 +3,7 @@ export default async function handler(req, res) {
   const secret = process.env.MONITOR_SECRET;
   const url =
     process.env.OPS_URL ??
-    'https://api-production-8ac1f.up.railway.app/api/v1/ops/snapshot';
+    'https://huphup-api.onrender.com/api/v1/ops/snapshot';
 
   if (!secret) {
     res.status(503).json({ message: 'MONITOR_SECRET is not set on Vercel' });
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       message:
         err instanceof Error
           ? err.message
-          : 'Upstream failed — Railway API is likely down',
+          : 'Upstream failed — Render API is likely down or still waking up',
     });
   }
 }

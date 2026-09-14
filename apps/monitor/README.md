@@ -30,7 +30,7 @@ npm run dev
 
 | Key | Value |
 |-----|-------|
-| `VITE_API_HEALTH_URL` | `https://api-production-8ac1f.up.railway.app/api/v1/health` |
+| `VITE_API_HEALTH_URL` | `https://huphup-api.onrender.com/api/v1/health` |
 | `VITE_FRONTEND_URL` | `https://huphup-frontend.vercel.app` |
 | `VITE_POLL_SECONDS` | `30` |
 
@@ -40,7 +40,7 @@ npm run dev
 
 ## Backend
 
-Health endpoint қазір `dbLatencyMs` қайтарады (Railway deploy керек).
+Health endpoint қазір `dbLatencyMs` қайтарады (Render deploy керек).
 
 ```json
 {

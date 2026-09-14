@@ -4,13 +4,12 @@
 
 https://huphup-frontend.vercel.app
 
-API: `https://api-production-8ac1f.up.railway.app/api/v1`
+API: `https://huphup-api.onrender.com/api/v1`
 
 ## Redeploy
 
-```bash
-cd huphup-frontend
-npx vercel --prod
-```
+The Vercel project builds from repo `Bauyrzhan01/huphup` with Root Directory
+`apps/frontend`; every push to `main` deploys.
 
-Env `VITE_API_URL` must point at the Railway API (set in Vercel project settings).
+Env `VITE_API_URL` must point at the Render API (set in Vercel project settings,
+then redeploy — it is baked in at build time). Full setup: `apps/backend/DEPLOY.md`.

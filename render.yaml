@@ -1,0 +1,53 @@
+# Render Blueprint — HupHup API (NestJS) from this pnpm monorepo.
+# Dashboard: New → Blueprint → pick this repo. Vars marked `sync: false` are
+# asked for once on creation; later edits go in the service's Environment tab.
+services:
+  - type: web
+    name: huphup-api # -> https://huphup-api.onrender.com
+    runtime: node
+    plan: free # sleeps after 15 min idle; first request after that waits ~1 min
+    region: frankfurt # next to the Neon database; cannot be changed later
+    # No rootDir: build from the repo root so pnpm sees pnpm-lock.yaml,
+    # pnpm-workspace.yaml and .nvmrc (Node 24). npx pins pnpm to the root
+    # `packageManager` version — keep the two in sync when upgrading pnpm.
+    buildCommand: npx --yes pnpm@12.3.4 install --frozen-lockfile && npx --yes pnpm@12.3.4 --filter @huphup/backend build
+    # pnpm isn't needed at runtime, and skipping it keeps cold starts short.
+    startCommand: cd apps/backend && node_modules/.bin/prisma migrate deploy && node dist/src/main.js
+    # Liveness doesn't touch the DB, so a Neon cold start can't fail a deploy.
+    healthCheckPath: /api/v1/health/live
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - apps/backend/**
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - package.json
+        - .nvmrc
+        - render.yaml
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PREFIX
+        value: api/v1
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: GEMINI_MODEL
+        value: gemini-flash-latest
+      - key: FRONTEND_URL
+        value: https://huphup-frontend.vercel.app
+      - key: CORS_ORIGINS
+        value: https://huphup-frontend.vercel.app,https://huphup-monitor.vercel.app
+      - key: JWT_SECRET
+        generateValue: true
+      # Neon: pooled URL (host contains `-pooler`), with ?sslmode=require.
+      - key: DATABASE_URL
+        sync: false
+      # Neon: direct URL (no `-pooler`) — only `prisma migrate` uses it.
+      - key: DIRECT_URL
+        sync: false
+      # Must equal MONITOR_SECRET in the huphup-monitor Vercel project.
+      - key: MONITOR_SECRET
+        sync: false
+      # Optional: without it matching falls back to the rule-based path.
+      - key: GEMINI_API_KEY
+        sync: false

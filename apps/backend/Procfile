@@ -1,1 +1,0 @@
-web: pnpm run prisma:deploy && pnpm run start:prod

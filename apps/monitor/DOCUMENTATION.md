@@ -61,12 +61,12 @@ npm run dev
 
 | Айнымалы | Сипаттама |
 |----------|-----------|
-| `VITE_API_HEALTH_URL` | `https://api-production-8ac1f.up.railway.app/api/v1/health` |
+| `VITE_API_HEALTH_URL` | `https://huphup-api.onrender.com/api/v1/health` |
 | `VITE_API_OPS_URL` | Ops snapshot URL |
 | `VITE_FRONTEND_URL` | Frontend URL |
 | `VITE_POLL_SECONDS` | Авто-refresh (сек, default 10) |
 
-`MONITOR_SECRET` — dashboard UI-да енгізіледі (Railway backend env-те де бірдей болуы керек).
+`MONITOR_SECRET` — dashboard UI-да енгізіледі (Render backend env-те де бірдей болуы керек).
 
 ---
 

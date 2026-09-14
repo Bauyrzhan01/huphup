@@ -24,8 +24,9 @@ function utcDayKey(date = new Date()): string {
 }
 
 // Cumulative token usage for the current UTC day. In-memory like the rest of
-// this store, so it resets on redeploy — acceptable since Railway restarts
-// are infrequent and the budget is a soft guard, not a billing ledger.
+// this store, so it resets whenever the process restarts — including Render
+// free-plan spin-downs after 15 idle minutes. Treat the budget as a soft guard,
+// not a billing ledger.
 let tokenDayKey = utcDayKey();
 let tokensUsedToday = 0;
 

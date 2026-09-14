@@ -9,7 +9,7 @@ B2B-маркетплейс: покупатель создаёт заявку →
 
 | Путь | Что это | Прод |
 |------|---------|------|
-| [`apps/backend`](apps/backend) | NestJS + Prisma + PostgreSQL. REST API `/api/v1`, WebSocket-чат, Swagger `/docs` | Railway |
+| [`apps/backend`](apps/backend) | NestJS + Prisma + PostgreSQL. REST API `/api/v1`, WebSocket-чат, Swagger `/docs` | Render |
 | [`apps/frontend`](apps/frontend) | React 19 + Vite. Основной сайт (кабинеты buyer / supplier) | Vercel |
 | [`apps/admin`](apps/admin) | React 19 + Vite. Админка: кошельки, биллинг, транзакции, цены, сделки | Vercel (приватный) |
 | [`apps/monitor`](apps/monitor) | Vite. Дашборд статуса API и БД | Vercel |

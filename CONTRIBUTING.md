@@ -39,7 +39,7 @@ pnpm --filter @huphup/backend exec prisma migrate dev --name <что_меняе�
 
 - В git попадает только `.env.example`. Реальные значения — в закрепе чата команды
   (позже — 1Password / Doppler).
-- Прод-секреты живут в Railway и Vercel, не в репозитории.
+- Прод-секреты живут в Render и Vercel, не в репозитории.
 - Никогда не коммить `.env`, ключи, токены. `.gitignore` это ловит, но проверяй `git status`.
 
 ## CI
@@ -51,12 +51,13 @@ pnpm --filter @huphup/backend exec prisma migrate dev --name <что_меняе�
 
 | Приложение | Платформа | Root directory | Триггер |
 |---|---|---|---|
-| backend | Railway | `apps/backend` | push в `main` |
+| backend | Render (`render.yaml` в корне) | корень репо (`buildFilter`: `apps/backend/**`) | push в `main` |
 | frontend | Vercel | `apps/frontend` | push в `main` |
 | admin | Vercel (приватный проект) | `apps/admin` | push в `main` |
 | monitor | Vercel | `apps/monitor` | push в `main` |
 
-Prisma-миграции на проде: `prisma migrate deploy` в release-шаге Railway.
+Prisma-миграции на проде: `prisma migrate deploy` при каждом старте API (см. `render.yaml`).
+Пошагово: [`apps/backend/DEPLOY.md`](apps/backend/DEPLOY.md).
 Preview-деплои Vercel на каждый PR включены по умолчанию.
 
 ## Открытые задачи по монорепо (первые PR)
@@ -69,8 +70,8 @@ Preview-деплои Vercel на каждый PR включены по умол�
    `huphup-backend`) + фронт-часть (`fix/private-media-token`, коммит «Supplier product detail/form WIP»).
 3. **Сверить тесты** из старой ветки `test/suite-and-fixes` с тем, что уже есть в `apps/backend`
    (proverka уже принесла много `*.spec.ts`; нужен догон недостающих).
-4. **Убрать дубли деплой-конфигов**: в `apps/backend` лежат свои `docker-compose.yml`,
-   `render.yaml`, `railway.json` — оставить один канонический путь.
+4. **Убрать дубли деплой-конфигов**: `render.yaml` / `railway.json` / `Procfile` сведены к
+   корневому `render.yaml`. Остался `apps/backend/docker-compose.yml` рядом с корневым.
 5. **Линт до зелёного**, затем сделать job блокирующим.
 
 ## История

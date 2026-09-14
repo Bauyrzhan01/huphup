@@ -31,7 +31,7 @@ B2B маркетплейс: **сатып алушы заявка жасайды 
 
 | Проект | Локальді папка | GitHub | Production URL |
 |--------|----------------|--------|----------------|
-| **Backend (API)** | `huphup-backend` | [huphup-backend](https://github.com/Bauyrzhan01/huphup-backend) | https://api-production-8ac1f.up.railway.app |
+| **Backend (API)** | `huphup-backend` | [huphup-backend](https://github.com/Bauyrzhan01/huphup-backend) | https://huphup-api.onrender.com |
 | **Frontend (сайт)** | `huphup-frontend` | [huphup-frontend](https://github.com/Bauyrzhan01/huphup-frontend) | https://huphup-frontend.vercel.app |
 | **Monitor (бақылау)** | `huphup-monitor` | [huphup-monitor](https://github.com/Bauyrzhan01/huphup-monitor) | https://huphup-monitor.vercel.app |
 
@@ -121,7 +121,7 @@ npm run dev
 | `.env` / `.env.example` | Конфигурация |
 | `docker-compose.yml` | Локальді Postgres |
 | `DOCS.md` | API endpoint толық құжаттамасы |
-| `DEPLOY.md` | Railway + Neon + Vercel deploy |
+| `DEPLOY.md` | Render + Neon + Vercel deploy |
 | `README.md` | Қысқа кіріспе |
 
 ### `src/` модульдері
@@ -312,7 +312,7 @@ npm run preview   # preview
 | `VITE_FRONTEND_URL` | Frontend URL тексеру |
 | `VITE_POLL_SECONDS` | Авто-refresh интервал (сек) |
 
-`MONITOR_SECRET` — UI-да енгізіледі (Railway-де `MONITOR_SECRET` env).
+`MONITOR_SECRET` — UI-да енгізіледі (Render-де `MONITOR_SECRET` env).
 
 ---
 
@@ -364,10 +364,10 @@ Seed: `npm run prisma:seed` (backend папкасында)
 
 | Проект | Платформа | Команда |
 |--------|-----------|---------|
-| Backend | Railway | `npx @railway/cli up --service api` |
-| Frontend | Vercel | `npx vercel --prod` |
-| Monitor | Vercel | `npx vercel --prod` |
-| DB | Neon | Railway env-те `DATABASE_URL` |
+| Backend | Render | `main`-ге push (`render.yaml` Blueprint) |
+| Frontend | Vercel | `main`-ге push (Root Directory `apps/frontend`) |
+| Monitor | Vercel | `main`-ге push (Root Directory `apps/monitor`) |
+| DB | Neon | Render env-те `DATABASE_URL` + `DIRECT_URL` |
 
 Толық нұсқау: [DEPLOY.md](./DEPLOY.md)
 
@@ -378,7 +378,7 @@ Seed: `npm run prisma:seed` (backend папкасында)
 | Файл | Мазмұны |
 |------|---------|
 | [DOCS.md](./DOCS.md) | API endpoints, модельдер, Gemini |
-| [DEPLOY.md](./DEPLOY.md) | Neon + Railway + Vercel |
+| [DEPLOY.md](./DEPLOY.md) | Neon + Render + Vercel |
 | [README.md](./README.md) | Қысқа кіріспе |
 | Frontend `README.md` | Frontend іске қосу |
 | Monitor `README.md` | Monitor іске қосу |

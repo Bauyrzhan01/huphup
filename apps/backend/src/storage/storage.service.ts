@@ -42,7 +42,7 @@ export class StorageService {
     } else {
       this.s3 = null;
       this.logger.warn(
-        'File storage is local/DB (Railway disk is wiped on deploy). Add S3 or files persist in Postgres.',
+        'File storage is local/DB (host disk is wiped on deploy/restart). Add S3 or files persist in Postgres.',
       );
     }
 
