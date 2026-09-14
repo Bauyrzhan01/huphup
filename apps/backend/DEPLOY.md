@@ -50,7 +50,8 @@ One Vercel project per app, all from repo `Bauyrzhan01/huphup`:
 | `huphup-monitor` | `apps/monitor` | `VITE_API_HEALTH_URL`, `VITE_API_OPS_URL`, `VITE_FRONTEND_URL`, `OPS_URL`, `MONITOR_SECRET` (same value as on Render) |
 
 `VITE_*` values are baked in at build time — redeploy after changing them.
-Each app's `vercel.json` rewrites SPA routes to `/index.html`.
+Each app's `vercel.json` pins pnpm via `installCommand` (Vercel only auto-detects pnpm up to 10);
+frontend and admin also rewrite SPA routes to `/index.html`.
 
 ## CORS
 

@@ -1,3 +1,4 @@
 {
+  "installCommand": "npx --yes pnpm@12.3.4 install --frozen-lockfile",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
