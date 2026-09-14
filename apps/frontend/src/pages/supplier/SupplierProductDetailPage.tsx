@@ -25,7 +25,8 @@ export function SupplierProductDetailPage() {
   const { formatDateTime } = useAppLocale();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const isNew = id === 'new';
+  // /supplier/products/new is its own route, so it has no :id param at all.
+  const isNew = !id || id === 'new';
 
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
