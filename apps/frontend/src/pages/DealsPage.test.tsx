@@ -194,6 +194,16 @@ describe('DealsPage', () => {
     await waitFor(() => expect(screen.getByText('deals.empty')).toBeDefined());
   });
 
+  it('поставщику пустой список объясняет его сторону сделки', async () => {
+    mode = 'supplier';
+    list.mockResolvedValue([]);
+
+    render(<DealsPage />);
+
+    await waitFor(() => expect(screen.getByText('deals.emptySupplier')).toBeDefined());
+    expect(screen.queryByText('deals.empty')).toBeNull();
+  });
+
   it('показывает ошибку, если сделки не загрузились', async () => {
     list.mockRejectedValue(new Error('Сервис недоступен'));
 

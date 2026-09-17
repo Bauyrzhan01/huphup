@@ -86,7 +86,9 @@ export function DealsPage() {
         {loading && !deals.length ? (
           <p className="assist-note">{t('common.loading')}</p>
         ) : !deals.length ? (
-          error ? null : <p className="assist-note">{t('deals.empty')}</p>
+          error ? null : (
+            <p className="assist-note">{t(isSupplier ? 'deals.emptySupplier' : 'deals.empty')}</p>
+          )
         ) : (
           <ul className="deals-list">
             {deals.map((deal) => {

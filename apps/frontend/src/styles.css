@@ -2811,3 +2811,28 @@ body.mobile-nav-open{overflow:hidden}
   .deal-head-amount{text-align:left}
   .deal-actions button{flex:1 1 100%}
 }
+
+.section-tabs{display:flex;gap:2px;padding:0 22px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;flex-shrink:0;background:#fff}
+.section-tabs::-webkit-scrollbar{display:none}
+.section-tab{padding:12px 12px 11px;font-size:13px;font-weight:600;color:#6b6b70;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.section-tab:hover{color:#111}
+.section-tab.active{color:#111;border-bottom-color:#111}
+
+/* Desktop topbar: actions scroll instead of covering the page title */
+@media(min-width:761px){
+  .topbar-page .topbar-head{flex:0 0 auto;max-width:60%}
+  .topbar-head h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-actions{flex:1 1 auto;justify-content:flex-end}
+  .top-actions-main{justify-content:flex-end;overflow-x:auto;scrollbar-width:none}
+  .top-actions-main::-webkit-scrollbar{display:none}
+  .top-actions-main > *{flex-shrink:0}
+}
+@media(min-width:761px) and (max-width:1180px){
+  .mode-long{display:none}
+  .mode-short{display:inline}
+  .topbar .top-user-copy{display:none}
+  .topbar .top-user{padding:4px}
+}
+@media(max-width:760px){
+  .section-tabs{padding:0 14px}
+}
