@@ -1,20 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Building2,
   ClipboardList,
   FileCheck,
   Home,
-  Inbox,
-  LayoutDashboard,
-  LayoutGrid,
-  ListTodo,
   Menu,
   MessageSquare,
-  Package,
   Store,
-  Users,
   ShieldCheck,
   Wallet,
   X,
@@ -23,11 +16,16 @@ import { companiesApi, notificationsApi, requestsApi } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { AppIcon } from '../components/AppIcon';
 import { NotificationsBell } from '../components/NotificationsBell';
-import { PresenceDot } from '../components/PresenceDot';
 import { RecentRequestRow } from '../components/RecentRequestRow';
 import { UserAvatar } from '../components/UserAvatar';
 import { useMobileNav } from '../hooks/useMobileNav';
-import type { CompanyMember, NotificationItem, RequestItem } from '../types';
+import type { RequestItem } from '../types';
+import {
+  SUPPLIER_SECTIONS,
+  findSupplierTabSection,
+  isSupplierSectionActive,
+  pathOf,
+} from './supplierNav';
 
 function LogoutButton() {
   const { t } = useTranslation();
@@ -264,6 +262,29 @@ export function BuyerLayout({
   );
 }
 
+function SupplierSectionTabs({ pathname }: { pathname: string }) {
+  const { t } = useTranslation();
+  const section = findSupplierTabSection(pathname);
+  if (!section?.tabs) return null;
+  return (
+    <nav className="section-tabs" aria-label={t(section.label)}>
+      {section.tabs.map((tab) => {
+        const active = pathOf(tab.to) === pathname;
+        return (
+          <Link
+            key={tab.to}
+            to={tab.to}
+            className={`section-tab${active ? ' active' : ''}`}
+            aria-current={active ? 'page' : undefined}
+          >
+            {t(tab.label)}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function SupplierLayout({
   crumb,
   title,
@@ -281,39 +302,23 @@ export function SupplierLayout({
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const { open, openNav, closeNav } = useMobileNav();
   const [companyName, setCompanyName] = useState(
     user?.company?.name ?? user?.fullName ?? t('nav.supplier'),
   );
-  const [members, setMembers] = useState<CompanyMember[]>([]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     void companiesApi
       .me()
-      .then((c) => {
-        setCompanyName(c.name);
-        setMembers(c.members ?? []);
-      })
-      .catch(() => {
-        setCompanyName(user?.fullName ?? t('nav.supplier'));
-        setMembers([]);
-      });
+      .then((c) => setCompanyName(c.name))
+      .catch(() => setCompanyName(user?.fullName ?? t('nav.supplier')));
     void notificationsApi
       .list()
-      .then(setNotifications)
-      .catch(() => setNotifications([]));
-
-    const timer = window.setInterval(() => {
-      void companiesApi
-        .me()
-        .then((c) => setMembers(c.members ?? []))
-        .catch(() => undefined);
-    }, 40_000);
-    return () => window.clearInterval(timer);
+      .then((list) => setUnread(list.filter((n) => !n.isRead).length))
+      .catch(() => setUnread(0));
   }, [user?.fullName, t]);
-
-  const unread = notifications.filter((n) => !n.isRead).length;
 
   return (
     <>
@@ -325,7 +330,7 @@ export function SupplierLayout({
           </Link>
         </div>
         <Link className="mobile-top-link" to="/supplier/leads">
-          {t('nav.newLeads')}
+          {t('nav.requests')}
         </Link>
       </div>
       <div className={`layout${open ? ' mobile-nav-open' : ''}`}>
@@ -342,89 +347,23 @@ export function SupplierLayout({
             </Link>
             <MobileNavClose onClose={closeNav} />
           </div>
-          <Link className="side-action" to="/supplier/leads" onClick={closeNav}>
-            {t('nav.findLeads')}
-          </Link>
           <nav className="nav">
-            <NavLink to="/supplier" end onClick={closeNav}>
-              <AppIcon icon={LayoutDashboard} className="ico" />
-              {t('nav.dashboard')}
-            </NavLink>
-            <NavLink to="/supplier/deals" onClick={closeNav}>
-              <AppIcon icon={LayoutGrid} className="ico" />
-              {t('nav.crm')}
-            </NavLink>
-            <NavLink to="/supplier/tasks" onClick={closeNav}>
-              <AppIcon icon={ListTodo} className="ico" />
-              {t('nav.tasks')}
-            </NavLink>
-            <NavLink to="/supplier/products" onClick={closeNav}>
-              <AppIcon icon={Package} className="ico" />
-              {t('nav.products')}
-            </NavLink>
-            <NavLink to="/supplier/offers" onClick={closeNav}>
-              <AppIcon icon={FileCheck} className="ico" />
-              {t('supplier.myOffers')}
-            </NavLink>
-            <NavLink to="/supplier/leads" onClick={closeNav}>
-              <AppIcon icon={Inbox} className="ico" />
-              {t('nav.newLeads')}
-            </NavLink>
-            <NavLink to="/supplier/company" onClick={closeNav}>
-              <AppIcon icon={Building2} className="ico" />
-              {t('nav.company')}
-            </NavLink>
-            <NavLink to="/supplier/team" onClick={closeNav}>
-              <AppIcon icon={Users} className="ico" />
-              {t('nav.team')}
-            </NavLink>
-            <NavLink to="/deals?workspace=supplier" onClick={closeNav}>
-              <AppIcon icon={ShieldCheck} className="ico" />
-              {t('nav.deals')}
-            </NavLink>
-            <NavLink to="/balance?workspace=supplier" onClick={closeNav}>
-              <AppIcon icon={Wallet} className="ico" />
-              {t('nav.balance')}
-            </NavLink>
-            <NavLink to="/conversations?workspace=supplier" onClick={closeNav}>
-              <AppIcon icon={MessageSquare} className="ico" />
-              {t('nav.chats')}
-            </NavLink>
-          </nav>
-          <div className="side-label">
-            <Link to="/supplier/team" onClick={closeNav} style={{ color: 'inherit' }}>
-              {t('nav.team')}
-            </Link>
-          </div>
-          <div className="recent">
-            {members.length === 0 ? (
-              <span className="meta" style={{ padding: '9px 11px', display: 'block' }}>
-                {t('nav.noTeamMembers')}
-              </span>
-            ) : (
-              members.map((m) => (
+            {SUPPLIER_SECTIONS.map((section) => {
+              const active = isSupplierSectionActive(section, pathname);
+              return (
                 <Link
-                  key={m.id}
-                  to="/supplier/team"
+                  key={section.to}
+                  to={section.to}
                   onClick={closeNav}
-                  className="side-team-member"
+                  className={active ? 'active' : undefined}
+                  aria-current={active ? 'page' : undefined}
                 >
-                  <span className="side-team-avatar-wrap">
-                    <UserAvatar
-                      name={m.user.fullName}
-                      avatarUrl={m.user.avatarUrl}
-                      className="side-team-avatar"
-                    />
-                    <PresenceDot lastSeenAt={m.user.lastSeenAt} />
-                  </span>
-                  <span className="side-team-name">
-                    {m.user.fullName}
-                    {m.title ? ` · ${m.title}` : ''}
-                  </span>
+                  <AppIcon icon={section.icon} className="ico" />
+                  {t(section.label)}
                 </Link>
-              ))
-            )}
-          </div>
+              );
+            })}
+          </nav>
           <div className="side-bottom">
             <Link className="user-card side-team-member" to="/profile" onClick={closeNav}>
               <UserAvatar
@@ -468,6 +407,7 @@ export function SupplierLayout({
               <NotificationsBell />
             </div>
           </div>
+          <SupplierSectionTabs pathname={pathname} />
           {children}
         </main>
       </div>

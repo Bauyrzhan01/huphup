@@ -167,19 +167,11 @@ export function SupplierCrmPage() {
     <SupplierLayout
       crumb={t('supplier.dealsTitle')}
       actions={
-        <div className="crm-head-actions">
-          {isOwner ? (
-            <Link className="ghost" to="/supplier/crm/settings">
-              {t('supplier.crmSettings')}
-            </Link>
-          ) : null}
-          <Link className="ghost" to="/supplier/tasks">
-            {t('nav.tasks')}
+        isOwner ? (
+          <Link className="ghost" to="/supplier/crm/settings">
+            {t('supplier.crmSettings')}
           </Link>
-          <Link className="ghost" to="/supplier/leads">
-            {t('supplier.newLeadsAction')}
-          </Link>
-        </div>
+        ) : null
       }
     >
       <div className="page crm-page">

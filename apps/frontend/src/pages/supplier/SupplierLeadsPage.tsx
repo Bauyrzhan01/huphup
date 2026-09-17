@@ -33,6 +33,7 @@ export function SupplierLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [members, setMembers] = useState<CompanyMember[]>([]);
   const [isOwner, setIsOwner] = useState(false);
+  const [hasCompany, setHasCompany] = useState(true);
   const [selected, setSelected] = useState<Lead | null>(null);
   const [price, setPrice] = useState('');
   const [days, setDays] = useState('3');
@@ -52,6 +53,7 @@ export function SupplierLeadsPage() {
       companiesApi.me().catch(() => null),
     ]);
     setLeads(list);
+    setHasCompany(Boolean(company));
     if (company) {
       setIsOwner(Boolean(company.isOwner));
       setMembers(company.members ?? []);
@@ -203,7 +205,7 @@ export function SupplierLeadsPage() {
     selected?.assigneeId && selected.assigneeId !== user?.id;
 
   return (
-    <SupplierLayout crumb={t('nav.newLeads')}>
+    <SupplierLayout crumb={t('nav.requests')}>
       <div className="page leads-page">
         {error ? (
           <p className="notice" style={{ color: '#b45309' }}>
@@ -269,7 +271,7 @@ export function SupplierLeadsPage() {
             {leads.length === 0 ? (
               <div className="leads-empty">
                 <b>{t('supplier.noLeads')}</b>
-                <p>{t('supplier.noLeadsHint')}</p>
+                <p>{t(hasCompany ? 'supplier.noLeadsWaitHint' : 'supplier.noLeadsHint')}</p>
               </div>
             ) : null}
           </aside>
