@@ -24,6 +24,7 @@ import { PlatformModule } from './platform/platform.module';
 import { BillingModule } from './billing/billing.module';
 import { DealsModule } from './deals/deals.module';
 import { WalletsModule } from './wallets/wallets.module';
+import { BannersModule } from './banners/banners.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { WalletsModule } from './wallets/wallets.module';
     WalletsModule,
     BillingModule,
     DealsModule,
+    BannersModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
