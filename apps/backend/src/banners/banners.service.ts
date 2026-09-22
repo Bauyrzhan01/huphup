@@ -28,6 +28,8 @@ export class BannersService {
       AND: [
         { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
         { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+        // A banner with neither a picture nor a title would be an empty card.
+        { OR: [{ imageUrl: { not: null } }, { title: { not: null } }] },
       ],
     };
     if (query.audience) {
