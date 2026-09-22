@@ -2,6 +2,12 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:3000/api/v1';
 
 export { API_URL };
 
+/** Media stored by the API itself comes back as "/api/v1/media/…". */
+export function mediaUrl(url: string | null | undefined) {
+  if (!url) return null;
+  return url.startsWith('/') ? `${new URL(API_URL).origin}${url}` : url;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -23,7 +29,8 @@ export function setToken(token: string | null) {
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
-  if (!headers.has('Content-Type') && options.body) {
+  // FormData needs the browser-generated multipart boundary, so no JSON header for it.
+  if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
   const token = getToken();

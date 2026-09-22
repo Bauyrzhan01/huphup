@@ -7,6 +7,7 @@ import { BillingPage } from './pages/BillingPage';
 import { BillingTransactionsPage } from './pages/BillingTransactionsPage';
 import { PricingPage } from './pages/PricingPage';
 import { DealsPage } from './pages/DealsPage';
+import { BannersPage } from './pages/BannersPage';
 
 export default function App() {
   return (
@@ -50,6 +51,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <DealsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/banners"
+          element={
+            <ProtectedRoute>
+              <BannersPage />
             </ProtectedRoute>
           }
         />

@@ -1,6 +1,8 @@
 import { api } from './client';
 import type {
   AdminWalletRow,
+  Banner,
+  BannerInput,
   BillingReason,
   BillingTx,
   BillingWalletRow,
@@ -87,4 +89,20 @@ export const dealsApi = {
       method: 'POST',
       body: JSON.stringify({ reason }),
     }),
+};
+
+/** NBO banners on the app home screen — /admin/banners. */
+export const bannersApi = {
+  list: () => api<Banner[]>('/admin/banners'),
+  create: (input: BannerInput) =>
+    api<Banner>('/admin/banners', { method: 'POST', body: JSON.stringify(input) }),
+  update: (id: string, patch: Partial<BannerInput>) =>
+    api<Banner>(`/admin/banners/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  remove: (id: string) => api<{ ok: true }>(`/admin/banners/${id}`, { method: 'DELETE' }),
+  uploadImage: (id: string, file: File) => {
+    const body = new FormData();
+    body.append('file', file);
+    return api<Banner>(`/admin/banners/${id}/image`, { method: 'POST', body });
+  },
+  removeImage: (id: string) => api<Banner>(`/admin/banners/${id}/image`, { method: 'DELETE' }),
 };
