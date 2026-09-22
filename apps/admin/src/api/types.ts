@@ -229,7 +229,6 @@ export type Banner = {
 export type BannerInput = {
   title: string;
   subtitle: string | null;
-  bgColor: string;
   ctaText: string | null;
   ctaUrl: string | null;
   audience: BannerAudience;
