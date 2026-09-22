@@ -8,11 +8,8 @@ import { ErrorNote, OkNote, formatDateTime } from '../components/ui';
 import { BANNER_AUDIENCE_LABEL } from '../api/types';
 import type { Banner, BannerAudience, BannerInput } from '../api/types';
 
+// The whole banner is the picture: its text and call-to-action are drawn into it.
 type Draft = {
-  title: string;
-  subtitle: string;
-  bgColor: string;
-  ctaText: string;
   ctaUrl: string;
   audience: BannerAudience;
   cities: string;
@@ -23,10 +20,6 @@ type Draft = {
 };
 
 const EMPTY: Draft = {
-  title: '',
-  subtitle: '',
-  bgColor: '#111111',
-  ctaText: '',
   ctaUrl: '',
   audience: 'ALL',
   cities: '',
@@ -50,10 +43,6 @@ function fromLocalInput(value: string) {
 
 function draftFrom(b: Banner): Draft {
   return {
-    title: b.title,
-    subtitle: b.subtitle ?? '',
-    bgColor: b.bgColor,
-    ctaText: b.ctaText ?? '',
     ctaUrl: b.ctaUrl ?? '',
     audience: b.audience,
     cities: b.cities.join(', '),
@@ -66,9 +55,6 @@ function draftFrom(b: Banner): Draft {
 
 function inputFrom(d: Draft): BannerInput {
   return {
-    title: d.title.trim(),
-    subtitle: d.subtitle.trim() || null,
-    ctaText: d.ctaText.trim() || null,
     ctaUrl: d.ctaUrl.trim() || null,
     audience: d.audience,
     cities: d.cities
@@ -83,6 +69,7 @@ function inputFrom(d: Draft): BannerInput {
 }
 
 function scheduleLabel(b: Banner, now: number) {
+  if (!b.imageUrl) return { text: 'Нет картинки — не показывается', tone: 'off' };
   if (!b.isActive) return { text: 'Выключен', tone: 'off' };
   if (b.startsAt && new Date(b.startsAt).getTime() > now)
     return { text: `С ${formatDateTime(b.startsAt)}`, tone: 'wait' };
@@ -90,28 +77,15 @@ function scheduleLabel(b: Banner, now: number) {
   return { text: 'Показывается', tone: 'on' };
 }
 
-function BannerPreview({
-  draft,
-  imageUrl,
-}: {
-  draft: Pick<Draft, 'title' | 'subtitle' | 'bgColor' | 'ctaText'>;
-  imageUrl: string | null;
-}) {
-  return (
-    <div
-      className="banner-preview"
-      style={{
-        backgroundColor: draft.bgColor,
-        backgroundImage: imageUrl ? `url("${imageUrl}")` : undefined,
-      }}
-    >
-      <div className={imageUrl ? 'banner-preview-body has-image' : 'banner-preview-body'}>
-        <b>{draft.title || 'Заголовок баннера'}</b>
-        {draft.subtitle ? <span>{draft.subtitle}</span> : null}
-        {draft.ctaText ? <em>{draft.ctaText}</em> : null}
+function BannerPreview({ imageUrl }: { imageUrl: string | null }) {
+  if (!imageUrl) {
+    return (
+      <div className="banner-preview is-empty">
+        <span>Картинка 1029 × 450 px</span>
       </div>
-    </div>
-  );
+    );
+  }
+  return <div className="banner-preview" style={{ backgroundImage: `url("${imageUrl}")` }} />;
 }
 
 export function BannersPage() {
@@ -191,8 +165,8 @@ export function BannersPage() {
   }
 
   async function save() {
-    if (!draft.title.trim()) {
-      setError('Укажите заголовок');
+    if (!file && !editing?.imageUrl) {
+      setError('Загрузите картинку баннера');
       return;
     }
     setBusy(true);
@@ -205,19 +179,6 @@ export function BannersPage() {
       if (file) await bannersApi.uploadImage(saved.id, file);
       setNotice(editingId ? 'Баннер сохранён.' : 'Баннер создан — он уже виден в приложении.');
       resetForm();
-      load();
-    } catch (err) {
-      handleError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function removeImage() {
-    if (!editingId) return;
-    setBusy(true);
-    try {
-      await bannersApi.removeImage(editingId);
       load();
     } catch (err) {
       handleError(err);
@@ -240,7 +201,7 @@ export function BannersPage() {
   }
 
   async function remove(b: Banner) {
-    if (!window.confirm(`Удалить баннер «${b.title}»? Это нельзя отменить.`)) return;
+    if (!window.confirm('Удалить этот баннер? Это нельзя отменить.')) return;
     setBusy(true);
     setError('');
     try {
@@ -262,8 +223,8 @@ export function BannersPage() {
       <div className="page-head">
         <h1>NBO-баннеры</h1>
         <p className="page-sub">
-          Рекламные баннеры на главном экране мобильного приложения. Изменения видны сразу, без
-          обновления приложения.
+          Рекламные баннеры на главном экране мобильного приложения. Весь текст баннера — на
+          самой картинке. Изменения видны сразу, без обновления приложения.
         </p>
       </div>
 
@@ -272,39 +233,26 @@ export function BannersPage() {
 
       <div className="panel banner-editor">
         <div className="banner-form">
-          <h2 className="panel-title">{editing ? `Редактирование: ${editing.title}` : 'Новый баннер'}</h2>
+          <h2 className="panel-title">{editing ? 'Редактирование баннера' : 'Новый баннер'}</h2>
 
-          <label className="field">
-            Заголовок *
+          <div className="form-row">
             <input
-              value={draft.title}
-              maxLength={80}
-              onChange={(e) => set('title', e.target.value)}
-              placeholder="Скидка 10% на цемент"
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
-          </label>
-          <label className="field">
-            Подзаголовок
-            <input
-              value={draft.subtitle}
-              maxLength={160}
-              onChange={(e) => set('subtitle', e.target.value)}
-              placeholder="Только до конца месяца"
-            />
-          </label>
+            <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>
+              <ImageUp size={16} className="ico" />
+              {file ? file.name : editing?.imageUrl ? 'Заменить картинку' : 'Картинка * (до 5 МБ)'}
+            </button>
+            <span className="muted">Рекомендуем 1029 × 450 px — края другого формата обрежутся.</span>
+          </div>
 
           <div className="form-grid">
             <label className="field">
-              Текст кнопки
-              <input
-                value={draft.ctaText}
-                maxLength={30}
-                onChange={(e) => set('ctaText', e.target.value)}
-                placeholder="Подробнее"
-              />
-            </label>
-            <label className="field">
-              Ссылка
+              Ссылка при нажатии
               <input
                 value={draft.ctaUrl}
                 onChange={(e) => set('ctaUrl', e.target.value)}
@@ -333,6 +281,15 @@ export function BannersPage() {
               />
             </label>
             <label className="field">
+              Порядок (меньше — раньше)
+              <input
+                type="number"
+                min={0}
+                value={draft.sortOrder}
+                onChange={(e) => set('sortOrder', e.target.value)}
+              />
+            </label>
+            <label className="field">
               Показывать с
               <input
                 type="datetime-local"
@@ -348,34 +305,9 @@ export function BannersPage() {
                 onChange={(e) => set('endsAt', e.target.value)}
               />
             </label>
-            <label className="field">
-              Порядок (меньше — раньше)
-              <input
-                type="number"
-                min={0}
-                value={draft.sortOrder}
-                onChange={(e) => set('sortOrder', e.target.value)}
-              />
-            </label>
           </div>
 
           <div className="form-row">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-            <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>
-              <ImageUp size={16} className="ico" />
-              {file ? file.name : 'Картинка (до 5 МБ)'}
-            </button>
-            {editing?.imageUrl && !file ? (
-              <button type="button" className="ghost" disabled={busy} onClick={() => void removeImage()}>
-                Убрать картинку
-              </button>
-            ) : null}
             <label className="checkbox-field">
               <input
                 type="checkbox"
@@ -400,7 +332,7 @@ export function BannersPage() {
 
         <div className="banner-preview-col">
           <div className="muted">Так баннер выглядит в приложении</div>
-          <BannerPreview draft={draft} imageUrl={previewImage} />
+          <BannerPreview imageUrl={previewImage} />
         </div>
       </div>
 
@@ -416,7 +348,7 @@ export function BannersPage() {
               const state = scheduleLabel(b, now);
               return (
                 <div key={b.id} className={`banner-row${editingId === b.id ? ' is-selected' : ''}`}>
-                  <BannerPreview draft={draftFrom(b)} imageUrl={mediaUrl(b.imageUrl)} />
+                  <BannerPreview imageUrl={mediaUrl(b.imageUrl)} />
                   <div className="banner-row-meta">
                     <span className={`banner-state is-${state.tone}`}>{state.text}</span>
                     <span>

@@ -210,7 +210,7 @@ export const BANNER_AUDIENCE_LABEL: Record<BannerAudience, string> = {
 
 export type Banner = {
   id: string;
-  title: string;
+  title: string | null;
   subtitle: string | null;
   imageUrl: string | null;
   bgColor: string;
@@ -227,9 +227,6 @@ export type Banner = {
 };
 
 export type BannerInput = {
-  title: string;
-  subtitle: string | null;
-  ctaText: string | null;
   ctaUrl: string | null;
   audience: BannerAudience;
   cities: string[];
