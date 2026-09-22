@@ -1,7 +1,8 @@
 packages:
   - "apps/*"
-  # Expo app: installed with npm inside apps/mobile (npx expo install), not by pnpm
+  # Expo apps: installed with npm inside apps/mobile and apps/business (npx expo install), not by pnpm
   - "!apps/mobile"
+  - "!apps/business"
   - "packages/*"
 allowBuilds:
   '@parcel/watcher': true
