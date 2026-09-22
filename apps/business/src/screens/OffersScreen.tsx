@@ -50,7 +50,7 @@ export function OffersScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Мои предложения" back={false} />
+      <ScreenHeader title="Мои предложения" />
       {offers === null ? (
         <ActivityIndicator color={colors.muted} style={styles.loader} />
       ) : (

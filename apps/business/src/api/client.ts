@@ -20,7 +20,10 @@ export function setAuthToken(token: string | null) {
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  // FormData sets its own multipart boundary — forcing JSON here would break uploads.
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
   if (authToken) headers.set('Authorization', `Bearer ${authToken}`);
 
   const controller = new AbortController();

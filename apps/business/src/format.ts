@@ -19,3 +19,8 @@ export function formatMoney(value: string | number, currency = 'KZT') {
   const text = Number.isFinite(n) ? n.toLocaleString('ru-RU', { maximumFractionDigits: 2 }) : String(value);
   return currency === 'KZT' ? `${text} ₸` : `${text} ${currency}`;
 }
+
+export function priceText(p: { priceFrom: string | number | null; currency: string; unit: string | null }) {
+  if (p.priceFrom === null || p.priceFrom === '') return 'Цена по запросу';
+  return `от ${formatMoney(p.priceFrom, p.currency)}${p.unit ? ` / ${p.unit}` : ''}`;
+}

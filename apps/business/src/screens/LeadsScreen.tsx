@@ -97,7 +97,15 @@ export function LeadsScreen() {
           keyExtractor={(l) => l.id}
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
-          ListHeaderComponent={error ? <Text style={styles.error}>{error}</Text> : null}
+          ListHeaderComponent={
+            <>
+              <Pressable onPress={() => router.push('/offers')} style={styles.offersLink}>
+                <Text style={styles.offersLinkText}>Мои предложения и их статусы</Text>
+                <ChevronRight size={16} color={colors.muted} />
+              </Pressable>
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+            </>
+          }
           ListEmptyComponent={
             error ? null : (
               <Text style={styles.empty}>
@@ -148,6 +156,17 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, color: '#555', fontWeight: '600' },
   tabTextActive: { color: '#fff' },
   content: { padding: 16, paddingBottom: 40, gap: 10 },
+  offersLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.soft,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 4,
+  },
+  offersLinkText: { fontSize: 13, fontWeight: '700', color: colors.text },
   error: { color: colors.amber, fontSize: 13, marginBottom: 8 },
   empty: { fontSize: 13, lineHeight: 19, color: '#555', padding: 4 },
   card: {
