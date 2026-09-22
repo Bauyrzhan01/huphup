@@ -181,6 +181,7 @@ export class ProductsService {
         description: dto.description,
         unit: dto.unit,
         city: dto.city ?? company.city,
+        priceFrom: dto.priceFrom ?? null,
       },
       include: { images: true },
     });
@@ -202,6 +203,7 @@ export class ProductsService {
         ...(dto.unit !== undefined ? { unit: dto.unit } : {}),
         ...(dto.city !== undefined ? { city: dto.city } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+        ...(dto.priceFrom !== undefined ? { priceFrom: dto.priceFrom } : {}),
       },
       include: { images: { orderBy: { sortOrder: 'asc' } } },
     });

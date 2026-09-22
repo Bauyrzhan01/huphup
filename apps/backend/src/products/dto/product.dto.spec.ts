@@ -1,6 +1,10 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { ProductCatalogQueryDto } from './product.dto';
+import {
+  CreateProductDto,
+  ProductCatalogQueryDto,
+  UpdateProductDto,
+} from './product.dto';
 
 // Ровно те опции, что стоят в глобальном ValidationPipe (main.ts).
 const PIPE_OPTS = { whitelist: true, forbidNonWhitelisted: true } as const;
@@ -37,5 +41,28 @@ describe('ProductCatalogQueryDto', () => {
     const dto = plainToInstance(ProductCatalogQueryDto, { limit: '999' });
     const errors = await validate(dto, PIPE_OPTS);
     expect(errors.some((e) => e.property === 'limit')).toBe(true);
+  });
+});
+
+describe('priceFrom в товаре', () => {
+  it('принимает цену при создании', async () => {
+    const dto = plainToInstance(CreateProductDto, {
+      name: 'Цемент М400',
+      priceFrom: 2450.5,
+    });
+    expect(await validate(dto, PIPE_OPTS)).toHaveLength(0);
+  });
+
+  it('null при обновлении снимает цену («по запросу»)', async () => {
+    const dto = plainToInstance(UpdateProductDto, { priceFrom: null });
+    expect(await validate(dto, PIPE_OPTS)).toHaveLength(0);
+  });
+
+  it('отрицательная цена и строка отклоняются', async () => {
+    for (const priceFrom of [-1, '100']) {
+      const dto = plainToInstance(UpdateProductDto, { priceFrom });
+      const errors = await validate(dto, PIPE_OPTS);
+      expect(errors.some((e) => e.property === 'priceFrom')).toBe(true);
+    }
   });
 });
