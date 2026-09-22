@@ -321,3 +321,45 @@ button .ico { flex: 0 0 auto; }
   .content { padding: 18px; }
   .deals-columns { grid-template-columns: 1fr; }
 }
+
+/* ---------- NBO banners ---------- */
+.banner-editor { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.banner-form { display: grid; gap: 10px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.color-input { padding: 2px; height: 36px; width: 72px; }
+.banner-preview-col { display: grid; gap: 8px; position: sticky; top: 16px; }
+.banner-preview {
+  position: relative; height: 150px; border-radius: 18px; overflow: hidden;
+  background-size: cover; background-position: center; color: #fff;
+}
+.banner-preview-body {
+  position: absolute; inset: 0; padding: 16px; display: flex; flex-direction: column;
+  justify-content: flex-end; gap: 4px;
+}
+.banner-preview-body.has-image { background: linear-gradient(to top, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0) 70%); }
+.banner-preview-body b { font-size: 18px; line-height: 1.2; }
+.banner-preview-body span { font-size: 13px; opacity: 0.9; }
+.banner-preview-body em {
+  font-style: normal; align-self: flex-start; margin-top: 6px; padding: 5px 12px;
+  border-radius: 999px; background: #fff; color: #111; font-size: 12px; font-weight: 700;
+}
+.banner-list { display: grid; gap: 10px; }
+.banner-row {
+  display: grid; grid-template-columns: 260px minmax(0, 1fr) auto; gap: 16px; align-items: center;
+  padding: 10px; border: 1px solid var(--rule); border-radius: var(--radius);
+}
+.banner-row.is-selected { border-color: var(--accent); background: var(--accent-soft); }
+.banner-row .banner-preview { height: 110px; border-radius: 14px; }
+.banner-row .banner-preview-body b { font-size: 15px; }
+.banner-row-meta { display: grid; gap: 4px; font-size: 0.85rem; }
+.banner-row-actions { display: flex; gap: 6px; align-items: center; }
+.banner-state { justify-self: start; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.banner-state.is-on { background: var(--ok-soft); color: var(--ok); }
+.banner-state.is-wait { background: #fff4e0; color: #9a5b00; }
+.banner-state.is-off { background: var(--surface-2); color: var(--muted); }
+@media (max-width: 1000px) {
+  .banner-editor { grid-template-columns: 1fr; }
+  .banner-preview-col { position: static; }
+  .banner-row { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+}

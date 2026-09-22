@@ -5,6 +5,7 @@ import {
   Receipt,
   Tag,
   ShieldCheck,
+  Megaphone,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
@@ -16,6 +17,7 @@ const NAV = [
   { to: '/billing/transactions', label: 'Транзакции', icon: Receipt },
   { to: '/billing/pricing', label: 'Цены', icon: Tag },
   { to: '/deals', label: 'Сделки', icon: ShieldCheck },
+  { to: '/banners', label: 'Баннеры', icon: Megaphone },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {

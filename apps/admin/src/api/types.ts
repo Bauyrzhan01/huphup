@@ -198,3 +198,44 @@ export type DisputeTriage =
       };
     }
   | { available: false; reason: string };
+
+
+export type BannerAudience = 'ALL' | 'BUYER' | 'SUPPLIER';
+
+export const BANNER_AUDIENCE_LABEL: Record<BannerAudience, string> = {
+  ALL: 'Всем',
+  BUYER: 'Заказчикам',
+  SUPPLIER: 'Поставщикам',
+};
+
+export type Banner = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  imageUrl: string | null;
+  bgColor: string;
+  ctaText: string | null;
+  ctaUrl: string | null;
+  audience: BannerAudience;
+  cities: string[];
+  isActive: boolean;
+  sortOrder: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BannerInput = {
+  title: string;
+  subtitle: string | null;
+  bgColor: string;
+  ctaText: string | null;
+  ctaUrl: string | null;
+  audience: BannerAudience;
+  cities: string[];
+  isActive: boolean;
+  sortOrder: number;
+  startsAt: string | null;
+  endsAt: string | null;
+};
