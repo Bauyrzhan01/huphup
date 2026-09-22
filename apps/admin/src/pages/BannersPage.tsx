@@ -68,7 +68,6 @@ function inputFrom(d: Draft): BannerInput {
   return {
     title: d.title.trim(),
     subtitle: d.subtitle.trim() || null,
-    bgColor: d.bgColor,
     ctaText: d.ctaText.trim() || null,
     ctaUrl: d.ctaUrl.trim() || null,
     audience: d.audience,
@@ -356,15 +355,6 @@ export function BannersPage() {
                 min={0}
                 value={draft.sortOrder}
                 onChange={(e) => set('sortOrder', e.target.value)}
-              />
-            </label>
-            <label className="field">
-              Цвет фона
-              <input
-                type="color"
-                className="color-input"
-                value={draft.bgColor}
-                onChange={(e) => set('bgColor', e.target.value)}
               />
             </label>
           </div>
