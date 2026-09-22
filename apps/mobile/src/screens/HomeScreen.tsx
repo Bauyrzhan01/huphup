@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,12 +11,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, router, useFocusEffect } from 'expo-router';
+import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 // Per-icon imports: Metro doesn't tree-shake, the barrel pulls in all ~1800 icons.
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
 import { useAuth } from '../auth/AuthContext';
 import { BannerCarousel } from '../components/BannerCarousel';
+import { confirm } from '../components/confirm';
+import { AttentionCard, DiscoverSections } from '../components/HomeSections';
 import { RequestRow } from '../components/requests';
 import { directoryApi, requestsApi, type PublishResult, type RequestItem } from '../api/requests';
 import { DEADLINE_CHOICES, formatDate, isoInDays } from '../requests/format';
@@ -35,8 +36,22 @@ export function HomeScreen() {
   const [text, setText] = useState('');
   const [openTool, setOpenTool] = useState<OpenTool>(null);
   const [cities, setCities] = useState<string[]>([]);
-  const [recent, setRecent] = useState<RequestItem[] | null>(null);
+  const [requests, setRequests] = useState<RequestItem[] | null>(null);
+  const recent = requests?.slice(0, RECENT_COUNT) ?? null;
   const scrollRef = useRef<ScrollView>(null);
+  const { draft } = useLocalSearchParams<{ draft?: string }>();
+
+  // "Создать заявку на этот товар" on a product screen lands here with a prefilled text.
+  const [appliedDraft, setAppliedDraft] = useState<string | undefined>();
+  if (draft && draft !== appliedDraft) {
+    setAppliedDraft(draft);
+    setText(draft);
+  } else if (!draft && appliedDraft) {
+    setAppliedDraft(undefined);
+  }
+  useEffect(() => {
+    if (draft) router.setParams({ draft: '' });
+  }, [draft]);
 
   useEffect(() => {
     directoryApi
@@ -48,8 +63,8 @@ export function HomeScreen() {
   const loadRecent = useCallback(() => {
     requestsApi
       .list()
-      .then((list) => setRecent(list.slice(0, RECENT_COUNT)))
-      .catch(() => setRecent((prev) => prev ?? []));
+      .then(setRequests)
+      .catch(() => setRequests((prev) => prev ?? []));
   }, []);
 
   // Refresh whenever the screen comes back into view (e.g. after opening a request).
@@ -59,17 +74,10 @@ export function HomeScreen() {
     if (chat.started) scrollRef.current?.scrollToEnd({ animated: true });
   }, [chat.chat.length, chat.busy, chat.started]);
 
-  function confirmLogout() {
-    const question = `Выйти из аккаунта ${user?.email ?? ''}?`;
-    // react-native-web has no Alert buttons, so the web build asks the browser instead.
-    if (Platform.OS === 'web') {
-      if (globalThis.confirm?.(question)) void logout();
-      return;
+  async function confirmLogout() {
+    if (await confirm('Выход', `Выйти из аккаунта ${user?.email ?? ''}?`, 'Выйти', true)) {
+      void logout();
     }
-    Alert.alert('Выход', question, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Выйти', style: 'destructive', onPress: () => void logout() },
-    ]);
   }
 
   async function send(value = text) {
@@ -249,6 +257,7 @@ export function HomeScreen() {
 
             {chat.started ? null : (
               <>
+                <AttentionCard requests={requests} />
                 <View style={styles.sectionHead}>
                   <Text style={styles.sectionTitle}>Недавние заявки</Text>
                   <Link href="/requests" style={styles.sectionLink}>
@@ -271,6 +280,7 @@ export function HomeScreen() {
                     ))}
                   </View>
                 )}
+                <DiscoverSections />
               </>
             )}
           </ScrollView>
