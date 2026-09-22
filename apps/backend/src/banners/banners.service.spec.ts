@@ -70,8 +70,17 @@ describe('BannersService.listActive', () => {
     expect(where.AND).toEqual([
       { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
       { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+      { OR: [{ imageUrl: { not: null } }, { title: { not: null } }] },
     ]);
     expect(where.audience).toBeUndefined();
+  });
+
+  it('не отдаёт пустые баннеры — без картинки и без заголовка', async () => {
+    const { service, prisma } = build();
+    await service.listActive({}, now);
+    expect(whereOf(prisma).AND).toContainEqual({
+      OR: [{ imageUrl: { not: null } }, { title: { not: null } }],
+    });
   });
 
   it('покупателю отдаёт баннеры «всем» и «покупателям»', async () => {
@@ -85,13 +94,19 @@ describe('BannersService.listActive', () => {
     const { service, prisma } = build();
     await service.listActive({ city: ' Алматы ' }, now);
     const where = whereOf(prisma);
-    expect(where.AND[2]).toEqual({
+    expect(where.AND).toContainEqual({
       OR: [{ cities: { isEmpty: true } }, { cities: { has: 'Алматы' } }],
     });
   });
 });
 
 describe('BannersService.create / update', () => {
+  it('создаёт баннер без заголовка — текст бывает прямо на картинке', async () => {
+    const { service, prisma } = build();
+    await service.create({ audience: 'BUYER' });
+    expect(prisma.banner.create).toHaveBeenCalledTimes(1);
+  });
+
   it('чистит список городов от пробелов и повторов', async () => {
     const { service, prisma } = build();
     await service.create({

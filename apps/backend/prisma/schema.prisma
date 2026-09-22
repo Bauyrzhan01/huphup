@@ -719,7 +719,7 @@ enum BannerAudience {
 /// Рекламный NBO-баннер на главном экране приложения. Управляется из админки.
 model Banner {
   id        String         @id @default(cuid())
-  title     String
+  title     String?
   subtitle  String?
   imageUrl  String?
   imageKey  String?

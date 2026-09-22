@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { BannerAudience } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
@@ -20,11 +20,15 @@ import {
 const CTA_URL = /^(\/[^\s]*|https?:\/\/[^\s]+)$/;
 
 export class CreateBannerDto {
-  @ApiProperty({ example: 'Скидка 10% на цемент' })
+  @ApiPropertyOptional({
+    example: 'Скидка 10% на цемент',
+    description: 'Only shown when the banner has no picture',
+  })
+  @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(80)
-  title!: string;
+  title?: string | null;
 
   @ApiPropertyOptional({
     example: 'Только до конца месяца у проверенных поставщиков',
