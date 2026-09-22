@@ -32,6 +32,7 @@ export function RequestDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [busyOffer, setBusyOffer] = useState('');
   const [notice, setNotice] = useState<'accepted' | 'rejected' | null>(null);
+  const [conversationId, setConversationId] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -59,7 +60,11 @@ export function RequestDetailScreen() {
       'Принять',
     );
     if (!ok) return;
-    await act(offer, () => offersApi.accept(offer.id), 'accepted');
+    await act(
+      offer,
+      async () => setConversationId((await offersApi.accept(offer.id)).conversationId),
+      'accepted',
+    );
   }
 
   async function reject(offer: Offer) {
@@ -110,6 +115,11 @@ export function RequestDetailScreen() {
               <Pressable onPress={() => router.push('/deals')} style={styles.noticeButton}>
                 <Text style={styles.noticeButtonText}>Перейти к сделке</Text>
               </Pressable>
+              {conversationId ? (
+                <Pressable onPress={() => router.push(`/chats/${conversationId}`)} style={styles.noticeButton}>
+                  <Text style={styles.noticeButtonText}>Написать поставщику</Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
           {notice === 'rejected' ? (

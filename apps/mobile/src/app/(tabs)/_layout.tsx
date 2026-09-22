@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import ClipboardList from 'lucide-react-native/icons/clipboard-list';
 import House from 'lucide-react-native/icons/house';
+import MessageSquare from 'lucide-react-native/icons/message-square';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import Wallet from 'lucide-react-native/icons/wallet';
 import { colors } from '../../theme';
@@ -30,6 +31,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="deals"
         options={{ title: 'Сделки', tabBarIcon: ({ color }) => <ShieldCheck size={22} color={color} /> }}
+      />
+      <Tabs.Screen
+        name="chats"
+        options={{ title: 'Чаты', tabBarIcon: ({ color }) => <MessageSquare size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="balance"

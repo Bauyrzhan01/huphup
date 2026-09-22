@@ -22,6 +22,10 @@ function RootStack() {
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="requests/[id]" />
+        <Stack.Screen name="chats/[id]" />
+        <Stack.Screen name="products/[id]" />
+        <Stack.Screen name="suppliers/index" />
+        <Stack.Screen name="suppliers/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" />
