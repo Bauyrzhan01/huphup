@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Runtime queries: pooled connection (Neon PgBouncer) in the cloud.
   url       = env("DATABASE_URL")
   // Migrations: must bypass the pooler — PgBouncer can't run them. Locally set
@@ -707,4 +707,36 @@ model Deal {
   @@index([companyId, status])
   @@index([status, autoReleaseAt])
   @@map("deals")
+}
+
+/// Кому показывать NBO-баннер.
+enum BannerAudience {
+  ALL
+  BUYER
+  SUPPLIER
+}
+
+/// Рекламный NBO-баннер на главном экране приложения. Управляется из админки.
+model Banner {
+  id        String         @id @default(cuid())
+  title     String
+  subtitle  String?
+  imageUrl  String?
+  imageKey  String?
+  /// Фон карточки, если картинки нет: #RRGGBB.
+  bgColor   String         @default("#111111")
+  ctaText   String?
+  ctaUrl    String?
+  audience  BannerAudience @default(ALL)
+  /// Пустой список — показывать во всех городах.
+  cities    String[]       @default([])
+  isActive  Boolean        @default(true)
+  sortOrder Int            @default(0)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("banners")
 }
