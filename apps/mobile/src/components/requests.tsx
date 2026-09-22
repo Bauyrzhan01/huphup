@@ -40,18 +40,22 @@ export function RequestRow({ request, last }: { request: RequestItem; last?: boo
   );
 }
 
-export function ScreenHeader({ title }: { title: string }) {
+export function ScreenHeader({ title, back = true }: { title: string; back?: boolean }) {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.headerSafe}>
       <View style={styles.header}>
-        <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          hitSlop={10}
-          style={styles.back}
-          accessibilityLabel="Назад"
-        >
-          <ChevronLeft size={22} color={colors.text} />
-        </Pressable>
+        {back ? (
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+            hitSlop={10}
+            style={styles.back}
+            accessibilityLabel="Назад"
+          >
+            <ChevronLeft size={22} color={colors.text} />
+          </Pressable>
+        ) : (
+          <View style={styles.back} />
+        )}
         <Text style={styles.headerTitle} numberOfLines={1}>
           {title}
         </Text>

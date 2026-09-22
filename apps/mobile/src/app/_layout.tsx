@@ -20,8 +20,7 @@ function RootStack() {
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Protected guard={signedIn}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="requests/index" />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="requests/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>

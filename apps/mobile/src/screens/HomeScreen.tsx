@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,6 +17,7 @@ import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
 import { useAuth } from '../auth/AuthContext';
 import { BannerCarousel } from '../components/BannerCarousel';
+import { confirm } from '../components/confirm';
 import { RequestRow } from '../components/requests';
 import { directoryApi, requestsApi, type PublishResult, type RequestItem } from '../api/requests';
 import { DEADLINE_CHOICES, formatDate, isoInDays } from '../requests/format';
@@ -59,17 +59,10 @@ export function HomeScreen() {
     if (chat.started) scrollRef.current?.scrollToEnd({ animated: true });
   }, [chat.chat.length, chat.busy, chat.started]);
 
-  function confirmLogout() {
-    const question = `Выйти из аккаунта ${user?.email ?? ''}?`;
-    // react-native-web has no Alert buttons, so the web build asks the browser instead.
-    if (Platform.OS === 'web') {
-      if (globalThis.confirm?.(question)) void logout();
-      return;
+  async function confirmLogout() {
+    if (await confirm('Выход', `Выйти из аккаунта ${user?.email ?? ''}?`, 'Выйти', true)) {
+      void logout();
     }
-    Alert.alert('Выход', question, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Выйти', style: 'destructive', onPress: () => void logout() },
-    ]);
   }
 
   async function send(value = text) {

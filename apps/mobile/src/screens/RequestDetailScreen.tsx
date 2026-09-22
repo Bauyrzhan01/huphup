@@ -1,9 +1,19 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import BadgeCheck from 'lucide-react-native/icons/badge-check';
 import { ApiError } from '../api/client';
+import { offersApi } from '../api/deals';
 import { requestsApi, type Offer, type RequestItem } from '../api/requests';
+import { confirm } from '../components/confirm';
 import { ScreenHeader, StatusBadge } from '../components/requests';
 import { formatDate, formatMoney } from '../requests/format';
 import { colors, radius } from '../theme';
@@ -20,6 +30,8 @@ export function RequestDetailScreen() {
   const [request, setRequest] = useState<RequestItem | null>(null);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [busyOffer, setBusyOffer] = useState('');
+  const [notice, setNotice] = useState<'accepted' | 'rejected' | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -40,6 +52,37 @@ export function RequestDetailScreen() {
     }, [load]),
   );
 
+  async function accept(offer: Offer) {
+    const ok = await confirm(
+      'Принять предложение?',
+      `${offer.company.name} · ${formatMoney(offer.price, offer.currency)}. Остальные предложения будут отклонены, откроется сейф-сделка — её нужно будет оплатить.`,
+      'Принять',
+    );
+    if (!ok) return;
+    await act(offer, () => offersApi.accept(offer.id), 'accepted');
+  }
+
+  async function reject(offer: Offer) {
+    const ok = await confirm('Отклонить предложение?', offer.company.name, 'Отклонить', true);
+    if (!ok) return;
+    await act(offer, () => offersApi.reject(offer.id), 'rejected');
+  }
+
+  async function act(offer: Offer, action: () => Promise<unknown>, result: 'accepted' | 'rejected') {
+    setBusyOffer(offer.id);
+    setError('');
+    setNotice(null);
+    try {
+      await action();
+      setNotice(result);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Не получилось. Попробуйте ещё раз.');
+    } finally {
+      setBusyOffer('');
+    }
+  }
+
   async function refresh() {
     setRefreshing(true);
     await load();
@@ -59,6 +102,21 @@ export function RequestDetailScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
         >
           {error ? <Text style={styles.error}>{error}</Text> : null}
+          {notice === 'accepted' ? (
+            <View style={styles.notice}>
+              <Text style={styles.noticeText}>
+                Предложение принято — открыта сейф-сделка. Оплатите её, чтобы поставщик начал отгрузку.
+              </Text>
+              <Pressable onPress={() => router.push('/deals')} style={styles.noticeButton}>
+                <Text style={styles.noticeButtonText}>Перейти к сделке</Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {notice === 'rejected' ? (
+            <View style={styles.notice}>
+              <Text style={styles.noticeText}>Предложение отклонено.</Text>
+            </View>
+          ) : null}
           {request ? (
             <>
               <StatusBadge status={request.status} />
@@ -95,6 +153,30 @@ export function RequestDetailScreen() {
                           .join(' · ')}
                       </Text>
                       {o.comment ? <Text style={styles.comment}>{o.comment}</Text> : null}
+                      {o.status === 'PENDING' && request.status === 'PUBLISHED' ? (
+                        <View style={styles.offerActions}>
+                          <Pressable
+                            onPress={() => void accept(o)}
+                            disabled={Boolean(busyOffer)}
+                            style={[styles.acceptBtn, busyOffer === o.id && styles.dim]}
+                            accessibilityRole="button"
+                          >
+                            {busyOffer === o.id ? (
+                              <ActivityIndicator color="#fff" size="small" />
+                            ) : (
+                              <Text style={styles.acceptText}>Принять</Text>
+                            )}
+                          </Pressable>
+                          <Pressable
+                            onPress={() => void reject(o)}
+                            disabled={Boolean(busyOffer)}
+                            style={styles.rejectBtn}
+                            accessibilityRole="button"
+                          >
+                            <Text style={styles.rejectText}>Отклонить</Text>
+                          </Pressable>
+                        </View>
+                      ) : null}
                     </View>
                   ))}
                 </View>
@@ -156,6 +238,35 @@ const styles = StyleSheet.create({
   price: { marginLeft: 'auto', fontSize: 15, fontWeight: '800', color: colors.text },
   offerMeta: { fontSize: 12, color: colors.muted },
   comment: { fontSize: 13, lineHeight: 18, color: '#404040', marginTop: 2 },
+  offerActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  acceptBtn: {
+    backgroundColor: colors.dark,
+    borderRadius: radius.pill,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    minWidth: 96,
+    alignItems: 'center',
+  },
+  acceptText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  rejectBtn: {
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+  },
+  rejectText: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  dim: { opacity: 0.6 },
+  notice: { backgroundColor: colors.greenSoft, borderRadius: radius.md, padding: 12, gap: 8, marginBottom: 12 },
+  noticeText: { color: '#1f5c4b', fontSize: 13, lineHeight: 18 },
+  noticeButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.dark,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  noticeButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   empty: {
     borderWidth: 1,
     borderColor: colors.line,

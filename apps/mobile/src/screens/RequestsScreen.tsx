@@ -34,7 +34,7 @@ export function RequestsScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Мои заявки" />
+      <ScreenHeader title="Мои заявки" back={false} />
       {items === null ? (
         <ActivityIndicator color={colors.muted} style={styles.loader} />
       ) : (
