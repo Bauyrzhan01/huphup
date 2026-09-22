@@ -24,6 +24,8 @@ function RootStack() {
       <Stack.Protected guard={signedIn && hasCompany}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="leads/[id]" />
+        <Stack.Screen name="offers" />
+        <Stack.Screen name="products/[id]" />
         <Stack.Screen name="chats/[id]" />
         <Stack.Screen name="profile" />
       </Stack.Protected>
