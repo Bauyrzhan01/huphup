@@ -27,7 +27,9 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "env:local": "node -e \"require('fs').copyFileSync('.env.local','.env')\" && echo Switched to LOCAL database (.env.local)",
+    "env:shared": "node -e \"require('fs').copyFileSync('.env.shared','.env')\" && echo Switched to SHARED team database (.env.shared)"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
