@@ -208,6 +208,13 @@ export const BANNER_AUDIENCE_LABEL: Record<BannerAudience, string> = {
   SUPPLIER: 'Поставщикам',
 };
 
+export type BannerPlacement = 'CARD' | 'POPUP';
+
+export const BANNER_PLACEMENT_LABEL: Record<BannerPlacement, string> = {
+  CARD: 'Карточка на главной',
+  POPUP: 'Pop-up поверх экрана',
+};
+
 export type Banner = {
   id: string;
   title: string | null;
@@ -217,6 +224,9 @@ export type Banner = {
   ctaText: string | null;
   ctaUrl: string | null;
   audience: BannerAudience;
+  placement: BannerPlacement;
+  /** Not empty — only these accounts see the banner (a test before it goes live). */
+  testEmails: string[];
   cities: string[];
   isActive: boolean;
   sortOrder: number;
@@ -229,6 +239,8 @@ export type Banner = {
 export type BannerInput = {
   ctaUrl: string | null;
   audience: BannerAudience;
+  placement: BannerPlacement;
+  testEmails: string[];
   cities: string[];
   isActive: boolean;
   sortOrder: number;

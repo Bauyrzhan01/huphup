@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ImageUp, Pencil, Trash2 } from 'lucide-react';
+import { ImageUp, Pencil, Send, Trash2 } from 'lucide-react';
 import { bannersApi } from '../api';
 import { ApiError, mediaUrl } from '../api/client';
 import { isAuthError, useAuth } from '../auth/AuthContext';
 import { ErrorNote, OkNote, formatDateTime } from '../components/ui';
-import { BANNER_AUDIENCE_LABEL } from '../api/types';
-import type { Banner, BannerAudience, BannerInput } from '../api/types';
+import { BANNER_AUDIENCE_LABEL, BANNER_PLACEMENT_LABEL } from '../api/types';
+import type { Banner, BannerAudience, BannerInput, BannerPlacement } from '../api/types';
 
 // The whole banner is the picture: its text and call-to-action are drawn into it.
 type Draft = {
   ctaUrl: string;
   audience: BannerAudience;
+  placement: BannerPlacement;
+  testEmails: string;
   cities: string;
   isActive: boolean;
   sortOrder: string;
@@ -22,6 +24,8 @@ type Draft = {
 const EMPTY: Draft = {
   ctaUrl: '',
   audience: 'ALL',
+  placement: 'CARD',
+  testEmails: '',
   cities: '',
   isActive: true,
   sortOrder: '0',
@@ -45,6 +49,8 @@ function draftFrom(b: Banner): Draft {
   return {
     ctaUrl: b.ctaUrl ?? '',
     audience: b.audience,
+    placement: b.placement,
+    testEmails: b.testEmails.join(', '),
     cities: b.cities.join(', '),
     isActive: b.isActive,
     sortOrder: String(b.sortOrder),
@@ -57,10 +63,9 @@ function inputFrom(d: Draft): BannerInput {
   return {
     ctaUrl: d.ctaUrl.trim() || null,
     audience: d.audience,
-    cities: d.cities
-      .split(',')
-      .map((c) => c.trim())
-      .filter(Boolean),
+    placement: d.placement,
+    testEmails: splitList(d.testEmails),
+    cities: splitList(d.cities),
     isActive: d.isActive,
     sortOrder: Math.max(0, Math.trunc(Number(d.sortOrder)) || 0),
     startsAt: fromLocalInput(d.startsAt),
@@ -68,9 +73,25 @@ function inputFrom(d: Draft): BannerInput {
   };
 }
 
+/** Adds an address to the comma-separated field, without duplicating it. */
+function addEmail(current: string, email: string) {
+  const list = splitList(current);
+  const lower = email.trim().toLowerCase();
+  return (list.some((e) => e.toLowerCase() === lower) ? list : [...list, email]).join(', ');
+}
+
+function splitList(value: string) {
+  return value
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
 function scheduleLabel(b: Banner, now: number) {
   if (!b.imageUrl) return { text: 'Нет картинки — не показывается', tone: 'off' };
   if (!b.isActive) return { text: 'Выключен', tone: 'off' };
+  if (b.testEmails.length)
+    return { text: `Тест: ${b.testEmails.join(', ')}`, tone: 'wait' };
   if (b.startsAt && new Date(b.startsAt).getTime() > now)
     return { text: `С ${formatDateTime(b.startsAt)}`, tone: 'wait' };
   if (b.endsAt && new Date(b.endsAt).getTime() <= now) return { text: 'Завершён', tone: 'off' };
@@ -89,7 +110,7 @@ function BannerPreview({ imageUrl }: { imageUrl: string | null }) {
 }
 
 export function BannersPage() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -177,7 +198,14 @@ export function BannersPage() {
         ? await bannersApi.update(editingId, inputFrom(draft))
         : await bannersApi.create(inputFrom(draft));
       if (file) await bannersApi.uploadImage(saved.id, file);
-      setNotice(editingId ? 'Баннер сохранён.' : 'Баннер создан — он уже виден в приложении.');
+      const list = inputFrom(draft).testEmails;
+      setNotice(
+        list.length
+          ? `Тестовый показ: баннер видят только ${list.join(', ')}. Очистите поле, чтобы показать всем.`
+          : editingId
+            ? 'Баннер сохранён.'
+            : 'Баннер создан — он уже виден в приложении.',
+      );
       resetForm();
       load();
     } catch (err) {
@@ -273,6 +301,19 @@ export function BannersPage() {
               </select>
             </label>
             <label className="field">
+              Где показывать
+              <select
+                value={draft.placement}
+                onChange={(e) => set('placement', e.target.value as BannerPlacement)}
+              >
+                {(Object.keys(BANNER_PLACEMENT_LABEL) as BannerPlacement[]).map((p) => (
+                  <option key={p} value={p}>
+                    {BANNER_PLACEMENT_LABEL[p]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
               Города (через запятую, пусто — все)
               <input
                 value={draft.cities}
@@ -305,6 +346,35 @@ export function BannersPage() {
                 onChange={(e) => set('endsAt', e.target.value)}
               />
             </label>
+          </div>
+
+          <label className="field">
+            Тестовый показ — email через запятую
+            <input
+              value={draft.testEmails}
+              onChange={(e) => set('testEmails', e.target.value)}
+              placeholder="пусто — видят все пользователи"
+            />
+          </label>
+          <div className="form-row">
+            {user?.email ? (
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => set('testEmails', addEmail(draft.testEmails, user.email))}
+              >
+                <Send size={15} className="ico" />
+                Тест только мне
+              </button>
+            ) : null}
+            {draft.testEmails.trim() ? (
+              <button type="button" className="ghost" onClick={() => set('testEmails', '')}>
+                Показать всем
+              </button>
+            ) : null}
+            <span className="muted">
+              Пока список не пуст, баннер видят только эти аккаунты — остальные не видят ничего.
+            </span>
           </div>
 
           <div className="form-row">
@@ -352,6 +422,7 @@ export function BannersPage() {
                   <div className="banner-row-meta">
                     <span className={`banner-state is-${state.tone}`}>{state.text}</span>
                     <span>
+                      {BANNER_PLACEMENT_LABEL[b.placement]} ·{' '}
                       {BANNER_AUDIENCE_LABEL[b.audience]} ·{' '}
                       {b.cities.length ? b.cities.join(', ') : 'все города'} · порядок {b.sortOrder}
                     </span>
