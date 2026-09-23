@@ -710,6 +710,13 @@ model Deal {
 }
 
 /// Кому показывать NBO-баннер.
+enum BannerPlacement {
+  /// Карточка в карусели на главном экране.
+  CARD
+  /// Модальное окно поверх экрана.
+  POPUP
+}
+
 enum BannerAudience {
   ALL
   BUYER
@@ -718,24 +725,27 @@ enum BannerAudience {
 
 /// Рекламный NBO-баннер на главном экране приложения. Управляется из админки.
 model Banner {
-  id        String         @id @default(cuid())
-  title     String?
-  subtitle  String?
-  imageUrl  String?
-  imageKey  String?
+  id         String          @id @default(cuid())
+  title      String?
+  subtitle   String?
+  imageUrl   String?
+  imageKey   String?
   /// Фон карточки, если картинки нет: #RRGGBB.
-  bgColor   String         @default("#111111")
-  ctaText   String?
-  ctaUrl    String?
-  audience  BannerAudience @default(ALL)
+  bgColor    String          @default("#111111")
+  ctaText    String?
+  ctaUrl     String?
+  audience   BannerAudience  @default(ALL)
+  placement  BannerPlacement @default(CARD)
+  /// Непустой список — черновик: баннер видят только эти пользователи (тест перед показом всем).
+  testEmails String[]        @default([])
   /// Пустой список — показывать во всех городах.
-  cities    String[]       @default([])
-  isActive  Boolean        @default(true)
-  sortOrder Int            @default(0)
-  startsAt  DateTime?
-  endsAt    DateTime?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  cities     String[]        @default([])
+  isActive   Boolean         @default(true)
+  sortOrder  Int             @default(0)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
 
   @@index([isActive, sortOrder])
   @@map("banners")

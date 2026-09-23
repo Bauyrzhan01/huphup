@@ -1,11 +1,12 @@
 import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { BannerAudience } from '@prisma/client';
-import { Type } from 'class-transformer';
+import { BannerAudience, BannerPlacement } from '@prisma/client';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsDate,
+  IsEmail,
   IsEnum,
   IsInt,
   IsOptional,
@@ -15,6 +16,12 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+
+/** Admins paste addresses with stray spaces and capitals — clean them before validating. */
+function toEmailList(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.map((v) => String(v).trim().toLowerCase()).filter(Boolean);
+}
 
 // App screens are relative paths ("/requests"), everything else must be a web URL.
 const CTA_URL = /^(\/[^\s]*|https?:\/\/[^\s]+)$/;
@@ -63,6 +70,24 @@ export class CreateBannerDto {
   @IsOptional()
   @IsEnum(BannerAudience)
   audience?: BannerAudience;
+
+  @ApiPropertyOptional({ enum: BannerPlacement, default: BannerPlacement.CARD })
+  @IsOptional()
+  @IsEnum(BannerPlacement)
+  placement?: BannerPlacement;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['tester@huphup.kz'],
+    description:
+      'Empty = everyone. Otherwise only these accounts see the banner — a test run before it goes live.',
+  })
+  @IsOptional()
+  @Transform(({ value }) => toEmailList(value))
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsEmail({}, { each: true })
+  testEmails?: string[];
 
   @ApiPropertyOptional({
     type: [String],
@@ -116,4 +141,13 @@ export class ActiveBannersQueryDto {
   @IsString()
   @MaxLength(60)
   city?: string;
+
+  @ApiPropertyOptional({
+    enum: BannerPlacement,
+    default: BannerPlacement.CARD,
+    description: 'CARD — carousel on the home screen, POPUP — modal over it',
+  })
+  @IsOptional()
+  @IsEnum(BannerPlacement)
+  placement?: BannerPlacement;
 }

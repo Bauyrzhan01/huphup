@@ -3,7 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Banner, BannerAudience, Prisma } from '@prisma/client';
+import {
+  Banner,
+  BannerAudience,
+  BannerPlacement,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import {
@@ -21,15 +26,27 @@ export class BannersService {
     private readonly storage: StorageService,
   ) {}
 
-  /** What the app shows right now to a given viewer. */
-  listActive(query: ActiveBannersQueryDto, now = new Date()) {
+  /** What the app shows right now to a given viewer; viewerEmail may be absent for guests. */
+  listActive(
+    query: ActiveBannersQueryDto,
+    viewerEmail?: string,
+    now = new Date(),
+  ) {
     const where: Prisma.BannerWhereInput = {
       isActive: true,
+      placement: query.placement ?? BannerPlacement.CARD,
       AND: [
         { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
         { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
         // A banner with neither a picture nor a title would be an empty card.
         { OR: [{ imageUrl: { not: null } }, { title: { not: null } }] },
+        // A banner under test is visible only to the accounts listed on it.
+        {
+          OR: [
+            { testEmails: { isEmpty: true } },
+            ...(viewerEmail ? [{ testEmails: { has: viewerEmail } }] : []),
+          ],
+        },
       ],
     };
     if (query.audience) {
@@ -66,7 +83,11 @@ export class BannersService {
   async create(dto: CreateBannerDto) {
     assertWindow(dto.startsAt, dto.endsAt);
     return this.prisma.banner.create({
-      data: { ...dto, cities: normalizeCities(dto.cities) },
+      data: {
+        ...dto,
+        cities: normalizeCities(dto.cities),
+        testEmails: normalizeEmails(dto.testEmails),
+      },
     });
   }
 
@@ -81,6 +102,9 @@ export class BannersService {
       data: {
         ...dto,
         ...(dto.cities ? { cities: normalizeCities(dto.cities) } : {}),
+        ...(dto.testEmails
+          ? { testEmails: normalizeEmails(dto.testEmails) }
+          : {}),
       },
     });
   }
@@ -139,6 +163,14 @@ export class BannersService {
 function normalizeCities(cities: string[] | undefined) {
   if (!cities) return [];
   return [...new Set(cities.map((c) => c.trim()).filter(Boolean))];
+}
+
+// Logins are lower-cased, so the stored test emails must be too.
+function normalizeEmails(emails: string[] | undefined) {
+  if (!emails) return [];
+  return [
+    ...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean)),
+  ];
 }
 
 function assertWindow(startsAt?: Date | null, endsAt?: Date | null) {
