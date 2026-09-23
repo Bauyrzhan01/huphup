@@ -15,6 +15,8 @@ function banner(over: Partial<Banner> = {}): Banner {
     ctaText: null,
     ctaUrl: null,
     audience: 'ALL',
+    placement: 'CARD',
+    testEmails: [],
     cities: [],
     isActive: true,
     sortOrder: 0,
@@ -34,8 +36,9 @@ function build() {
         [{ where: Prisma.BannerWhereInput }]
       >(() => Promise.resolve([])),
       findUnique: jest.fn().mockResolvedValue(banner()),
-      create: jest.fn((args: { data: { cities?: string[] } }) =>
-        Promise.resolve(args.data),
+      create: jest.fn(
+        (args: { data: { cities?: string[]; testEmails?: string[] } }) =>
+          Promise.resolve(args.data),
       ),
       update: jest.fn((args: { data: object }) => Promise.resolve(args.data)),
       delete: jest.fn().mockResolvedValue(banner()),
@@ -64,20 +67,22 @@ describe('BannersService.listActive', () => {
 
   it('показывает только активные баннеры внутри окна показа', async () => {
     const { service, prisma } = build();
-    await service.listActive({}, now);
+    await service.listActive({}, undefined, now);
     const where = whereOf(prisma);
     expect(where.isActive).toBe(true);
     expect(where.AND).toEqual([
       { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
       { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
       { OR: [{ imageUrl: { not: null } }, { title: { not: null } }] },
+      { OR: [{ testEmails: { isEmpty: true } }] },
     ]);
     expect(where.audience).toBeUndefined();
+    expect(where.placement).toBe('CARD');
   });
 
   it('не отдаёт пустые баннеры — без картинки и без заголовка', async () => {
     const { service, prisma } = build();
-    await service.listActive({}, now);
+    await service.listActive({}, undefined, now);
     expect(whereOf(prisma).AND).toContainEqual({
       OR: [{ imageUrl: { not: null } }, { title: { not: null } }],
     });
@@ -85,14 +90,39 @@ describe('BannersService.listActive', () => {
 
   it('покупателю отдаёт баннеры «всем» и «покупателям»', async () => {
     const { service, prisma } = build();
-    await service.listActive({ audience: 'BUYER' }, now);
+    await service.listActive({ audience: 'BUYER' }, undefined, now);
     const where = whereOf(prisma);
     expect(where.audience).toEqual({ in: ['ALL', 'BUYER'] });
   });
 
+  it('по умолчанию отдаёт карточки, pop-up — только по запросу', async () => {
+    const { service, prisma } = build();
+    await service.listActive({ placement: 'POPUP' }, undefined, now);
+    expect(whereOf(prisma).placement).toBe('POPUP');
+  });
+
+  it('тестовый баннер виден только своим адресатам', async () => {
+    const { service, prisma } = build();
+    await service.listActive({}, 'tester@huphup.kz', now);
+    expect(whereOf(prisma).AND).toContainEqual({
+      OR: [
+        { testEmails: { isEmpty: true } },
+        { testEmails: { has: 'tester@huphup.kz' } },
+      ],
+    });
+  });
+
+  it('гостю тестовые баннеры не показываются', async () => {
+    const { service, prisma } = build();
+    await service.listActive({}, undefined, now);
+    expect(whereOf(prisma).AND).toContainEqual({
+      OR: [{ testEmails: { isEmpty: true } }],
+    });
+  });
+
   it('по городу берёт баннеры без городов и с этим городом', async () => {
     const { service, prisma } = build();
-    await service.listActive({ city: ' Алматы ' }, now);
+    await service.listActive({ city: ' Алматы ' }, undefined, now);
     const where = whereOf(prisma);
     expect(where.AND).toContainEqual({
       OR: [{ cities: { isEmpty: true } }, { cities: { has: 'Алматы' } }],
@@ -116,6 +146,18 @@ describe('BannersService.create / update', () => {
     expect(prisma.banner.create.mock.calls[0][0].data.cities).toEqual([
       'Алматы',
       'Астана',
+    ]);
+  });
+
+  it('приводит тестовые email к нижнему регистру и убирает повторы', async () => {
+    const { service, prisma } = build();
+    await service.create({
+      title: 'А',
+      testEmails: [' Tester@Huphup.KZ ', 'tester@huphup.kz', 'two@huphup.kz'],
+    });
+    expect(prisma.banner.create.mock.calls[0][0].data.testEmails).toEqual([
+      'tester@huphup.kz',
+      'two@huphup.kz',
     ]);
   });
 
