@@ -24,7 +24,15 @@
     "scheme": "huphup-business",
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "HupHup Business использует фото, чтобы вы могли добавить снимки товаров в каталог.",
+          "cameraPermission": "HupHup Business использует камеру, чтобы вы могли сфотографировать товар для каталога.",
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }

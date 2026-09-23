@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import Inbox from 'lucide-react-native/icons/inbox';
 import MessageSquare from 'lucide-react-native/icons/message-square';
-import Send from 'lucide-react-native/icons/send';
+import Package from 'lucide-react-native/icons/package';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import Wallet from 'lucide-react-native/icons/wallet';
 import { colors } from '../../theme';
@@ -22,8 +22,8 @@ export default function TabsLayout() {
         options={{ title: 'Заявки', tabBarIcon: ({ color }) => <Inbox size={22} color={color} /> }}
       />
       <Tabs.Screen
-        name="offers"
-        options={{ title: 'Предложения', tabBarIcon: ({ color }) => <Send size={21} color={color} /> }}
+        name="products"
+        options={{ title: 'Товары', tabBarIcon: ({ color }) => <Package size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="deals"
