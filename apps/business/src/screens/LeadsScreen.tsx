@@ -11,6 +11,7 @@ import {
 import { router, useFocusEffect } from 'expo-router';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { leadsApi, type Lead } from '../api/leads';
+import { PopupBanner } from '../components/PopupBanner';
 import { ScreenHeader } from '../components/ui';
 import { formatDate } from '../format';
 import { colors, radius } from '../theme';
@@ -74,6 +75,7 @@ export function LeadsScreen() {
 
   return (
     <View style={styles.screen}>
+      <PopupBanner audience="SUPPLIER" />
       <ScreenHeader title="Заявки покупателей" back={false} />
       <View style={styles.tabs}>
         {FILTERS.map((f) => (
