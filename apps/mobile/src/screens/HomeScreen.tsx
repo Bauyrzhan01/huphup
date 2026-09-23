@@ -19,6 +19,7 @@ import { useAuth } from '../auth/AuthContext';
 import { BannerCarousel } from '../components/BannerCarousel';
 import { confirm } from '../components/confirm';
 import { AttentionCard, DiscoverSections } from '../components/HomeSections';
+import { PopupBanner } from '../components/PopupBanner';
 import { RequestRow } from '../components/requests';
 import { directoryApi, requestsApi, type PublishResult, type RequestItem } from '../api/requests';
 import { DEADLINE_CHOICES, formatDate, isoInDays } from '../requests/format';
@@ -99,6 +100,7 @@ export function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <PopupBanner audience="BUYER" city={chat.city || undefined} />
       <View style={styles.topbar}>
         <View style={styles.brand}>
           <View style={styles.logo}>
